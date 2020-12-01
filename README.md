@@ -14,8 +14,8 @@ Thus, if our goal is to identify samples with a given driver mutation, it is
 plausible that different data modalities will contain different amounts of
 information. For example, IDH1 mutations have been [implicated in aberrant DNA
 methylation](https://doi.org/10.1038/s41598-019-53262-7), and TP53 mutation
-has been [shown to lead to distinct gene expression changes]
-(https://doi.org/10.1016/j.celrep.2018.03.076). More to come.
+has been [shown to lead to distinct and detectable gene expression changes](
+https://doi.org/10.1016/j.celrep.2018.03.076). More to come.
 
 ## Setup
 
