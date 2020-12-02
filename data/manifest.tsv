@@ -1,0 +1,6 @@
+name	id	filename	md5	size
+mirna_sample	55d9bf6f-0712-4315-b588-e6f8e295018e	PanCanAtlas_miRNA_sample_information_list.txt	02bb56712be34bcd58c50d90387aebde	553408
+methylation	d82e2c44-89eb-43d9-b6d3-712732bf6a53	jhu-usc.edu_PANCAN_merged_HumanMethylation27_HumanMethylation450.betaValue_whitelisted.tsv	5cec086f0b002d17befef76a3241e73b	5022150019
+rppa	fcbb373e-28d4-4818-92f3-601ede3da5e1	TCGA-RPPA-pancan-clean.txt	e2b914c7ecd369589275d546d9555b05	18901234
+rna_seq	3586c0da-64d0-4b74-a449-5ff4d9136611	EBPlusPlusAdjustPANCAN_IlluminaHiSeq_RNASeqV2.geneExp.tsv	02e72c33071307ff6570621480d3c90b	1882540959
+mirna	1c6174d9-8ffb-466e-b5ee-07b204c15cf8	pancanMiRs_EBadjOnProtocolPlatformWithoutRepsWithUnCorrectMiRs_08_04_16.csv	c7501dc3c505ca172a6a05b611bd11c3	67167640
