@@ -7,6 +7,7 @@ data_dir = repo_root / 'data'
 results_dir = repo_root / 'results'
 
 # location of saved expression data
+raw_data_dir = data_dir / 'raw'
 pancan_data = data_dir / 'pancancer_data.pkl'
 rnaseq_data = data_dir / 'tcga_expression_matrix_processed.tsv.gz'
 sample_counts = data_dir / 'tcga_sample_counts.tsv'
