@@ -15,9 +15,9 @@ plausible that different data modalities will contain different amounts of
 information. For example, IDH1 mutations have been [implicated in aberrant DNA
 methylation](https://doi.org/10.1038/s41598-019-53262-7), and TP53 mutation
 has been [shown to lead to distinct and detectable gene expression changes](
-https://doi.org/10.1016/j.celrep.2018.03.076). Our goal is to develop a data-
-driven methodology for identifying and comparing the strength of relationships
-between various drivers and one or more data modalities.
+https://doi.org/10.1016/j.celrep.2018.03.076). Our goal is to develop a
+data-driven methodology for identifying and comparing the strength of
+relationships between various drivers and one or more data modalities.
 
 More to come as the project progresses.
 
