@@ -6,3 +6,4 @@
 data/raw/*
 data/tcga_expression_matrix_processed.tsv.gz
 data/tcga_methylation_matrix_processed.tsv.gz
+data/pancancer_data.pkl
