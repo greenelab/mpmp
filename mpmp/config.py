@@ -13,3 +13,9 @@ rnaseq_data = data_dir / 'tcga_expression_matrix_processed.tsv.gz'
 methylation_data = data_dir / 'tcga_methylation_matrix_processed.tsv.gz'
 sample_counts = data_dir / 'tcga_sample_counts.tsv'
 sample_info = data_dir / 'tcga_sample_identifiers.tsv'
+
+# gene/cancer type filtering hyperparameters
+# filter cancer types with less than this percent of mutated samples
+filter_prop = 0.05
+# filter cancer types with less than this number of mutated samples
+filter_count = 15
