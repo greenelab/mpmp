@@ -50,6 +50,28 @@ def load_expression_data(scale_input=False, verbose=False, debug=False):
     return rnaseq_df
 
 
+def load_methylation_data(verbose=False, debug=False):
+    """Load and preprocess saved TCGA DNA methylation data.
+
+    Arguments
+    ---------
+    verbose (bool): whether or not to print verbose output
+    debug (bool): whether or not to subset data for faster debugging
+
+    Returns
+    -------
+    methylation_df: samples x probes methylation dataframe
+    """
+    if debug:
+        raise NotImplementedError('need to generate subset of Me data')
+    else:
+        if verbose:
+            print('Loading DNA methylation data...', file=sys.stderr)
+        methylation_df = pd.read_csv(cfg.methylation_data, index_col=0, sep='\t')
+
+    return methylation_df
+
+
 def load_pancancer_data(verbose=False, test=False, subset_columns=None):
     """Load pan-cancer relevant data from previous Greene Lab repos.
 
