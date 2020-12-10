@@ -14,6 +14,12 @@ methylation_data = data_dir / 'tcga_methylation_matrix_processed.tsv.gz'
 sample_counts = data_dir / 'tcga_sample_counts.tsv'
 sample_info = data_dir / 'tcga_sample_identifiers.tsv'
 
+# default seed for random number generator
+default_seed = 42
+
+# number of features to use by default
+num_features_raw = 8000
+
 # gene/cancer type filtering hyperparameters
 # filter cancer types with less than this percent of mutated samples
 filter_prop = 0.05
