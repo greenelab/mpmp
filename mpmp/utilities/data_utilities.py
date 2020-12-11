@@ -127,11 +127,8 @@ def load_top_50():
     These were precomputed for the equivalent experiments in the
     BioBombe paper, so no need to recompute them.
     """
-    base_url = "https://github.com/greenelab/BioBombe/raw"
-    commit = "aedc9dfd0503edfc5f25611f5eb112675b99edc9"
-
     file = "{}/{}/9.tcga-classify/data/top50_mutated_genes.tsv".format(
-            base_url, commit)
+            cfg.top50_base_url, cfg.top50_commit)
     genes_df = pd.read_csv(file, sep='\t')
     return genes_df
 
@@ -143,12 +140,9 @@ def load_vogelstein():
     These genes and their oncogene or TSG status were precomputed in
     the pancancer repo, so we just load them from there.
     """
-    base_url = "https://github.com/greenelab/pancancer/raw"
-    commit = "2a0683b68017fb226f4053e63415e4356191734f"
 
     file = "{}/{}/data/vogelstein_cancergenes.tsv".format(
-            base_url, commit)
-
+            cfg.vogelstein_base_url, cfg.vogelstein_commit)
     genes_df = (
         pd.read_csv(file, sep='\t')
           .rename(columns={'Gene Symbol'   : 'gene',
