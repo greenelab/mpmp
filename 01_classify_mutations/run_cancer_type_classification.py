@@ -19,8 +19,9 @@ import mpmp.utilities.data_utilities as du
 
 def process_args():
     p = argparse.ArgumentParser()
-    p.add_argument('--cancer_types', nargs='*', default=['BRCA'],
-                   help='cancer types to predict')
+    p.add_argument('--cancer_types', nargs='*', default=None,
+                   help='cancer types to predict, if not included predict '
+                        'all cancer types in TCGA')
     p.add_argument('--debug', action='store_true',
                    help='use subset of data for fast debugging')
     p.add_argument('--log_file', default=None,
@@ -47,10 +48,14 @@ def process_args():
     # check that all provided cancer types are valid TCGA acronyms
     sample_info_df = du.load_sample_info(args.verbose)
     tcga_cancer_types = list(np.unique(sample_info_df.cancer_type))
-    not_in_tcga = set(args.cancer_types) - set(tcga_cancer_types)
-    if len(not_in_tcga) > 0:
-        p.error('some cancer types not present in TCGA: {}'.format(
-            ' '.join(not_in_tcga)))
+
+    if args.cancer_types is None:
+        args.cancer_types = tcga_cancer_types
+    else:
+        not_in_tcga = set(args.cancer_types) - set(tcga_cancer_types)
+        if len(not_in_tcga) > 0:
+            p.error('some cancer types not present in TCGA: {}'.format(
+                ' '.join(not_in_tcga)))
 
     return args, sample_info_df
 
@@ -83,4 +88,20 @@ if __name__ == '__main__':
 
     print(tcga_data.train_df.shape)
 
+    # we want to run mutation prediction experiments:
+    # - for true labels and shuffled labels
+    #   (shuffled labels acts as our lower baseline)
+    # - for all genes in the given gene set
+    for shuffle_labels in (False, True):
+
+        print('shuffle_labels: {}'.format(shuffle_labels))
+
+        progress = tqdm(args.cancer_types,
+                        total=len(args.cancer_types),
+                        ncols=100,
+                        file=sys.stdout)
+
+        for cancer_type in progress:
+            progress.set_description('cancer type: {}'.format(cancer_type))
+            import time; time.sleep(2)
 
