@@ -94,3 +94,40 @@ def process_y_matrix(
 
     return y_df
 
+
+def process_y_matrix_cancertype(
+    acronym, sample_freeze, mutation_burden, hyper_filter=5
+):
+    """Build a y vector based on cancer-type membership.
+
+    Arguments
+    ---------
+    acronym (str): the TCGA cancer-type barcode
+    sample_freeze (pd.DataFrame): stores TCGA barcodes and cancer-types
+    mutation_burden (pd.DataFrame): log10 mutation count per sample
+                                    (this gets added as covariate)
+    hyper_filter (float): the number of std dev above log10 mutation burden
+                          to filter
+
+    Returns
+    -------
+    y_df: 0/1 status DataFrame for the given cancer type
+    count_df: status count dataframe
+    """
+    y_df = sample_freeze.assign(status=0)
+    y_df.loc[y_df.DISEASE == acronym, "status"] = 1
+
+    y_df = y_df.set_index("SAMPLE_BARCODE").merge(
+        mutation_burden, left_index=True, right_index=True
+    )
+
+    burden_filter = y_df["log10_mut"] < hyper_filter * y_df["log10_mut"].std()
+    y_df = y_df.loc[burden_filter, :]
+
+    count_df = pd.DataFrame(y_df.status.value_counts()).reset_index()
+    count_df.columns = ["status", acronym]
+
+    return y_df, count_df
+
+
+

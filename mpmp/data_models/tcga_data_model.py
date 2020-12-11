@@ -24,6 +24,7 @@ class TCGADataModel():
                  seed=cfg.default_seed,
                  subset_mad_genes=-1,
                  training_data='expression',
+                 sample_info_df=None,
                  verbose=False,
                  debug=False,
                  test=False):
@@ -48,7 +49,9 @@ class TCGADataModel():
         self.test = test
 
         # load and store data in memory
-        self._load_data(debug=debug, train_data_type=training_data,
+        self._load_data(train_data_type=training_data,
+                        sample_info_df=sample_info_df,
+                        debug=debug,
                         test=self.test)
 
     def load_gene_set(self, gene_set='top_50'):
@@ -124,7 +127,11 @@ class TCGADataModel():
         self.gene_features = gene_features
 
 
-    def _load_data(self, train_data_type, debug=False, test=False):
+    def _load_data(self,
+                   train_data_type,
+                   sample_info_df=None,
+                   debug=False,
+                   test=False):
         """Load and store relevant data.
 
         This data does not vary based on the gene/cancer type being considered
