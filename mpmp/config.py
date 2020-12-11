@@ -19,3 +19,11 @@ sample_info = data_dir / 'tcga_sample_identifiers.tsv'
 filter_prop = 0.05
 # filter cancer types with less than this number of mutated samples
 filter_count = 15
+
+# repo/commit information to retrieve precomputed cancer gene information
+# this is used in data_utilities.py
+top50_base_url = "https://github.com/greenelab/BioBombe/raw"
+top50_commit = "aedc9dfd0503edfc5f25611f5eb112675b99edc9"
+vogelstein_base_url = "https://github.com/greenelab/pancancer/raw"
+vogelstein_commit = "2a0683b68017fb226f4053e63415e4356191734f"
+
