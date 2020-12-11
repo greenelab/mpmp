@@ -93,9 +93,10 @@ def process_y_matrix(y_mutation,
     return y_df
 
 
-def process_y_matrix_cancertype(
-    acronym, sample_freeze, mutation_burden, hyper_filter=5
-):
+def process_y_matrix_cancertype(acronym,
+                                sample_freeze,
+                                mutation_burden,
+                                hyper_filter=5):
     """Build a y vector based on cancer-type membership.
 
     Arguments
