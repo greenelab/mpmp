@@ -8,8 +8,8 @@ import pandas as pd
 import mpmp.config as cfg
 import mpmp.utilities.data_utilities as du
 from mpmp.utilities.tcga_utilities import (
-    process_y_matrix,
-    # align_matrices,
+    process_y_matrix_cancertype,
+    align_matrices,
 )
 
 class TCGADataModel():
@@ -88,44 +88,37 @@ class TCGADataModel():
 
         return genes_df
 
-    def process_data_for_gene(self,
-                              gene,
-                              classification,
-                              gene_dir,
-                              use_pancancer=False,
-                              shuffle_labels=False):
+    def process_data_for_cancer_type(self,
+                                     cancer_type,
+                                     cancer_type_dir,
+                                     shuffle_labels=False):
         """
-        Prepare to run cancer type experiments for a given gene.
+        Prepare to run cancer type prediction experiments.
 
-        This has to be rerun for each gene, since the data is filtered based
-        on label proportions for the given gene in each cancer type.
+        This has to be rerun to generate the labels for each cancer type.
 
         Arguments
         ---------
-        gene (str): gene to run experiments for
-        classification (str): 'oncogene' or 'TSG'; most likely cancer function for
-                              the given gene
-        gene_dir (str): directory to write output to, if None don't write output
-        use_pancancer (bool): whether or not to use pancancer data
-        shuffle_labels (bool): whether or not to shuffle labels (negative control)
+        cancer_type (str): cancer type to predict (one vs. rest binary)
+        cancer_type_dir (str): directory to write output to, if None don't
+                               write output
+        shuffle_labels (bool): whether or not to shuffle labels (negative
+                               control)
         """
-        y_df_raw = self._generate_labels(gene, classification, gene_dir)
+        y_df_raw = self._generate_cancer_type_labels(cancer_type)
 
-        filtered_data = self._filter_data_for_gene(
-            self.rnaseq_df,
-            y_df_raw,
-            use_pancancer
-        )
-        rnaseq_filtered_df, y_filtered_df, gene_features = filtered_data
+        filtered_data = self._filter_data_for_cancer_type(self.train_df,
+                                                          y_df_raw)
+
+        train_filtered_df, y_filtered_df, gene_features = filtered_data
 
         if shuffle_labels:
             y_filtered_df.status = np.random.permutation(
                 y_filtered_df.status.values)
 
-        self.X_df = rnaseq_filtered_df
+        self.X_df = train_filtered_df
         self.y_df = y_filtered_df
         self.gene_features = gene_features
-
 
     def _load_data(self,
                    train_data_type,
@@ -169,35 +162,23 @@ class TCGADataModel():
          self.copy_gain_df,
          self.mut_burden_df) = pancan_data
 
-    def _generate_labels(self, gene, classification, gene_dir):
-        # process the y matrix for the given gene or pathway
-        y_mutation_df = self.mutation_df.loc[:, gene]
-
-        # include copy number gains for oncogenes
-        # and copy number loss for tumor suppressor genes (TSG)
-        include_copy = True
-        if classification == "Oncogene":
-            y_copy_number_df = self.copy_gain_df.loc[:, gene]
-        elif classification == "TSG":
-            y_copy_number_df = self.copy_loss_df.loc[:, gene]
-        else:
-            y_copy_number_df = pd.DataFrame()
-            include_copy = False
-
-        # construct labels from mutation/CNV information, and filter for
-        # cancer types without an extreme label imbalance
-        y_df = process_y_matrix(
-            y_mutation=y_mutation_df,
-            y_copy=y_copy_number_df,
-            include_copy=include_copy,
-            gene=gene,
+    def _generate_cancer_type_labels(self, cancer_type):
+        # TODO: should we do something with cancer type counts?
+        y_df, count_df = process_y_matrix_cancertype(
+            acronym=cancer_type,
             sample_freeze=self.sample_freeze_df,
             mutation_burden=self.mut_burden_df,
-            filter_count=cfg.filter_count,
-            filter_prop=cfg.filter_prop,
-            output_directory=gene_dir,
             hyper_filter=5,
-            test=self.test
         )
         return y_df
+
+    def _filter_data_for_cancer_type(self, train_df, y_df):
+        use_samples, train_df, y_df, gene_features = align_matrices(
+            x_file_or_df=train_df,
+            y=y_df,
+            add_cancertype_covariate=False,
+            add_mutation_covariate=True
+        )
+        return train_df, y_df, gene_features
+
 

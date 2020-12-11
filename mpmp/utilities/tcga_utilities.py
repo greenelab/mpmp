@@ -11,19 +11,17 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-def process_y_matrix(
-    y_mutation,
-    y_copy,
-    include_copy,
-    gene,
-    sample_freeze,
-    mutation_burden,
-    filter_count,
-    filter_prop,
-    output_directory,
-    hyper_filter=5,
-    test=False,
-):
+def process_y_matrix(y_mutation,
+                     y_copy,
+                     include_copy,
+                     gene,
+                     sample_freeze,
+                     mutation_burden,
+                     filter_count,
+                     filter_prop,
+                     output_directory,
+                     hyper_filter=5,
+                     test=False):
     """
     Combine copy number and mutation data and filter cancer-types to build y matrix
 
@@ -130,4 +128,54 @@ def process_y_matrix_cancertype(
     return y_df, count_df
 
 
+def align_matrices(x_file_or_df,
+                   y,
+                   add_cancertype_covariate=True,
+                   add_mutation_covariate=True):
+    """
+    Process the x matrix for the given input file and align x and y together
 
+    Arguments
+    ---------
+    x_file_or_df: string location of the x matrix or matrix df itself
+    y: pandas DataFrame storing status of corresponding samples
+    add_cancertype_covariate: if true, add one-hot encoded cancer type as a covariate
+    add_mutation_covariate: if true, add log10(mutation burden) as a covariate
+
+    Returns
+    -------
+    use_samples: the samples used to subset
+    rnaseq_df: processed X matrix
+    y_df: processed y matrix
+    gene_features: real-valued gene features, to be standardized later
+    """
+    try:
+        x_df = pd.read_csv(x_file_or_df, index_col=0, sep='\t')
+    except:
+        x_df = x_file_or_df
+
+    # select samples to use, assuming y has already been filtered by cancer type
+    use_samples = y.index.intersection(x_df.index)
+    x_df = x_df.reindex(use_samples)
+    y = y.reindex(use_samples)
+
+    # add features to X matrix if necessary
+    gene_features = np.ones(x_df.shape[1]).astype('bool')
+
+    if add_cancertype_covariate:
+        # add one-hot covariate for cancer type
+        covariate_df = pd.get_dummies(y.DISEASE)
+        x_df = x_df.merge(covariate_df, left_index=True, right_index=True)
+
+    if add_mutation_covariate:
+        # add covariate for mutation burden
+        mutation_covariate_df = pd.DataFrame(y.loc[:, "log10_mut"], index=y.index)
+        x_df = x_df.merge(mutation_covariate_df, left_index=True, right_index=True)
+
+    num_added_features = x_df.shape[1] - gene_features.shape[0]
+    if num_added_features > 0:
+        gene_features = np.concatenate(
+            (gene_features, np.zeros(num_added_features).astype('bool'))
+        )
+
+    return use_samples, x_df, y, gene_features

@@ -13,9 +13,12 @@ from tqdm import tqdm
 
 import mpmp.config as cfg
 from mpmp.data_models.tcga_data_model import TCGADataModel
+from mpmp.exceptions import (
+    ResultsFileExistsError,
+)
 # from mpmp.utilities.classify_utilities import run_cv_stratified
 import mpmp.utilities.data_utilities as du
-# import mpmp.utilities.file_utilities as fu
+import mpmp.utilities.file_utilities as fu
 
 def process_args():
     p = argparse.ArgumentParser()
@@ -86,8 +89,6 @@ if __name__ == '__main__':
                               verbose=args.verbose,
                               debug=args.debug)
 
-    print(tcga_data.train_df.shape)
-
     # we want to run mutation prediction experiments:
     # - for true labels and shuffled labels
     #   (shuffled labels acts as our lower baseline)
@@ -103,5 +104,26 @@ if __name__ == '__main__':
 
         for cancer_type in progress:
             progress.set_description('cancer type: {}'.format(cancer_type))
-            import time; time.sleep(2)
+
+            try:
+                cancer_type_dir = fu.make_cancer_type_dir(args.results_dir, cancer_type)
+                check_file = fu.check_cancer_type_file(cancer_type_dir, cancer_type,
+                                                       shuffle_labels=shuffle_labels)
+                tcga_data.process_data_for_cancer_type(cancer_type,
+                                                       cancer_type_dir)
+                print(tcga_data.X_df.shape)
+                print(tcga_data.y_df.shape)
+                print(tcga_data.y_df.head(n=10))
+            except ResultsFileExistsError:
+                # this happens if cross-validation for this gene has already been
+                # run (i.e. the results file already exists)
+                if args.verbose:
+                    print('Skipping because results file exists already: '
+                          'cancer type {}'.format(gene), file=sys.stderr)
+                cancer_type_log_df = fu.generate_log_df(
+                    log_columns,
+                    [cancer_type, shuffle_labels, 'file_exists']
+                )
+                fu.write_log_file(cancer_type_log_df, args.log_file)
+                continue
 
