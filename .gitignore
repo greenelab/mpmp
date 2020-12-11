@@ -3,7 +3,7 @@
 *.egg-info*
 
 # don't track large data files
-data/EBPlusPlusAdjustPANCAN_IlluminaHiSeq_RNASeqV2.geneExp.tsv
-data/jhu-usc.edu_PANCAN_merged_HumanMethylation27_HumanMethylation450.betaValue_whitelisted.tsv
-data/pancanMiRs_EBadjOnProtocolPlatformWithoutRepsWithUnCorrectMiRs_08_04_16.csv
-data/TCGA-RPPA-pancan-clean.txt
+data/raw/*
+data/tcga_expression_matrix_processed.tsv.gz
+data/tcga_methylation_matrix_processed.tsv.gz
+data/pancancer_data.pkl
