@@ -33,9 +33,9 @@ def run_cv_cancer_type(data_model,
                        shuffle_labels=False,
                        standardize_columns=False):
     """
-    Run cancer type cross-validation experiments for a given gene, then
-    write the results to files in the results directory. If the relevant
-    files already exist, skip this experiment.
+    Run cancer type cross-validation experiments for a given cancer type, then
+    write the results to files in the results directory. If the relevant files
+    already exist, skip this experiment.
 
     Arguments
     ---------
@@ -47,10 +47,10 @@ def run_cv_cancer_type(data_model,
     standardize_columns (bool): whether or not to standardize predictors
     """
     results = {
-        'gene_metrics': [],
-        'gene_auc': [],
-        'gene_aupr': [],
-        'gene_coef': []
+        'cancer_type_metrics': [],
+        'cancer_type_auc': [],
+        'cancer_type_aupr': [],
+        'cancer_type_coef': []
     }
     signal = 'shuffled' if shuffle_labels else 'signal'
 
@@ -82,40 +82,109 @@ def run_cv_cancer_type(data_model,
          y_pred_train_df,
          y_pred_test_df,
          y_cv_df) = model_results
-        print(y_pred_train_df[:5])
 
-    # # TODO: separate below into another function (one returns raw results)
+        # TODO: separate below into another function (one returns raw results)
 
-    # # get coefficients
-    # coef_df = extract_coefficients(
-    #     cv_pipeline=cv_pipeline,
-    #     feature_names=X_train_df.columns,
-    #     signal=signal,
-    #     seed=data_model.seed
-    # )
-    # coef_df = coef_df.assign(gene=gene)
-    # coef_df = coef_df.assign(fold=fold_no)
+        # get coefficients
+        coef_df = extract_coefficients(
+            cv_pipeline=cv_pipeline,
+            feature_names=X_train_df.columns,
+            signal=signal,
+            seed=data_model.seed
+        )
+        coef_df = coef_df.assign(cancer_type=cancer_type)
+        coef_df = coef_df.assign(fold=fold_no)
 
-    # try:
-    #     # also ignore warnings here, same deal as above
-    #     with warnings.catch_warnings():
-    #         warnings.simplefilter("ignore")
-    #         metric_df, gene_auc_df, gene_aupr_df = get_metrics(
-    #             y_train_df, y_test_df, y_cv_df, y_pred_train_df,
-    #             y_pred_test_df, gene, 'N/A', signal, data_model.seed,
-    #             fold_no
-    #         )
-    # except ValueError:
-    #     raise OneClassError(
-    #         'Only one class present in test set for gene: {}\n'.format(gene)
-    #     )
+        metric_df, cancer_type_auc_df, cancer_type_aupr_df = get_metrics(
+            y_train_df, y_test_df, y_cv_df, y_pred_train_df,
+            y_pred_test_df, cancer_type, signal, data_model.seed,
+            fold_no
+        )
 
-    # results['gene_metrics'].append(metric_df)
-    # results['gene_auc'].append(gene_auc_df)
-    # results['gene_aupr'].append(gene_aupr_df)
-    # results['gene_coef'].append(coef_df)
+        results['cancer_type_metrics'].append(metric_df)
+        results['cancer_type_auc'].append(cancer_type_auc_df)
+        results['cancer_type_aupr'].append(cancer_type_aupr_df)
+        results['cancer_type_coef'].append(coef_df)
 
     return results
+
+
+def get_threshold_metrics(y_true, y_pred, drop=False):
+    """
+    Retrieve true/false positive rates and auroc/aupr for class predictions
+
+    Arguments
+    ---------
+    y_true: an array of gold standard mutation status
+    y_pred: an array of predicted mutation status
+    drop: boolean if intermediate thresholds are dropped
+
+    Returns
+    -------
+    dict of AUROC, AUPR, pandas dataframes of ROC and PR data, and cancer-type
+    """
+    roc_columns = ["fpr", "tpr", "threshold"]
+    pr_columns = ["precision", "recall", "threshold"]
+
+    roc_results = roc_curve(y_true, y_pred, drop_intermediate=drop)
+    roc_items = zip(roc_columns, roc_results)
+    roc_df = pd.DataFrame.from_dict(dict(roc_items))
+
+    prec, rec, thresh = precision_recall_curve(y_true, y_pred)
+    pr_df = pd.DataFrame.from_records([prec, rec]).T
+    pr_df = pd.concat([pr_df, pd.Series(thresh)], ignore_index=True, axis=1)
+    pr_df.columns = pr_columns
+
+    auroc = roc_auc_score(y_true, y_pred, average="weighted")
+    aupr = average_precision_score(y_true, y_pred, average="weighted")
+
+    return {"auroc": auroc, "aupr": aupr, "roc_df": roc_df, "pr_df": pr_df}
+
+
+def get_metrics(y_train_df, y_test_df, y_cv_df, y_pred_train, y_pred_test,
+                cancer_type, signal, seed, fold_no):
+
+    # get classification metric values
+    y_train_results = get_threshold_metrics(
+        y_train_df.status, y_pred_train, drop=False
+    )
+    y_test_results = get_threshold_metrics(
+        y_test_df.status, y_pred_test, drop=False
+    )
+    y_cv_results = get_threshold_metrics(
+        y_train_df.status, y_cv_df, drop=False
+    )
+
+    # summarize all results in dataframes
+    metric_cols = [
+        "auroc",
+        "aupr",
+        "cancer_type",
+        "signal",
+        "seed",
+        "data_type",
+        "fold"
+    ]
+    train_metrics_, train_roc_df, train_pr_df = summarize_results(
+        y_train_results, cancer_type, signal,
+        seed, "train", fold_no
+    )
+    test_metrics_, test_roc_df, test_pr_df = summarize_results(
+        y_test_results, cancer_type, signal,
+        seed, "test", fold_no
+    )
+    cv_metrics_, cv_roc_df, cv_pr_df = summarize_results(
+        y_cv_results, cancer_type, signal,
+        seed, "cv", fold_no
+    )
+
+    # compile summary metrics
+    metrics_ = [train_metrics_, test_metrics_, cv_metrics_]
+    metric_df = pd.DataFrame(metrics_, columns=metric_cols)
+    cancer_type_auc_df = pd.concat([train_roc_df, test_roc_df, cv_roc_df])
+    cancer_type_aupr_df = pd.concat([train_pr_df, test_pr_df, cv_pr_df])
+
+    return metric_df, cancer_type_auc_df, cancer_type_aupr_df
 
 
 def train_model(X_train,
@@ -196,6 +265,80 @@ def train_model(X_train,
     return cv_pipeline, y_predict_train, y_predict_test, y_cv
 
 
+def extract_coefficients(cv_pipeline, feature_names, signal, seed):
+    """
+    Pull out the coefficients from the trained classifiers
+
+    Arguments
+    ---------
+    cv_pipeline: the trained sklearn cross validation pipeline
+    feature_names: the column names of the x matrix used to train model (features)
+    results: a results object output from `get_threshold_metrics`
+    signal: the signal of interest
+    seed: the seed used to compress the data
+    """
+    final_pipeline = cv_pipeline.best_estimator_
+    final_classifier = final_pipeline.named_steps["classify"]
+
+    coef_df = pd.DataFrame.from_dict(
+        {"feature": feature_names, "weight": final_classifier.coef_[0]}
+    )
+
+    coef_df = (
+        coef_df.assign(abs=coef_df["weight"].abs())
+        .sort_values("abs", ascending=False)
+        .reset_index(drop=True)
+        .assign(signal=signal, seed=seed)
+    )
+
+    return coef_df
+
+
+def summarize_results(results, cancer_type, signal, seed, data_type, fold_no):
+    """
+    Given an input results file, summarize and output all pertinent files
+
+    Arguments
+    ---------
+    results: a results object output from `get_threshold_metrics`
+    cancer_type: the cancer type being predicted
+    signal: the signal of interest
+    seed: the seed used to compress the data
+    data_type: the type of data (either training, testing, or cv)
+    fold_no: the fold number for the external cross-validation loop
+    """
+    results_append_list = [
+        cancer_type,
+        signal,
+        seed,
+        data_type,
+        fold_no,
+    ]
+
+    metrics_out_ = [results["auroc"], results["aupr"]] + results_append_list
+
+    roc_df_ = results["roc_df"]
+    pr_df_ = results["pr_df"]
+
+    roc_df_ = roc_df_.assign(
+        predictor=cancer_type,
+        signal=signal,
+        seed=seed,
+        data_type=data_type,
+        fold_no=fold_no,
+    )
+
+    pr_df_ = pr_df_.assign(
+        predictor=cancer_type,
+        signal=signal,
+        seed=seed,
+        data_type=data_type,
+        fold_no=fold_no,
+    )
+
+    return metrics_out_, roc_df_, pr_df_
+
+
 def split_stratified(data_df,
                      sample_info_df,
                      num_folds=4,
@@ -249,3 +392,4 @@ def split_stratified(data_df,
             train_df = data_df.iloc[train_ixs]
             test_df = data_df.iloc[test_ixs]
     return train_df, test_df, sample_info_df
+
