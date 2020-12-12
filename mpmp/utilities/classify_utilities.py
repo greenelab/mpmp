@@ -18,7 +18,7 @@ from sklearn.model_selection import StratifiedKFold
 # from sklearn.model_selection import GridSearchCV
 
 import mpmp.config as cfg
-# import mpmp.utilities.tcga_utilities as tu
+import mpmp.utilities.tcga_utilities as tu
 from mpmp.exceptions import (
     NoTrainSamplesError,
     NoTestSamplesError,
@@ -28,7 +28,8 @@ def run_cv_cancer_type(data_model,
                        cancer_type,
                        sample_info,
                        num_folds,
-                       shuffle_labels):
+                       shuffle_labels=False,
+                       standardize_columns=False):
     """
     Run cancer type cross-validation experiments for a given gene, then
     write the results to files in the results directory. If the relevant
@@ -41,6 +42,7 @@ def run_cv_cancer_type(data_model,
     sample_info (pd.DataFrame): df with TCGA sample information
     num_folds (int): number of cross-validation folds to run
     shuffle_labels (bool): whether or not to shuffle labels (negative control)
+    standardize_columns (bool): whether or not to standardize predictors
     """
     results = {
         'gene_metrics': [],
@@ -51,20 +53,18 @@ def run_cv_cancer_type(data_model,
     signal = 'shuffled' if shuffle_labels else 'signal'
 
     for fold_no in range(num_folds):
+        # TODO: catch user warning?
         X_train_raw_df, X_test_raw_df, _ = split_stratified(
            data_model.X_df, sample_info, num_folds=num_folds,
            fold_no=fold_no, seed=data_model.seed)
         y_train_df = data_model.y_df.reindex(X_train_raw_df.index)
         y_test_df = data_model.y_df.reindex(X_test_raw_df.index)
-        print(X_train_raw_df.shape)
-        print(y_train_df.shape)
-        print(X_test_raw_df.shape)
-        print(y_test_df.shape)
-        exit()
 
-    #    X_train_df, X_test_df = tu.preprocess_data(X_train_raw_df, X_test_raw_df,
-    #                                               data_model.gene_features,
-    #                                               data_model.subset_mad_genes)
+        X_train_df, X_test_df = tu.preprocess_data(X_train_raw_df,
+                                                   X_test_raw_df,
+                                                   data_model.gene_features,
+                                                   standardize_columns,
+                                                   data_model.subset_mad_genes)
 
     # try:
     #     # also ignore warnings here, same deal as above

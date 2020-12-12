@@ -127,9 +127,14 @@ if __name__ == '__main__':
                 continue
 
             try:
-                results = run_cv_cancer_type(tcga_data, cancer_type,
-                                             sample_info_df, args.num_folds,
-                                             shuffle_labels)
+                # for now, don't standardize methylation data
+                standardize_columns = (args.training_data in ['expression'])
+                results = run_cv_cancer_type(tcga_data,
+                                             cancer_type,
+                                             sample_info_df,
+                                             args.num_folds,
+                                             shuffle_labels,
+                                             standardize_columns)
             except NoTestSamplesError:
                 if args.verbose:
                     print('Skipping due to no test samples: cancer type '
