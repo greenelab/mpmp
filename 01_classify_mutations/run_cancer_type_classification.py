@@ -15,8 +15,10 @@ import mpmp.config as cfg
 from mpmp.data_models.tcga_data_model import TCGADataModel
 from mpmp.exceptions import (
     ResultsFileExistsError,
+    NoTrainSamplesError,
+    NoTestSamplesError,
 )
-# from mpmp.utilities.classify_utilities import run_cv_stratified
+from mpmp.utilities.classify_utilities import run_cv_cancer_type
 import mpmp.utilities.data_utilities as du
 import mpmp.utilities.file_utilities as fu
 
@@ -111,19 +113,47 @@ if __name__ == '__main__':
                                                        shuffle_labels=shuffle_labels)
                 tcga_data.process_data_for_cancer_type(cancer_type,
                                                        cancer_type_dir)
-                print(tcga_data.X_df.shape)
-                print(tcga_data.y_df.shape)
-                print(tcga_data.y_df.head(n=10))
             except ResultsFileExistsError:
-                # this happens if cross-validation for this gene has already been
-                # run (i.e. the results file already exists)
+                # this happens if cross-validation for this cancer type has
+                # already been run (i.e. the results file already exists)
                 if args.verbose:
                     print('Skipping because results file exists already: '
-                          'cancer type {}'.format(gene), file=sys.stderr)
+                          'cancer type {}'.format(cancer_type), file=sys.stderr)
                 cancer_type_log_df = fu.generate_log_df(
                     log_columns,
                     [cancer_type, shuffle_labels, 'file_exists']
                 )
                 fu.write_log_file(cancer_type_log_df, args.log_file)
                 continue
+
+            try:
+                results = run_cv_cancer_type(tcga_data, cancer_type,
+                                             sample_info_df, args.num_folds,
+                                             shuffle_labels)
+            except NoTestSamplesError:
+                if args.verbose:
+                    print('Skipping due to no test samples: cancer type '
+                          '{}'.format(cancer_type), file=sys.stderr)
+                cancer_type_log_df = fu.generate_log_df(
+                    log_columns,
+                    [cancer_type, shuffle_labels, 'no_test_samples']
+                )
+            # except OneClassError:
+            #     if args.verbose:
+            #         print('Skipping due to one holdout class: cancer type '
+            #               '{}'.format(cancer_type), file=sys.stderr)
+            #     cancer_type_log_df = fu.generate_log_df(
+            #         log_columns,
+            #         [cancer_type, shuffle_labels, 'one_class']
+            #     )
+            else:
+                # only save results if no exceptions
+                fu.save_results_cancer_type(cancer_type_dir,
+                                            check_file,
+                                            results,
+                                            cancer_type,
+                                            shuffle_labels)
+
+            if cancer_type_log_df is not None:
+                fu.write_log_file(cancer_type_log_df, args.log_file)
 

@@ -107,7 +107,7 @@ class TCGADataModel():
         """
         y_df_raw = self._generate_cancer_type_labels(cancer_type)
 
-        filtered_data = self._filter_data_for_cancer_type(self.train_df,
+        filtered_data = self._filter_data_for_cancer_type(self.data_df,
                                                           y_df_raw)
 
         train_filtered_df, y_filtered_df, gene_features = filtered_data
@@ -137,10 +137,10 @@ class TCGADataModel():
         """
         # load training data
         if train_data_type == 'expression':
-            self.train_df = du.load_expression_data(verbose=self.verbose,
+            self.data_df = du.load_expression_data(verbose=self.verbose,
                                                     debug=debug)
         elif train_data_type == 'methylation':
-            self.train_df = du.load_methylation_data(verbose=self.verbose,
+            self.data_df = du.load_methylation_data(verbose=self.verbose,
                                                      debug=debug)
 
         self.sample_info_df = du.load_sample_info(verbose=self.verbose)
@@ -172,13 +172,13 @@ class TCGADataModel():
         )
         return y_df
 
-    def _filter_data_for_cancer_type(self, train_df, y_df):
-        use_samples, train_df, y_df, gene_features = align_matrices(
-            x_file_or_df=train_df,
+    def _filter_data_for_cancer_type(self, data_df, y_df):
+        use_samples, data_df, y_df, gene_features = align_matrices(
+            x_file_or_df=data_df,
             y=y_df,
             add_cancertype_covariate=False,
             add_mutation_covariate=True
         )
-        return train_df, y_df, gene_features
+        return data_df, y_df, gene_features
 
 
