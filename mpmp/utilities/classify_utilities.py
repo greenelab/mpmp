@@ -28,6 +28,7 @@ from mpmp.exceptions import (
 
 def run_cv_cancer_type(data_model,
                        cancer_type,
+                       training_data,
                        sample_info,
                        num_folds,
                        shuffle_labels=False,
@@ -41,6 +42,7 @@ def run_cv_cancer_type(data_model,
     ---------
     data_model (TCGADataModel): class containing preprocessed train/test data
     cancer_type (str): cancer type to run experiments for
+    training_data (str): what type of data is being used to train model
     sample_info (pd.DataFrame): df with TCGA sample information
     num_folds (int): number of cross-validation folds to run
     shuffle_labels (bool): whether or not to shuffle labels (negative control)
@@ -93,12 +95,13 @@ def run_cv_cancer_type(data_model,
             seed=data_model.seed
         )
         coef_df = coef_df.assign(cancer_type=cancer_type)
+        coef_df = coef_df.assign(training_data=training_data)
         coef_df = coef_df.assign(fold=fold_no)
 
         metric_df, cancer_type_auc_df, cancer_type_aupr_df = get_metrics(
             y_train_df, y_test_df, y_cv_df, y_pred_train_df,
-            y_pred_test_df, cancer_type, signal, data_model.seed,
-            fold_no
+            y_pred_test_df, cancer_type, training_data, signal,
+            data_model.seed, fold_no
         )
 
         results['cancer_type_metrics'].append(metric_df)
@@ -142,7 +145,7 @@ def get_threshold_metrics(y_true, y_pred, drop=False):
 
 
 def get_metrics(y_train_df, y_test_df, y_cv_df, y_pred_train, y_pred_test,
-                cancer_type, signal, seed, fold_no):
+                cancer_type, training_data, signal, seed, fold_no):
 
     # get classification metric values
     y_train_results = get_threshold_metrics(
@@ -160,21 +163,22 @@ def get_metrics(y_train_df, y_test_df, y_cv_df, y_pred_train, y_pred_test,
         "auroc",
         "aupr",
         "cancer_type",
+        "training_data",
         "signal",
         "seed",
         "data_type",
         "fold"
     ]
     train_metrics_, train_roc_df, train_pr_df = summarize_results(
-        y_train_results, cancer_type, signal,
+        y_train_results, cancer_type, training_data, signal,
         seed, "train", fold_no
     )
     test_metrics_, test_roc_df, test_pr_df = summarize_results(
-        y_test_results, cancer_type, signal,
+        y_test_results, cancer_type, training_data, signal,
         seed, "test", fold_no
     )
     cv_metrics_, cv_roc_df, cv_pr_df = summarize_results(
-        y_cv_results, cancer_type, signal,
+        y_cv_results, cancer_type, training_data, signal,
         seed, "cv", fold_no
     )
 
@@ -294,7 +298,13 @@ def extract_coefficients(cv_pipeline, feature_names, signal, seed):
     return coef_df
 
 
-def summarize_results(results, cancer_type, signal, seed, data_type, fold_no):
+def summarize_results(results,
+                      cancer_type,
+                      training_data,
+                      signal,
+                      seed,
+                      data_type,
+                      fold_no):
     """
     Given an input results file, summarize and output all pertinent files
 
@@ -302,6 +312,7 @@ def summarize_results(results, cancer_type, signal, seed, data_type, fold_no):
     ---------
     results: a results object output from `get_threshold_metrics`
     cancer_type: the cancer type being predicted
+    training_data: the data type being used to train the model
     signal: the signal of interest
     seed: the seed used to compress the data
     data_type: the type of data (either training, testing, or cv)
@@ -309,6 +320,7 @@ def summarize_results(results, cancer_type, signal, seed, data_type, fold_no):
     """
     results_append_list = [
         cancer_type,
+        training_data,
         signal,
         seed,
         data_type,
@@ -322,6 +334,7 @@ def summarize_results(results, cancer_type, signal, seed, data_type, fold_no):
 
     roc_df_ = roc_df_.assign(
         predictor=cancer_type,
+        training_data=training_data,
         signal=signal,
         seed=seed,
         data_type=data_type,
@@ -330,6 +343,7 @@ def summarize_results(results, cancer_type, signal, seed, data_type, fold_no):
 
     pr_df_ = pr_df_.assign(
         predictor=cancer_type,
+        training_data=training_data,
         signal=signal,
         seed=seed,
         data_type=data_type,

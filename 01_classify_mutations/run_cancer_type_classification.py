@@ -76,6 +76,7 @@ if __name__ == '__main__':
     # create empty log file if it doesn't exist
     log_columns = [
         'cancer_type',
+        'training_data',
         'shuffle_labels',
         'skip_reason'
     ]
@@ -110,7 +111,9 @@ if __name__ == '__main__':
 
             try:
                 cancer_type_dir = fu.make_cancer_type_dir(args.results_dir, cancer_type)
-                check_file = fu.check_cancer_type_file(cancer_type_dir, cancer_type,
+                check_file = fu.check_cancer_type_file(cancer_type_dir,
+                                                       cancer_type,
+                                                       args.training_data,
                                                        shuffle_labels=shuffle_labels)
                 tcga_data.process_data_for_cancer_type(cancer_type,
                                                        cancer_type_dir,
@@ -123,7 +126,7 @@ if __name__ == '__main__':
                           'cancer type {}'.format(cancer_type), file=sys.stderr)
                 cancer_type_log_df = fu.generate_log_df(
                     log_columns,
-                    [cancer_type, shuffle_labels, 'file_exists']
+                    [cancer_type, args.training_data, shuffle_labels, 'file_exists']
                 )
                 fu.write_log_file(cancer_type_log_df, args.log_file)
                 continue
@@ -133,6 +136,7 @@ if __name__ == '__main__':
                 standardize_columns = (args.training_data in ['expression'])
                 results = run_cv_cancer_type(tcga_data,
                                              cancer_type,
+                                             args.training_data,
                                              sample_info_df,
                                              args.num_folds,
                                              shuffle_labels,
@@ -143,7 +147,7 @@ if __name__ == '__main__':
                           '{}'.format(cancer_type), file=sys.stderr)
                 cancer_type_log_df = fu.generate_log_df(
                     log_columns,
-                    [cancer_type, shuffle_labels, 'no_test_samples']
+                    [cancer_type, args.training_data, shuffle_labels, 'no_test_samples']
                 )
             # except OneClassError:
             #     if args.verbose:
@@ -159,6 +163,7 @@ if __name__ == '__main__':
                                             check_file,
                                             results,
                                             cancer_type,
+                                            args.training_data,
                                             shuffle_labels)
 
             if cancer_type_log_df is not None:

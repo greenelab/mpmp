@@ -18,11 +18,13 @@ def make_cancer_type_dir(results_dir, cancer_type):
 
 def check_cancer_type_file(cancer_type_dir,
                            cancer_type,
+                           training_data,
                            shuffle_labels):
+
     signal = 'shuffled' if shuffle_labels else 'signal'
     check_file = Path(cancer_type_dir,
-                      "{}_{}_coefficients.tsv.gz".format(
-                          cancer_type, signal)).resolve()
+                      "{}_{}_{}_coefficients.tsv.gz".format(
+                          cancer_type, training_data, signal)).resolve()
     if check_file.is_file():
         raise ResultsFileExistsError(
             'Results file already exists for cancer type: {}\n'.format(
@@ -35,9 +37,11 @@ def save_results_cancer_type(cancer_type_dir,
                              check_file,
                              results,
                              cancer_type,
+                             training_data,
                              shuffle_labels):
 
     signal = 'shuffled' if shuffle_labels else 'signal'
+    print(results)
     cancer_type_auc_df = pd.concat(results['cancer_type_auc'])
     cancer_type_aupr_df = pd.concat(results['cancer_type_aupr'])
     cancer_type_coef_df = pd.concat(results['cancer_type_coef'])
@@ -49,21 +53,22 @@ def save_results_cancer_type(cancer_type_dir,
     )
 
     output_file = Path(
-        cancer_type_dir, "{}_{}_auc_threshold_metrics.tsv.gz".format(
-            cancer_type, signal)).resolve()
+        cancer_type_dir, "{}_{}_{}_auc_threshold_metrics.tsv.gz".format(
+            cancer_type, training_data, signal)).resolve()
     cancer_type_auc_df.to_csv(
         output_file, sep="\t", index=False, compression="gzip", float_format="%.5g"
     )
 
     output_file = Path(
-        cancer_type_dir, "{}_{}_aupr_threshold_metrics.tsv.gz".format(
-            cancer_type, signal)).resolve()
+        cancer_type_dir, "{}_{}_{}_aupr_threshold_metrics.tsv.gz".format(
+            cancer_type, training_data, signal)).resolve()
     cancer_type_aupr_df.to_csv(
         output_file, sep="\t", index=False, compression="gzip", float_format="%.5g"
     )
 
-    output_file = Path(cancer_type_dir, "{}_{}_classify_metrics.tsv.gz".format(
-        cancer_type, signal)).resolve()
+    output_file = Path(
+        cancer_type_dir, "{}_{}_{}_classify_metrics.tsv.gz".format(
+            cancer_type, training_data, signal)).resolve()
     cancer_type_metrics_df.to_csv(
         output_file, sep="\t", index=False, compression="gzip", float_format="%.5g"
     )
