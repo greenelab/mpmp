@@ -41,7 +41,6 @@ def save_results_cancer_type(cancer_type_dir,
                              shuffle_labels):
 
     signal = 'shuffled' if shuffle_labels else 'signal'
-    print(results)
     cancer_type_auc_df = pd.concat(results['cancer_type_auc'])
     cancer_type_aupr_df = pd.concat(results['cancer_type_aupr'])
     cancer_type_coef_df = pd.concat(results['cancer_type_coef'])
