@@ -105,6 +105,7 @@ if __name__ == '__main__':
                         file=sys.stdout)
 
         for cancer_type in progress:
+            cancer_type_log_df = None
             progress.set_description('cancer type: {}'.format(cancer_type))
 
             try:
