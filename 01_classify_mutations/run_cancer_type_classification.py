@@ -95,7 +95,7 @@ if __name__ == '__main__':
     # we want to run mutation prediction experiments:
     # - for true labels and shuffled labels
     #   (shuffled labels acts as our lower baseline)
-    # - for all genes in the given gene set
+    # - for all cancer types in the given list of TCGA cancers
     for shuffle_labels in (False, True):
 
         print('shuffle_labels: {}'.format(shuffle_labels))
@@ -149,14 +149,6 @@ if __name__ == '__main__':
                     log_columns,
                     [cancer_type, args.training_data, shuffle_labels, 'no_test_samples']
                 )
-            # except OneClassError:
-            #     if args.verbose:
-            #         print('Skipping due to one holdout class: cancer type '
-            #               '{}'.format(cancer_type), file=sys.stderr)
-            #     cancer_type_log_df = fu.generate_log_df(
-            #         log_columns,
-            #         [cancer_type, shuffle_labels, 'one_class']
-            #     )
             else:
                 # only save results if no exceptions
                 fu.save_results_cancer_type(cancer_type_dir,

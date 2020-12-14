@@ -4,6 +4,8 @@ Functions for training classifiers on TCGA data.
 Many of these functions are adapted from:
 https://github.com/greenelab/BioBombe/blob/master/9.tcga-classify/scripts/tcga_util.py
 """
+import warnings
+
 import pandas as pd
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import SGDClassifier
@@ -57,10 +59,18 @@ def run_cv_cancer_type(data_model,
     signal = 'shuffled' if shuffle_labels else 'signal'
 
     for fold_no in range(num_folds):
-        # TODO: catch user warning?
-        X_train_raw_df, X_test_raw_df, _ = split_stratified(
-           data_model.X_df, sample_info, num_folds=num_folds,
-           fold_no=fold_no, seed=data_model.seed)
+
+        with warnings.catch_warnings():
+            # sklearn warns us if one of the stratification classes has fewer
+            # members than num_folds: in our case that will be the 'other'
+            # class, and it's fine to distribute those unevenly. so here we
+            # can ignore that warning.
+            warnings.filterwarnings('ignore',
+                                    message='The least populated class in y')
+            X_train_raw_df, X_test_raw_df, _ = split_stratified(
+               data_model.X_df, sample_info, num_folds=num_folds,
+               fold_no=fold_no, seed=data_model.seed)
+
         y_train_df = data_model.y_df.reindex(X_train_raw_df.index)
         y_test_df = data_model.y_df.reindex(X_test_raw_df.index)
 
