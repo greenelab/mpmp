@@ -143,7 +143,13 @@ class TCGADataModel():
             self.data_df = du.load_methylation_data(verbose=self.verbose,
                                                      debug=debug)
 
-        self.sample_info_df = du.load_sample_info(verbose=self.verbose)
+        if sample_info_df is None:
+            self.sample_info_df = du.load_sample_info(verbose=self.verbose)
+        else:
+            # sometimes we load sample info in the calling script as part of
+            # argument processing, etc
+            # in that case, we don't need to load it again
+            self.sample_info_df = sample_info_df
 
         # load and unpack pancancer data
         # this data is described in more detail in the load_pancancer_data docstring

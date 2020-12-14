@@ -31,7 +31,7 @@ def load_expression_data(scale_input=False, verbose=False, debug=False):
         if verbose:
             print('Loading subset of gene expression data for debugging...',
                   file=sys.stderr)
-        rnaseq_df = pd.read_csv(cfg.test_expression, index_col=0, sep='\t')
+        rnaseq_df = pd.read_csv(cfg.subsampled_expression, index_col=0, sep='\t')
     else:
         if verbose:
             print('Loading gene expression data...', file=sys.stderr)
@@ -63,7 +63,10 @@ def load_methylation_data(verbose=False, debug=False):
     methylation_df: samples x probes methylation dataframe
     """
     if debug:
-        raise NotImplementedError('need to generate subset of Me data')
+        if verbose:
+            print('Loading subset of DNA methylation data for debugging...',
+                  file=sys.stderr)
+        rnaseq_df = pd.read_csv(cfg.subsampled_methylation, index_col=0, sep='\t')
     else:
         if verbose:
             print('Loading DNA methylation data...', file=sys.stderr)
