@@ -34,9 +34,9 @@ def run_cv_cancer_type(data_model,
                        shuffle_labels=False,
                        standardize_columns=False):
     """
-    Run cancer type cross-validation experiments for a given cancer type, then
-    write the results to files in the results directory. If the relevant files
-    already exist, skip this experiment.
+    Run cancer type prediction cross-validation experiments for a given cancer
+    type, then write the results to files in the results directory. If the
+    relevant files already exist, skip this experiment.
 
     Arguments
     ---------
@@ -247,7 +247,6 @@ def train_model(X_train,
         cv=n_folds,
         scoring="roc_auc",
         return_train_score=True,
-        iid=False
     )
 
     # Fit the model
