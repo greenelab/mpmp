@@ -114,7 +114,8 @@ if __name__ == '__main__':
                 check_file = fu.check_cancer_type_file(cancer_type_dir,
                                                        cancer_type,
                                                        args.training_data,
-                                                       shuffle_labels=shuffle_labels)
+                                                       shuffle_labels,
+                                                       args.seed)
                 tcga_data.process_data_for_cancer_type(cancer_type,
                                                        cancer_type_dir,
                                                        shuffle_labels=shuffle_labels)
@@ -156,7 +157,8 @@ if __name__ == '__main__':
                                             results,
                                             cancer_type,
                                             args.training_data,
-                                            shuffle_labels)
+                                            shuffle_labels,
+                                            args.seed)
 
             if cancer_type_log_df is not None:
                 fu.write_log_file(cancer_type_log_df, args.log_file)
