@@ -1,6 +1,6 @@
 """
-Script to run pan-cancer classification experiments for all chosen combinations
-of gene and cancer type.
+Script to run one-vs-rest cancer type classification, with stratified train and
+test sets, for all provided TCGA cancer types.
 """
 import sys
 import argparse
