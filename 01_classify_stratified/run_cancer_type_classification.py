@@ -4,7 +4,6 @@ test sets, for all provided TCGA cancer types.
 """
 import sys
 import argparse
-import itertools as it
 from pathlib import Path
 
 import numpy as np
@@ -92,7 +91,7 @@ if __name__ == '__main__':
                               verbose=args.verbose,
                               debug=args.debug)
 
-    # we want to run mutation prediction experiments:
+    # we want to run cancer type classification experiments:
     # - for true labels and shuffled labels
     #   (shuffled labels acts as our lower baseline)
     # - for all cancer types in the given list of TCGA cancers
@@ -110,12 +109,14 @@ if __name__ == '__main__':
             progress.set_description('cancer type: {}'.format(cancer_type))
 
             try:
-                cancer_type_dir = fu.make_cancer_type_dir(args.results_dir, cancer_type)
-                check_file = fu.check_cancer_type_file(cancer_type_dir,
-                                                       cancer_type,
-                                                       args.training_data,
-                                                       shuffle_labels,
-                                                       args.seed)
+                cancer_type_dir = fu.make_output_dir(args.results_dir,
+                                                     cancer_type,
+                                                     'cancer_type')
+                check_file = fu.check_output_file(cancer_type_dir,
+                                                  cancer_type,
+                                                  args.training_data,
+                                                  shuffle_labels,
+                                                  args.seed)
                 tcga_data.process_data_for_cancer_type(cancer_type,
                                                        cancer_type_dir,
                                                        shuffle_labels=shuffle_labels)
@@ -152,13 +153,14 @@ if __name__ == '__main__':
                 )
             else:
                 # only save results if no exceptions
-                fu.save_results_cancer_type(cancer_type_dir,
-                                            check_file,
-                                            results,
-                                            cancer_type,
-                                            args.training_data,
-                                            shuffle_labels,
-                                            args.seed)
+                fu.save_results(cancer_type_dir,
+                                check_file,
+                                results,
+                                'cancer_type',
+                                cancer_type,
+                                args.training_data,
+                                shuffle_labels,
+                                args.seed)
 
             if cancer_type_log_df is not None:
                 fu.write_log_file(cancer_type_log_df, args.log_file)

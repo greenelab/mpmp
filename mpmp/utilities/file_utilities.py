@@ -8,69 +8,76 @@ import pandas as pd
 
 from mpmp.exceptions import ResultsFileExistsError
 
-def make_cancer_type_dir(results_dir, cancer_type):
-    """Create a directory for the given cancer type."""
-    dirname = 'cancer_type'
-    cancer_type_dir = Path(results_dir, dirname, cancer_type).resolve()
-    cancer_type_dir.mkdir(parents=True, exist_ok=True)
-    return cancer_type_dir
+def make_output_dir(results_dir, identifier, exp_string='cancer_type'):
+    """Create a directory to write output to."""
+    output_dir = Path(results_dir, exp_string, identifier).resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+    return output_dir
 
 
-def check_cancer_type_file(cancer_type_dir,
-                           cancer_type,
-                           training_data,
-                           shuffle_labels,
-                           seed):
-
+def check_output_file(output_dir,
+                      identifier,
+                      training_data,
+                      shuffle_labels,
+                      seed):
     signal = 'shuffled' if shuffle_labels else 'signal'
-    check_file = Path(cancer_type_dir,
+    check_file = Path(output_dir,
                       "{}_{}_{}_s{}_coefficients.tsv.gz".format(
-                          cancer_type, training_data, signal, seed)).resolve()
+                          identifier, training_data, signal, seed)).resolve()
     if check_file.is_file():
         raise ResultsFileExistsError(
-            'Results file already exists for cancer type: {}\n'.format(
-                cancer_type)
+            'Results file already exists for identifier: {}\n'.format(
+                identifier)
         )
     return check_file
 
 
-def save_results_cancer_type(cancer_type_dir,
-                             check_file,
-                             results,
-                             cancer_type,
-                             training_data,
-                             shuffle_labels,
-                             seed):
+def save_results(output_dir,
+                 check_file,
+                 results,
+                 exp_string,
+                 identifier,
+                 training_data,
+                 shuffle_labels,
+                 seed):
 
     signal = 'shuffled' if shuffle_labels else 'signal'
-    cancer_type_auc_df = pd.concat(results['cancer_type_auc'])
-    cancer_type_aupr_df = pd.concat(results['cancer_type_aupr'])
-    cancer_type_coef_df = pd.concat(results['cancer_type_coef'])
-    cancer_type_metrics_df = pd.concat(results['cancer_type_metrics'])
+    auc_df = pd.concat(results[
+        '{}_auc'.format(exp_string)
+    ])
+    aupr_df = pd.concat(results[
+        '{}_aupr'.format(exp_string)
+    ])
+    coef_df = pd.concat(results[
+        '{}_coef'.format(exp_string)
+    ])
+    metrics_df = pd.concat(results[
+        '{}_metrics'.format(exp_string)
+    ])
 
-    cancer_type_coef_df.to_csv(
+    coef_df.to_csv(
         check_file, sep="\t", index=False, compression="gzip",
         float_format="%.5g"
     )
 
     output_file = Path(
-        cancer_type_dir, "{}_{}_{}_s{}_auc_threshold_metrics.tsv.gz".format(
-            cancer_type, training_data, signal, seed)).resolve()
-    cancer_type_auc_df.to_csv(
+        output_dir, "{}_{}_{}_s{}_auc_threshold_metrics.tsv.gz".format(
+            identifier, training_data, signal, seed)).resolve()
+    auc_df.to_csv(
         output_file, sep="\t", index=False, compression="gzip", float_format="%.5g"
     )
 
     output_file = Path(
-        cancer_type_dir, "{}_{}_{}_s{}_aupr_threshold_metrics.tsv.gz".format(
-            cancer_type, training_data, signal, seed)).resolve()
-    cancer_type_aupr_df.to_csv(
+        output_dir, "{}_{}_{}_s{}_aupr_threshold_metrics.tsv.gz".format(
+            identifier, training_data, signal, seed)).resolve()
+    aupr_df.to_csv(
         output_file, sep="\t", index=False, compression="gzip", float_format="%.5g"
     )
 
     output_file = Path(
-        cancer_type_dir, "{}_{}_{}_s{}_classify_metrics.tsv.gz".format(
-            cancer_type, training_data, signal, seed)).resolve()
-    cancer_type_metrics_df.to_csv(
+        output_dir, "{}_{}_{}_s{}_classify_metrics.tsv.gz".format(
+            identifier, training_data, signal, seed)).resolve()
+    metrics_df.to_csv(
         output_file, sep="\t", index=False, compression="gzip", float_format="%.5g"
     )
 
