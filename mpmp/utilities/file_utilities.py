@@ -1,6 +1,5 @@
 """
 Functions for writing and processing output files
-
 """
 from pathlib import Path
 
@@ -78,4 +77,3 @@ def save_results_cancer_type(cancer_type_dir,
 def generate_log_df(log_columns, log_values):
     """Generate and format log output."""
     return pd.DataFrame(dict(zip(log_columns, log_values)), index=[0])
-
