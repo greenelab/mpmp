@@ -11,19 +11,17 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-def process_y_matrix(
-    y_mutation,
-    y_copy,
-    include_copy,
-    gene,
-    sample_freeze,
-    mutation_burden,
-    filter_count,
-    filter_prop,
-    output_directory,
-    hyper_filter=5,
-    test=False,
-):
+def process_y_matrix(y_mutation,
+                     y_copy,
+                     include_copy,
+                     gene,
+                     sample_freeze,
+                     mutation_burden,
+                     filter_count,
+                     filter_prop,
+                     output_directory,
+                     hyper_filter=5,
+                     test=False):
     """
     Combine copy number and mutation data and filter cancer-types to build y matrix
 
@@ -93,4 +91,181 @@ def process_y_matrix(
     y_df = y_df.loc[burden_filter, :].query("DISEASE in @use_diseases")
 
     return y_df
+
+
+def process_y_matrix_cancertype(acronym,
+                                sample_freeze,
+                                mutation_burden,
+                                hyper_filter=5):
+    """Build a y vector based on cancer-type membership.
+
+    Arguments
+    ---------
+    acronym (str): the TCGA cancer-type barcode
+    sample_freeze (pd.DataFrame): stores TCGA barcodes and cancer-types
+    mutation_burden (pd.DataFrame): log10 mutation count per sample
+                                    (this gets added as covariate)
+    hyper_filter (float): the number of std dev above log10 mutation burden
+                          to filter
+
+    Returns
+    -------
+    y_df: 0/1 status DataFrame for the given cancer type
+    count_df: status count dataframe
+    """
+    y_df = sample_freeze.assign(status=0)
+    y_df.loc[y_df.DISEASE == acronym, "status"] = 1
+
+    y_df = y_df.set_index("SAMPLE_BARCODE").merge(
+        mutation_burden, left_index=True, right_index=True
+    )
+
+    burden_filter = y_df["log10_mut"] < hyper_filter * y_df["log10_mut"].std()
+    y_df = y_df.loc[burden_filter, :]
+
+    count_df = pd.DataFrame(y_df.status.value_counts()).reset_index()
+    count_df.columns = ["status", acronym]
+
+    return y_df, count_df
+
+
+def align_matrices(x_file_or_df,
+                   y,
+                   add_cancertype_covariate=True,
+                   add_mutation_covariate=True):
+    """
+    Process the x matrix for the given input file and align x and y together
+
+    Arguments
+    ---------
+    x_file_or_df: string location of the x matrix or matrix df itself
+    y: pandas DataFrame storing status of corresponding samples
+    add_cancertype_covariate: if true, add one-hot encoded cancer type as a covariate
+    add_mutation_covariate: if true, add log10(mutation burden) as a covariate
+
+    Returns
+    -------
+    use_samples: the samples used to subset
+    rnaseq_df: processed X matrix
+    y_df: processed y matrix
+    gene_features: real-valued gene features, to be standardized later
+    """
+    try:
+        x_df = pd.read_csv(x_file_or_df, index_col=0, sep='\t')
+    except:
+        x_df = x_file_or_df
+
+    # select samples to use, assuming y has already been filtered by cancer type
+    use_samples = y.index.intersection(x_df.index)
+    x_df = x_df.reindex(use_samples)
+    y = y.reindex(use_samples)
+
+    # add features to X matrix if necessary
+    gene_features = np.ones(x_df.shape[1]).astype('bool')
+
+    if add_cancertype_covariate:
+        # add one-hot covariate for cancer type
+        covariate_df = pd.get_dummies(y.DISEASE)
+        x_df = x_df.merge(covariate_df, left_index=True, right_index=True)
+
+    if add_mutation_covariate:
+        # add covariate for mutation burden
+        mutation_covariate_df = pd.DataFrame(y.loc[:, "log10_mut"], index=y.index)
+        x_df = x_df.merge(mutation_covariate_df, left_index=True, right_index=True)
+
+    num_added_features = x_df.shape[1] - gene_features.shape[0]
+    if num_added_features > 0:
+        gene_features = np.concatenate(
+            (gene_features, np.zeros(num_added_features).astype('bool'))
+        )
+
+    return use_samples, x_df, y, gene_features
+
+
+def preprocess_data(X_train_raw_df,
+                    X_test_raw_df,
+                    gene_features,
+                    standardize_columns=True,
+                    subset_mad_genes=-1):
+    """
+    Data processing and feature selection, if applicable.
+
+    Note this needs to happen for train and test sets independently.
+    """
+    # TODO: this logic can probably be simplified
+    if subset_mad_genes > 0:
+        X_train_raw_df, X_test_raw_df, gene_features_filtered = subset_by_mad(
+            X_train_raw_df, X_test_raw_df, gene_features, subset_mad_genes
+        )
+        if standardize_columns:
+            X_train_df = standardize_gene_features(X_train_raw_df, gene_features_filtered)
+            X_test_df = standardize_gene_features(X_test_raw_df, gene_features_filtered)
+        else:
+            X_train_df = X_train_raw_df
+            X_test_df = X_test_raw_df
+    elif standardize_columns:
+        X_train_df = standardize_gene_features(X_train_raw_df, gene_features)
+        X_test_df = standardize_gene_features(X_test_raw_df, gene_features)
+    else:
+        X_train_df = X_train_raw_df
+        X_test_df = X_test_raw_df
+    return X_train_df, X_test_df
+
+
+def standardize_gene_features(x_df, gene_features):
+    """Standardize (take z-scores of) real-valued gene expression features.
+
+    Note this should be done for train and test sets independently. Also note
+    this doesn't necessarily preserve the order of features (this shouldn't
+    matter in most cases).
+    """
+    x_df_gene = x_df.loc[:, gene_features]
+    x_df_other = x_df.loc[:, ~gene_features]
+    x_df_scaled = pd.DataFrame(
+        StandardScaler().fit_transform(x_df_gene),
+        index=x_df_gene.index.copy(),
+        columns=x_df_gene.columns.copy()
+    )
+    return pd.concat((x_df_scaled, x_df_other), axis=1)
+
+
+def subset_by_mad(X_train_df, X_test_df, gene_features, subset_mad_genes, verbose=False):
+    """Subset features by mean absolute deviation.
+
+    Takes the top subset_mad_genes genes (sorted in descending order),
+    calculated on the training set.
+
+    Arguments
+    ---------
+    X_train_df: training data, samples x genes
+    X_test_df: test data, samples x genes
+    gene_features: numpy bool array, indicating which features are genes (and should be subsetted/standardized)
+    subset_mad_genes (int): number of genes to take
+
+    Returns
+    -------
+    (train_df, test_df, gene_features) datasets with filtered features
+    """
+    if verbose:
+        print('Taking subset of gene features', file=sys.stderr)
+
+    mad_genes_df = (
+        X_train_df.loc[:, gene_features]
+                  .mad(axis=0)
+                  .sort_values(ascending=False)
+                  .reset_index()
+    )
+    mad_genes_df.columns = ['gene_id', 'mean_absolute_deviation']
+    mad_genes = mad_genes_df.iloc[:subset_mad_genes, :].gene_id.astype(str).values
+
+    non_gene_features = X_train_df.columns.values[~gene_features]
+    valid_features = np.concatenate((mad_genes, non_gene_features))
+
+    gene_features = np.concatenate((
+        np.ones(mad_genes.shape[0]).astype('bool'),
+        np.zeros(non_gene_features.shape[0]).astype('bool')
+    ))
+    train_df = X_train_df.reindex(valid_features, axis='columns')
+    test_df = X_test_df.reindex(valid_features, axis='columns')
+    return train_df, test_df, gene_features
 
