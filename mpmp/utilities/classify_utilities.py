@@ -28,22 +28,24 @@ from mpmp.exceptions import (
     NoTestSamplesError,
 )
 
-def run_cv_cancer_type(data_model,
-                       cancer_type,
-                       training_data,
-                       sample_info,
-                       num_folds,
-                       shuffle_labels=False,
-                       standardize_columns=False):
+def run_cv_stratified(data_model,
+                      exp_string,
+                      identifier,
+                      training_data,
+                      sample_info,
+                      num_folds,
+                      shuffle_labels=False,
+                      standardize_columns=False):
     """
-    Run cancer type prediction cross-validation experiments for a given cancer
-    type, then write the results to files in the results directory. If the
-    relevant files already exist, skip this experiment.
+    Run stratified cross-validation experiments for a given dataset, then write
+    the results to files in the results directory. If the relevant files already
+    exist, skip this experiment.
 
     Arguments
     ---------
     data_model (TCGADataModel): class containing preprocessed train/test data
-    cancer_type (str): cancer type to run experiments for
+    exp_string (str): string describing the experiment being run
+    identifier (str): string describing the target value/environment
     training_data (str): what type of data is being used to train model
     sample_info (pd.DataFrame): df with TCGA sample information
     num_folds (int): number of cross-validation folds to run
@@ -51,10 +53,10 @@ def run_cv_cancer_type(data_model,
     standardize_columns (bool): whether or not to standardize predictors
     """
     results = {
-        'cancer_type_metrics': [],
-        'cancer_type_auc': [],
-        'cancer_type_aupr': [],
-        'cancer_type_coef': []
+        '{}_metrics'.format(exp_string): [],
+        '{}_auc'.format(exp_string): [],
+        '{}_aupr'.format(exp_string): [],
+        '{}_coef'.format(exp_string): [],
     }
     signal = 'shuffled' if shuffle_labels else 'signal'
 
@@ -95,8 +97,6 @@ def run_cv_cancer_type(data_model,
          y_pred_test_df,
          y_cv_df) = model_results
 
-        # TODO: separate below into another function (one returns raw results)
-
         # get coefficients
         coef_df = extract_coefficients(
             cv_pipeline=cv_pipeline,
@@ -104,20 +104,20 @@ def run_cv_cancer_type(data_model,
             signal=signal,
             seed=data_model.seed
         )
-        coef_df = coef_df.assign(cancer_type=cancer_type)
+        coef_df = coef_df.assign(identifier=identifier)
         coef_df = coef_df.assign(training_data=training_data)
         coef_df = coef_df.assign(fold=fold_no)
 
-        metric_df, cancer_type_auc_df, cancer_type_aupr_df = get_metrics(
+        metric_df, auc_df, aupr_df = get_metrics(
             y_train_df, y_test_df, y_cv_df, y_pred_train_df,
-            y_pred_test_df, cancer_type, training_data, signal,
+            y_pred_test_df, identifier, training_data, signal,
             data_model.seed, fold_no
         )
 
-        results['cancer_type_metrics'].append(metric_df)
-        results['cancer_type_auc'].append(cancer_type_auc_df)
-        results['cancer_type_aupr'].append(cancer_type_aupr_df)
-        results['cancer_type_coef'].append(coef_df)
+        results['{}_metrics'.format(exp_string)].append(metric_df)
+        results['{}_auc'.format(exp_string)].append(auc_df)
+        results['{}_aupr'.format(exp_string)].append(aupr_df)
+        results['{}_coef'.format(exp_string)].append(coef_df)
 
     return results
 
@@ -155,7 +155,7 @@ def get_threshold_metrics(y_true, y_pred, drop=False):
 
 
 def get_metrics(y_train_df, y_test_df, y_cv_df, y_pred_train, y_pred_test,
-                cancer_type, training_data, signal, seed, fold_no):
+                identifier, training_data, signal, seed, fold_no):
 
     # get classification metric values
     y_train_results = get_threshold_metrics(
@@ -172,7 +172,7 @@ def get_metrics(y_train_df, y_test_df, y_cv_df, y_pred_train, y_pred_test,
     metric_cols = [
         "auroc",
         "aupr",
-        "cancer_type",
+        "identifier",
         "training_data",
         "signal",
         "seed",
@@ -180,25 +180,25 @@ def get_metrics(y_train_df, y_test_df, y_cv_df, y_pred_train, y_pred_test,
         "fold"
     ]
     train_metrics_, train_roc_df, train_pr_df = summarize_results(
-        y_train_results, cancer_type, training_data, signal,
+        y_train_results, identifier, training_data, signal,
         seed, "train", fold_no
     )
     test_metrics_, test_roc_df, test_pr_df = summarize_results(
-        y_test_results, cancer_type, training_data, signal,
+        y_test_results, identifier, training_data, signal,
         seed, "test", fold_no
     )
     cv_metrics_, cv_roc_df, cv_pr_df = summarize_results(
-        y_cv_results, cancer_type, training_data, signal,
+        y_cv_results, identifier, training_data, signal,
         seed, "cv", fold_no
     )
 
     # compile summary metrics
     metrics_ = [train_metrics_, test_metrics_, cv_metrics_]
     metric_df = pd.DataFrame(metrics_, columns=metric_cols)
-    cancer_type_auc_df = pd.concat([train_roc_df, test_roc_df, cv_roc_df])
-    cancer_type_aupr_df = pd.concat([train_pr_df, test_pr_df, cv_pr_df])
+    auc_df = pd.concat([train_roc_df, test_roc_df, cv_roc_df])
+    aupr_df = pd.concat([train_pr_df, test_pr_df, cv_pr_df])
 
-    return metric_df, cancer_type_auc_df, cancer_type_aupr_df
+    return metric_df, auc_df, aupr_df
 
 
 def train_model(X_train,
@@ -308,7 +308,7 @@ def extract_coefficients(cv_pipeline, feature_names, signal, seed):
 
 
 def summarize_results(results,
-                      cancer_type,
+                      identifier,
                       training_data,
                       signal,
                       seed,
@@ -320,7 +320,7 @@ def summarize_results(results,
     Arguments
     ---------
     results: a results object output from `get_threshold_metrics`
-    cancer_type: the cancer type being predicted
+    identifier: string describing the label being predicted
     training_data: the data type being used to train the model
     signal: the signal of interest
     seed: the seed used to compress the data
@@ -328,7 +328,7 @@ def summarize_results(results,
     fold_no: the fold number for the external cross-validation loop
     """
     results_append_list = [
-        cancer_type,
+        identifier,
         training_data,
         signal,
         seed,
@@ -342,7 +342,7 @@ def summarize_results(results,
     pr_df_ = results["pr_df"]
 
     roc_df_ = roc_df_.assign(
-        predictor=cancer_type,
+        predictor=identifier,
         training_data=training_data,
         signal=signal,
         seed=seed,
@@ -351,7 +351,7 @@ def summarize_results(results,
     )
 
     pr_df_ = pr_df_.assign(
-        predictor=cancer_type,
+        predictor=identifier,
         training_data=training_data,
         signal=signal,
         seed=seed,

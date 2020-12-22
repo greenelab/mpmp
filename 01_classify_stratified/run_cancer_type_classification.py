@@ -17,7 +17,7 @@ from mpmp.exceptions import (
     NoTrainSamplesError,
     NoTestSamplesError,
 )
-from mpmp.utilities.classify_utilities import run_cv_cancer_type
+from mpmp.utilities.classify_utilities import run_cv_stratified
 import mpmp.utilities.data_utilities as du
 import mpmp.utilities.file_utilities as fu
 
@@ -137,13 +137,14 @@ if __name__ == '__main__':
                 # for now, don't standardize methylation data
                 standardize_columns = (args.training_data in
                                        cfg.standardize_data_types)
-                results = run_cv_cancer_type(tcga_data,
-                                             cancer_type,
-                                             args.training_data,
-                                             sample_info_df,
-                                             args.num_folds,
-                                             shuffle_labels,
-                                             standardize_columns)
+                results = run_cv_stratified(tcga_data,
+                                            'cancer_type',
+                                            cancer_type,
+                                            args.training_data,
+                                            sample_info_df,
+                                            args.num_folds,
+                                            shuffle_labels,
+                                            standardize_columns)
             except NoTestSamplesError:
                 if args.verbose:
                     print('Skipping due to no test samples: cancer type '

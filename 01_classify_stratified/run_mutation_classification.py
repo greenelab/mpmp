@@ -15,8 +15,9 @@ from mpmp.exceptions import (
     ResultsFileExistsError,
     NoTrainSamplesError,
     NoTestSamplesError,
+    OneClassError,
 )
-# from mpmp.utilities.classify_utilities import run_cv_mutation
+from mpmp.utilities.classify_utilities import run_cv_stratified
 import mpmp.utilities.data_utilities as du
 import mpmp.utilities.file_utilities as fu
 
@@ -147,8 +148,37 @@ if __name__ == '__main__':
                 fu.write_log_file(cancer_type_log_df, args.log_file)
                 continue
 
-            print(tcga_data.X_df.shape)
-            print(tcga_data.y_df.shape)
-            print(tcga_data.X_df.iloc[:5, :5])
-            print(tcga_data.y_df.head())
-            exit()
+            try:
+                # for now, don't standardize methylation data
+                standardize_columns = (args.training_data in
+                                       cfg.standardize_data_types)
+                results = run_cv_stratified(tcga_data,
+                                            'gene',
+                                            gene,
+                                            args.training_data,
+                                            sample_info_df,
+                                            args.num_folds,
+                                            shuffle_labels,
+                                            standardize_columns)
+            except NoTestSamplesError:
+                if args.verbose:
+                    print('Skipping due to no test samples: gene {}'.format(
+                        gene), file=sys.stderr)
+                cancer_type_log_df = fu.generate_log_df(
+                    log_columns,
+                    [gene, True, shuffle_labels, 'no_test_samples']
+                )
+            else:
+                # only save results if no exceptions
+                fu.save_results(gene_dir,
+                                check_file,
+                                results,
+                                'gene',
+                                gene,
+                                args.training_data,
+                                shuffle_labels,
+                                args.seed)
+
+            if cancer_type_log_df is not None:
+                fu.write_log_file(cancer_type_log_df, args.log_file)
+
