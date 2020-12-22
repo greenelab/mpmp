@@ -23,7 +23,7 @@ import mpmp.utilities.file_utilities as fu
 
 def process_args():
     p = argparse.ArgumentParser()
-    p.add_argument('--cancer_types', nargs='*', default=None,
+    p.add_argument('--cancer_types', nargs='*',
                    help='cancer types to predict, if not included predict '
                         'all cancer types in TCGA')
     p.add_argument('--debug', action='store_true',
@@ -135,7 +135,8 @@ if __name__ == '__main__':
 
             try:
                 # for now, don't standardize methylation data
-                standardize_columns = (args.training_data in ['expression'])
+                standardize_columns = (args.training_data in
+                                       cfg.standardize_data_types)
                 results = run_cv_cancer_type(tcga_data,
                                              cancer_type,
                                              args.training_data,

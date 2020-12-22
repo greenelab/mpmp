@@ -4,7 +4,7 @@ This directory stores scripts to run classification experiments and analyze/plot
 We use various data modalities to predict cancer type and gene alteration status in TCGA, with train and test sets that are stratified by cancer type (i.e. that have approximately equal proportions of each cancer type and subtype catalogued in TCGA).
 
 The goal is to compare the utility of different data modalities for each cancer type and each gene alteration.
-For details on how the mutation data and cancer type data is preprocessed and filtered, see [the notes in the BioBombe repo].
+For details on how the mutation data and cancer type data is preprocessed and filtered, see [the notes in the BioBombe repo](https://github.com/greenelab/BioBombe/tree/master/9.tcga-classify).
 Here, we use the same mutation and copy number data, as well as the same preprocessing steps to generate cancer type labels.
 
 ### Predicting cancer types
