@@ -132,7 +132,7 @@ if __name__ == '__main__':
                         gene), file=sys.stderr)
                 cancer_type_log_df = fu.generate_log_df(
                     log_columns,
-                    [gene, True, shuffle_labels, 'file_exists']
+                    [gene, args.training_data, shuffle_labels, 'file_exists']
                 )
                 fu.write_log_file(cancer_type_log_df, args.log_file)
                 continue
@@ -143,7 +143,7 @@ if __name__ == '__main__':
                       file=sys.stderr)
                 cancer_type_log_df = fu.generate_log_df(
                     log_columns,
-                    [gene, True, shuffle_labels, 'gene_not_found']
+                    [gene, args.training_data, shuffle_labels, 'gene_not_found']
                 )
                 fu.write_log_file(cancer_type_log_df, args.log_file)
                 continue
@@ -160,13 +160,21 @@ if __name__ == '__main__':
                                             args.num_folds,
                                             shuffle_labels,
                                             standardize_columns)
-            except NoTestSamplesError:
+            except NoTrainSamplesError:
                 if args.verbose:
-                    print('Skipping due to no test samples: gene {}'.format(
+                    print('Skipping due to no train samples: gene {}'.format(
                         gene), file=sys.stderr)
                 cancer_type_log_df = fu.generate_log_df(
                     log_columns,
-                    [gene, True, shuffle_labels, 'no_test_samples']
+                    [gene, args.training_data, shuffle_labels, 'no_train_samples']
+                )
+            except OneClassError:
+                if args.verbose:
+                    print('Skipping due to one holdout class: gene {}'.format(
+                        gene), file=sys.stderr)
+                cancer_type_log_df = fu.generate_log_df(
+                    log_columns,
+                    [gene, args.training_data, shuffle_labels, 'one_class']
                 )
             else:
                 # only save results if no exceptions

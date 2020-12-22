@@ -26,6 +26,7 @@ import mpmp.utilities.tcga_utilities as tu
 from mpmp.exceptions import (
     NoTrainSamplesError,
     NoTestSamplesError,
+    OneClassError,
 )
 
 def run_cv_stratified(data_model,
@@ -62,16 +63,23 @@ def run_cv_stratified(data_model,
 
     for fold_no in range(num_folds):
 
-        with warnings.catch_warnings():
-            # sklearn warns us if one of the stratification classes has fewer
-            # members than num_folds: in our case that will be the 'other'
-            # class, and it's fine to distribute those unevenly. so here we
-            # can ignore that warning.
-            warnings.filterwarnings('ignore',
-                                    message='The least populated class in y')
-            X_train_raw_df, X_test_raw_df, _ = split_stratified(
-               data_model.X_df, sample_info, num_folds=num_folds,
-               fold_no=fold_no, seed=data_model.seed)
+        try:
+            with warnings.catch_warnings():
+                # sklearn warns us if one of the stratification classes has fewer
+                # members than num_folds: in our case that will be the 'other'
+                # class, and it's fine to distribute those unevenly. so here we
+                # can ignore that warning.
+                warnings.filterwarnings('ignore',
+                                        message='The least populated class in y')
+                X_train_raw_df, X_test_raw_df, _ = split_stratified(
+                   data_model.X_df, sample_info, num_folds=num_folds,
+                   fold_no=fold_no, seed=data_model.seed)
+        except ValueError:
+            if data_model.X_df.shape[0] == 0:
+                raise NoTrainSamplesError(
+                    'No train samples found for identifier: {}'.format(
+                        identifier)
+                )
 
         y_train_df = data_model.y_df.reindex(X_train_raw_df.index)
         y_test_df = data_model.y_df.reindex(X_test_raw_df.index)
@@ -108,11 +116,19 @@ def run_cv_stratified(data_model,
         coef_df = coef_df.assign(training_data=training_data)
         coef_df = coef_df.assign(fold=fold_no)
 
-        metric_df, auc_df, aupr_df = get_metrics(
-            y_train_df, y_test_df, y_cv_df, y_pred_train_df,
-            y_pred_test_df, identifier, training_data, signal,
-            data_model.seed, fold_no
-        )
+        try:
+            metric_df, auc_df, aupr_df = get_metrics(
+                y_train_df, y_test_df, y_cv_df, y_pred_train_df,
+                y_pred_test_df, identifier, training_data, signal,
+                data_model.seed, fold_no
+            )
+        except ValueError as e:
+            desc = str(e)
+            if 'Only one class' in desc:
+                raise OneClassError(
+                    'Only one class present in test set for identifier: '
+                    '{}'.format(identifier)
+                )
 
         results['{}_metrics'.format(exp_string)].append(metric_df)
         results['{}_auc'.format(exp_string)].append(auc_df)
