@@ -90,16 +90,27 @@ def run_cv_stratified(data_model,
                                                    standardize_columns,
                                                    data_model.subset_mad_genes)
 
-        model_results = train_model(
-            X_train=X_train_df,
-            X_test=X_test_df,
-            y_train=y_train_df,
-            alphas=cfg.alphas,
-            l1_ratios=cfg.l1_ratios,
-            seed=data_model.seed,
-            n_folds=cfg.folds,
-            max_iter=cfg.max_iter
-        )
+        try:
+            model_results = train_model(
+                X_train=X_train_df,
+                X_test=X_test_df,
+                y_train=y_train_df,
+                alphas=cfg.alphas,
+                l1_ratios=cfg.l1_ratios,
+                seed=data_model.seed,
+                n_folds=cfg.folds,
+                max_iter=cfg.max_iter
+            )
+        except ValueError as e:
+            if 'Only one class' in str(e):
+                raise OneClassError(
+                    'Only one class present in test set for cancer type: {}, '
+                    'gene: {}\n'.format(cancer_type, gene)
+                )
+            else:
+                # if not only one class error, just re-raise
+                raise e
+
         (cv_pipeline,
          y_pred_train_df,
          y_pred_test_df,
@@ -123,12 +134,14 @@ def run_cv_stratified(data_model,
                 data_model.seed, fold_no
             )
         except ValueError as e:
-            desc = str(e)
-            if 'Only one class' in desc:
+            if 'Only one class' in str(e):
                 raise OneClassError(
                     'Only one class present in test set for identifier: '
                     '{}'.format(identifier)
                 )
+            else:
+                # if not only one class error, just re-raise
+                raise e
 
         results['{}_metrics'.format(exp_string)].append(metric_df)
         results['{}_auc'.format(exp_string)].append(auc_df)
