@@ -22,26 +22,38 @@ import mpmp.utilities.data_utilities as du
 import mpmp.utilities.file_utilities as fu
 
 def process_args():
+    """Parse and format command line arguments."""
+
     p = argparse.ArgumentParser()
-    p.add_argument('--cancer_types', nargs='*',
-                   help='cancer types to predict, if not included predict '
+
+    io = p.add_argument_group('io',
+                              'arguments related to script input/output, '
+                              'note these will *not* be saved in metadata ')
+    io.add_argument('--cancer_types', nargs='*',
+                    help='cancer types to predict, if not included predict '
                         'all cancer types in TCGA')
-    p.add_argument('--debug', action='store_true',
-                   help='use subset of data for fast debugging')
-    p.add_argument('--log_file', default=None,
-                   help='name of file to log skipped cancer types to')
-    p.add_argument('--num_folds', type=int, default=4,
-                   help='number of folds of cross-validation to run')
-    p.add_argument('--results_dir', default=cfg.results_dir,
-                   help='where to write results to')
-    p.add_argument('--seed', type=int, default=cfg.default_seed)
-    p.add_argument('--subset_mad_genes', type=int, default=cfg.num_features_raw,
-                   help='if included, subset gene features to this number of '
-                        'features having highest mean absolute deviation')
-    p.add_argument('--training_data', type=str, default='expression',
-                   choices=['expression', 'methylation'],
-                   help='what data type to train model on')
-    p.add_argument('--verbose', action='store_true')
+    io.add_argument('--log_file', default=None,
+                    help='name of file to log skipped cancer types to')
+    io.add_argument('--results_dir', default=cfg.results_dir,
+                    help='where to write results to')
+    io.add_argument('--verbose', action='store_true')
+
+    opts = p.add_argument_group('model_options',
+                                'parameters for training/evaluating model, '
+                                'these will affect output and are saved as '
+                                'experiment metadata ')
+    opts.add_argument('--debug', action='store_true',
+                      help='use subset of data for fast debugging')
+    opts.add_argument('--num_folds', type=int, default=4,
+                      help='number of folds of cross-validation to run')
+    opts.add_argument('--seed', type=int, default=cfg.default_seed)
+    opts.add_argument('--subset_mad_genes', type=int, default=cfg.num_features_raw,
+                      help='if included, subset gene features to this number of '
+                           'features having highest mean absolute deviation')
+    opts.add_argument('--training_data', type=str, default='expression',
+                      choices=['expression', 'methylation'],
+                      help='what data type to train model on')
+
     args = p.parse_args()
 
     args.results_dir = Path(args.results_dir).resolve()
@@ -61,13 +73,35 @@ def process_args():
             p.error('some cancer types not present in TCGA: {}'.format(
                 ' '.join(not_in_tcga)))
 
-    return args, sample_info_df
+    # split args into defined argument groups, since we'll use them differently
+    arg_groups = split_argument_groups(args, p)
+    io_args, model_options = arg_groups['io'], arg_groups['model_options']
+
+    return io_args, model_options, sample_info_df
+
+def split_argument_groups(args, parser):
+    """Split argparse arguments into argument groups.
+
+    See https://stackoverflow.com/a/46929320 for details.
+    """
+    arg_groups = {}
+    for group in parser._action_groups:
+        if group.title in ['positional arguments', 'optional arguments']:
+            continue
+        group_dict = {
+            a.dest : getattr(args,a.dest,None) for a in group._group_actions
+        }
+        arg_groups[group.title] = group_dict
+    return arg_groups
 
 
 if __name__ == '__main__':
 
     # process command line arguments
-    args, sample_info_df = process_args()
+    io_args, model_options, sample_info_df = process_args()
+    print(io_args)
+    print(model_options)
+    exit()
 
     # create results dir if it doesn't exist
     args.results_dir.mkdir(parents=True, exist_ok=True)
