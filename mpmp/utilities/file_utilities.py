@@ -54,6 +54,13 @@ def save_results(output_dir,
         '{}_metrics'.format(exp_string)
     ])
 
+    if '{}_preds'.format(exp_string) in results:
+        preds_df = pd.concat(results[
+            '{}_preds'.format(exp_string)
+        ])
+    else:
+        preds_df = None
+
     coef_df.to_csv(
         check_file, sep="\t", index=False, compression="gzip",
         float_format="%.5g"
@@ -79,6 +86,14 @@ def save_results(output_dir,
     metrics_df.to_csv(
         output_file, sep="\t", index=False, compression="gzip", float_format="%.5g"
     )
+
+    if preds_df is not None:
+        output_file = Path(
+            output_dir, "{}_{}_{}_s{}_preds.tsv.gz".format(
+                identifier, training_data, signal, seed)).resolve()
+        preds_df.to_csv(
+            output_file, sep="\t", index=False, compression="gzip", float_format="%.5g"
+        )
 
 
 def generate_log_df(log_columns, log_values):

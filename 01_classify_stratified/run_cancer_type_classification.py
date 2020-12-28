@@ -32,6 +32,7 @@ def process_args():
                    help='name of file to log skipped cancer types to')
     p.add_argument('--num_folds', type=int, default=4,
                    help='number of folds of cross-validation to run')
+    p.add_argument('--output_preds', action='store_true')
     p.add_argument('--results_dir', default=cfg.results_dir,
                    help='where to write results to')
     p.add_argument('--seed', type=int, default=cfg.default_seed)
@@ -144,7 +145,8 @@ if __name__ == '__main__':
                                             sample_info_df,
                                             args.num_folds,
                                             shuffle_labels,
-                                            standardize_columns)
+                                            standardize_columns,
+                                            args.output_preds)
             except NoTestSamplesError:
                 if args.verbose:
                     print('Skipping due to no test samples: cancer type '
