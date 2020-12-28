@@ -6,6 +6,7 @@ https://github.com/greenelab/BioBombe/blob/master/9.tcga-classify/scripts/tcga_u
 """
 import warnings
 
+import numpy as np
 import pandas as pd
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import SGDClassifier
@@ -36,7 +37,8 @@ def run_cv_stratified(data_model,
                       sample_info,
                       num_folds,
                       shuffle_labels=False,
-                      standardize_columns=False):
+                      standardize_columns=False,
+                      output_preds=False):
     """
     Run stratified cross-validation experiments for a given dataset, then write
     the results to files in the results directory. If the relevant files already
@@ -52,6 +54,7 @@ def run_cv_stratified(data_model,
     num_folds (int): number of cross-validation folds to run
     shuffle_labels (bool): whether or not to shuffle labels (negative control)
     standardize_columns (bool): whether or not to standardize predictors
+    output_preds (bool): whether or not to write predictions to file
     """
     results = {
         '{}_metrics'.format(exp_string): [],
@@ -60,6 +63,9 @@ def run_cv_stratified(data_model,
         '{}_coef'.format(exp_string): [],
     }
     signal = 'shuffled' if shuffle_labels else 'signal'
+
+    if output_preds:
+        results['{}_preds'.format(exp_string)] = []
 
     for fold_no in range(num_folds):
 
@@ -112,8 +118,8 @@ def run_cv_stratified(data_model,
                 raise e
 
         (cv_pipeline,
-         y_pred_train_df,
-         y_pred_test_df,
+         y_pred_train,
+         y_pred_test,
          y_cv_df) = model_results
 
         # get coefficients
@@ -129,8 +135,8 @@ def run_cv_stratified(data_model,
 
         try:
             metric_df, auc_df, aupr_df = get_metrics(
-                y_train_df, y_test_df, y_cv_df, y_pred_train_df,
-                y_pred_test_df, identifier, training_data, signal,
+                y_train_df, y_test_df, y_cv_df, y_pred_train,
+                y_pred_test, identifier, training_data, signal,
                 data_model.seed, fold_no
             )
         except ValueError as e:
@@ -148,7 +154,26 @@ def run_cv_stratified(data_model,
         results['{}_aupr'.format(exp_string)].append(aupr_df)
         results['{}_coef'.format(exp_string)].append(coef_df)
 
+        if output_preds:
+            results['{}_preds'.format(exp_string)].append(
+                get_preds(X_test_df, y_test_df, cv_pipeline, fold_no)
+            )
+
     return results
+
+def get_preds(X_test_df, y_test_df, cv_pipeline, fold_no):
+    # get probability of belonging to positive(?) class
+    y_probs_test = cv_pipeline.predict_proba(X_test_df)
+    assert np.array_equal(cv_pipeline.best_estimator_.classes_,
+                          np.array([0, 1]))
+    # TODO: index?
+    return pd.DataFrame({
+        'fold_no': fold_no,
+        'true_class': y_test_df.status,
+        'positive_prob': y_probs_test[:, 1]
+    }, index=y_test_df.index)
+
+
 
 
 def get_threshold_metrics(y_true, y_pred, drop=False):
