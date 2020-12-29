@@ -92,7 +92,7 @@ def save_results(output_dir,
             output_dir, "{}_{}_{}_s{}_preds.tsv.gz".format(
                 identifier, training_data, signal, seed)).resolve()
         preds_df.to_csv(
-            output_file, sep="\t", index=False, compression="gzip", float_format="%.5g"
+            output_file, sep="\t", compression="gzip", float_format="%.5g"
         )
 
 
