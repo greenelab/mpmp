@@ -45,5 +45,5 @@ vogelstein_base_url = "https://github.com/greenelab/pancancer/raw"
 vogelstein_commit = "2a0683b68017fb226f4053e63415e4356191734f"
 
 # data types to standardize columns for
-standardize_data_types = ['expression']
+standardize_data_types = ['expression', 'methylation']
 
