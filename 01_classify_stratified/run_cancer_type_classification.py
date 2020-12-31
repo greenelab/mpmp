@@ -77,12 +77,18 @@ def process_args():
     arg_groups = split_argument_groups(args, p)
     io_args, model_options = arg_groups['io'], arg_groups['model_options']
 
+    # add hyperparameter ranges from config file to model options
+    # TODO: could also add some info about preprocessing steps?
+    model_options['alphas'] = cfg.alphas
+    model_options['l1_ratios'] = cfg.l1_ratios
+
     return io_args, model_options, sample_info_df
+
 
 def split_argument_groups(args, parser):
     """Split argparse arguments into argument groups.
 
-    See https://stackoverflow.com/a/46929320 for details.
+    See: https://stackoverflow.com/a/46929320
     """
     arg_groups = {}
     for group in parser._action_groups:
@@ -91,7 +97,7 @@ def split_argument_groups(args, parser):
         group_dict = {
             a.dest : getattr(args,a.dest,None) for a in group._group_actions
         }
-        arg_groups[group.title] = group_dict
+        arg_groups[group.title] = argparse.Namespace(**group_dict)
     return arg_groups
 
 
@@ -99,12 +105,9 @@ if __name__ == '__main__':
 
     # process command line arguments
     io_args, model_options, sample_info_df = process_args()
-    print(io_args)
-    print(model_options)
-    exit()
 
     # create results dir if it doesn't exist
-    args.results_dir.mkdir(parents=True, exist_ok=True)
+    io_args.results_dir.mkdir(parents=True, exist_ok=True)
 
     # create empty log file if it doesn't exist
     log_columns = [
@@ -113,17 +116,17 @@ if __name__ == '__main__':
         'shuffle_labels',
         'skip_reason'
     ]
-    if args.log_file.exists() and args.log_file.is_file():
-        log_df = pd.read_csv(args.log_file, sep='\t')
+    if io_args.log_file.exists() and io_args.log_file.is_file():
+        log_df = pd.read_csv(io_args.log_file, sep='\t')
     else:
         log_df = pd.DataFrame(columns=log_columns)
-        log_df.to_csv(args.log_file, sep='\t')
+        log_df.to_csv(io_args.log_file, sep='\t')
 
-    tcga_data = TCGADataModel(seed=args.seed,
-                              subset_mad_genes=args.subset_mad_genes,
-                              training_data=args.training_data,
-                              verbose=args.verbose,
-                              debug=args.debug)
+    tcga_data = TCGADataModel(seed=model_options.seed,
+                              subset_mad_genes=model_options.subset_mad_genes,
+                              training_data=model_options.training_data,
+                              verbose=io_args.verbose,
+                              debug=model_options.debug)
 
     # we want to run cancer type classification experiments:
     # - for true labels and shuffled labels
@@ -133,8 +136,8 @@ if __name__ == '__main__':
 
         print('shuffle_labels: {}'.format(shuffle_labels))
 
-        progress = tqdm(args.cancer_types,
-                        total=len(args.cancer_types),
+        progress = tqdm(io_args.cancer_types,
+                        total=len(io_args.cancer_types),
                         ncols=100,
                         file=sys.stdout)
 
@@ -143,49 +146,49 @@ if __name__ == '__main__':
             progress.set_description('cancer type: {}'.format(cancer_type))
 
             try:
-                cancer_type_dir = fu.make_output_dir(args.results_dir,
+                cancer_type_dir = fu.make_output_dir(io_args.results_dir,
                                                      cancer_type,
                                                      'cancer_type')
                 check_file = fu.check_output_file(cancer_type_dir,
                                                   cancer_type,
-                                                  args.training_data,
+                                                  model_options.training_data,
                                                   shuffle_labels,
-                                                  args.seed)
+                                                  model_options.seed)
                 tcga_data.process_data_for_cancer_type(cancer_type,
                                                        cancer_type_dir,
                                                        shuffle_labels=shuffle_labels)
             except ResultsFileExistsError:
                 # this happens if cross-validation for this cancer type has
                 # already been run (i.e. the results file already exists)
-                if args.verbose:
+                if io_args.verbose:
                     print('Skipping because results file exists already: '
                           'cancer type {}'.format(cancer_type), file=sys.stderr)
                 cancer_type_log_df = fu.generate_log_df(
                     log_columns,
-                    [cancer_type, args.training_data, shuffle_labels, 'file_exists']
+                    [cancer_type, model_options.training_data, shuffle_labels, 'file_exists']
                 )
-                fu.write_log_file(cancer_type_log_df, args.log_file)
+                fu.write_log_file(cancer_type_log_df, .log_file)
                 continue
 
             try:
                 # for now, don't standardize methylation data
-                standardize_columns = (args.training_data in
+                standardize_columns = (model_options.training_data in
                                        cfg.standardize_data_types)
                 results = run_cv_stratified(tcga_data,
                                             'cancer_type',
                                             cancer_type,
-                                            args.training_data,
+                                            model_options.training_data,
                                             sample_info_df,
-                                            args.num_folds,
+                                            model_options.num_folds,
                                             shuffle_labels,
                                             standardize_columns)
             except NoTestSamplesError:
-                if args.verbose:
+                if io_args.verbose:
                     print('Skipping due to no test samples: cancer type '
                           '{}'.format(cancer_type), file=sys.stderr)
                 cancer_type_log_df = fu.generate_log_df(
                     log_columns,
-                    [cancer_type, args.training_data, shuffle_labels, 'no_test_samples']
+                    [cancer_type, model_options.training_data, shuffle_labels, 'no_test_samples']
                 )
             else:
                 # only save results if no exceptions
@@ -194,10 +197,8 @@ if __name__ == '__main__':
                                 results,
                                 'cancer_type',
                                 cancer_type,
-                                args.training_data,
-                                shuffle_labels,
-                                args.seed)
+                                model_options)
 
             if cancer_type_log_df is not None:
-                fu.write_log_file(cancer_type_log_df, args.log_file)
+                fu.write_log_file(cancer_type_log_df, io_args.log_file)
 
