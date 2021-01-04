@@ -79,8 +79,9 @@ def process_args():
 
     # add hyperparameter ranges from config file to model options
     # TODO: could also add some info about preprocessing steps?
-    model_options['alphas'] = cfg.alphas
-    model_options['l1_ratios'] = cfg.l1_ratios
+    model_options.alphas = cfg.alphas
+    model_options.l1_ratios = cfg.l1_ratios
+    model_options.standardize_data_types = cfg.standardize_data_types
 
     return io_args, model_options, sample_info_df
 
@@ -109,7 +110,11 @@ if __name__ == '__main__':
     # create results dir if it doesn't exist
     io_args.results_dir.mkdir(parents=True, exist_ok=True)
 
-    # create empty log file if it doesn't exist
+    # save model options for this experiment
+    # (hyperparameters, preprocessing info, etc)
+    fu.save_model_options(io_args.results_dir, model_options)
+
+    # create empty error log file if it doesn't exist
     log_columns = [
         'cancer_type',
         'training_data',
@@ -122,6 +127,7 @@ if __name__ == '__main__':
         log_df = pd.DataFrame(columns=log_columns)
         log_df.to_csv(io_args.log_file, sep='\t')
 
+    # load data matrix for the specified data type
     tcga_data = TCGADataModel(seed=model_options.seed,
                               subset_mad_genes=model_options.subset_mad_genes,
                               training_data=model_options.training_data,
@@ -151,9 +157,8 @@ if __name__ == '__main__':
                                                      'cancer_type')
                 check_file = fu.check_output_file(cancer_type_dir,
                                                   cancer_type,
-                                                  model_options.training_data,
                                                   shuffle_labels,
-                                                  model_options.seed)
+                                                  model_options)
                 tcga_data.process_data_for_cancer_type(cancer_type,
                                                        cancer_type_dir,
                                                        shuffle_labels=shuffle_labels)
@@ -167,7 +172,7 @@ if __name__ == '__main__':
                     log_columns,
                     [cancer_type, model_options.training_data, shuffle_labels, 'file_exists']
                 )
-                fu.write_log_file(cancer_type_log_df, .log_file)
+                fu.write_log_file(cancer_type_log_df, log_file)
                 continue
 
             try:
@@ -197,6 +202,7 @@ if __name__ == '__main__':
                                 results,
                                 'cancer_type',
                                 cancer_type,
+                                shuffle_labels,
                                 model_options)
 
             if cancer_type_log_df is not None:
