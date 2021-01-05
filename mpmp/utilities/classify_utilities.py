@@ -161,19 +161,21 @@ def run_cv_stratified(data_model,
 
     return results
 
+
 def get_preds(X_test_df, y_test_df, cv_pipeline, fold_no):
-    # get probability of belonging to positive(?) class
+
+    # get probability of belonging to positive class
     y_probs_test = cv_pipeline.predict_proba(X_test_df)
+
+    # make sure we're actually looking at positive class prob
     assert np.array_equal(cv_pipeline.best_estimator_.classes_,
                           np.array([0, 1]))
-    # TODO: index?
+
     return pd.DataFrame({
         'fold_no': fold_no,
         'true_class': y_test_df.status,
         'positive_prob': y_probs_test[:, 1]
     }, index=y_test_df.index)
-
-
 
 
 def get_threshold_metrics(y_true, y_pred, drop=False):
