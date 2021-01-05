@@ -96,7 +96,7 @@ def split_argument_groups(args, parser):
         if group.title in ['positional arguments', 'optional arguments']:
             continue
         group_dict = {
-            a.dest : getattr(args,a.dest,None) for a in group._group_actions
+            a.dest : getattr(args, a.dest, None) for a in group._group_actions
         }
         arg_groups[group.title] = argparse.Namespace(**group_dict)
     return arg_groups
