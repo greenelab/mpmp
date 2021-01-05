@@ -84,7 +84,7 @@ def process_args():
                          ' '.join(not_in_tcga)))
 
     # split args into defined argument groups, since we'll use them differently
-    arg_groups = split_argument_groups(args, parser)
+    arg_groups = du.split_argument_groups(args, parser)
     io_args, model_options = arg_groups['io'], arg_groups['model_options']
 
     # add some additional hyperparameters/ranges from config file to model options
@@ -93,22 +93,6 @@ def process_args():
     model_options.standardize_data_types = cfg.standardize_data_types
 
     return io_args, model_options, sample_info_df
-
-
-def split_argument_groups(args, parser):
-    """Split argparse arguments into argument groups.
-
-    See: https://stackoverflow.com/a/46929320
-    """
-    arg_groups = {}
-    for group in parser._action_groups:
-        if group.title in ['positional arguments', 'optional arguments']:
-            continue
-        group_dict = {
-            a.dest : getattr(args, a.dest, None) for a in group._group_actions
-        }
-        arg_groups[group.title] = argparse.Namespace(**group_dict)
-    return arg_groups
 
 
 if __name__ == '__main__':
