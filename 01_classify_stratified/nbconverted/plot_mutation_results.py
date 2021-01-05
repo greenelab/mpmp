@@ -215,3 +215,34 @@ adjust_text(text_labels,
             expand_text=(1., 1.),
             lim=5)
 
+
+# ## Confusion matrix
+
+# In[9]:
+
+
+import os
+
+import mpmp.utilities.data_utilities as du
+
+preds_dir = os.path.join(cfg.repo_root, 'results_preds', 'cancer_type')
+sample_info_df = du.load_sample_info()
+
+preds_df = au.load_preds_to_matrix(preds_dir, sample_info_df)
+
+print(preds_df.shape)
+preds_df.iloc[:5, :5]
+
+
+# In[10]:
+
+
+sns.set({'figure.figsize': (15, 10)})
+ax = sns.heatmap(preds_df, cbar_kws={'label': 'Predicted probability of positive label, averaged over samples'})
+# https://stackoverflow.com/a/48587137
+ax.figure.axes[-1].yaxis.label.set_size(14)
+plt.xlabel('True cancer type label', size=14)
+plt.ylabel('Positive label used to train classifier', size=14)
+plt.title('Cancer type confusion matrix', size=14)
+plt.tight_layout()
+
