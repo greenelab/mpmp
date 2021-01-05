@@ -8,9 +8,9 @@ import pandas as pd
 
 from mpmp.exceptions import ResultsFileExistsError
 
-def make_output_dir(results_dir, identifier, exp_string='cancer_type'):
+def make_output_dir(experiment_dir, identifier):
     """Create a directory to write output to."""
-    output_dir = Path(results_dir, exp_string, identifier).resolve()
+    output_dir = Path(experiment_dir, identifier).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     return output_dir
 

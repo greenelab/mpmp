@@ -109,10 +109,13 @@ if __name__ == '__main__':
 
     # create results dir if it doesn't exist
     io_args.results_dir.mkdir(parents=True, exist_ok=True)
+    # create subdir for experiment if it doesn't exist
+    experiment_dir = Path(io_args.results_dir, 'cancer_type').resolve()
+    experiment_dir.mkdir(parents=True, exist_ok=True)
 
     # save model options for this experiment
     # (hyperparameters, preprocessing info, etc)
-    fu.save_model_options(io_args.results_dir, model_options)
+    fu.save_model_options(experiment_dir, model_options)
 
     # create empty error log file if it doesn't exist
     log_columns = [
@@ -152,9 +155,7 @@ if __name__ == '__main__':
             progress.set_description('cancer type: {}'.format(cancer_type))
 
             try:
-                cancer_type_dir = fu.make_output_dir(io_args.results_dir,
-                                                     cancer_type,
-                                                     'cancer_type')
+                cancer_type_dir = fu.make_output_dir(experiment_dir, cancer_type)
                 check_file = fu.check_output_file(cancer_type_dir,
                                                   cancer_type,
                                                   shuffle_labels,

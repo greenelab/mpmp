@@ -111,10 +111,13 @@ if __name__ == '__main__':
 
     # create results dir if it doesn't exist
     io_args.results_dir.mkdir(parents=True, exist_ok=True)
+    # create subdir for experiment if it doesn't exist
+    experiment_dir = Path(io_args.results_dir, 'gene').resolve()
+    experiment_dir.mkdir(parents=True, exist_ok=True)
 
     # save model options for this experiment
     # (hyperparameters, preprocessing info, etc)
-    fu.save_model_options(io_args.results_dir, model_options)
+    fu.save_model_options(experiment_dir, model_options)
 
     # create empty log file if it doesn't exist
     log_columns = [
@@ -156,7 +159,7 @@ if __name__ == '__main__':
             progress.set_description('gene: {}'.format(gene))
 
             try:
-                gene_dir = fu.make_output_dir(io_args.results_dir, gene, 'gene')
+                gene_dir = fu.make_output_dir(experiment_dir, gene)
                 check_file = fu.check_output_file(gene_dir,
                                                   gene,
                                                   shuffle_labels,
