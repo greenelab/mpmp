@@ -24,11 +24,16 @@ import mpmp.utilities.file_utilities as fu
 def process_args():
     """Parse and format command line arguments."""
 
-    p = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser()
 
-    io = p.add_argument_group('io',
-                              'arguments related to script input/output, '
-                              'note these will *not* be saved in metadata ')
+    # argument group for parameters related to input/output
+    # (e.g. filenames, logging/verbosity options, target genes)
+    #
+    # these don't affect the model output, and thus don't need to be saved
+    # with the results of the experiment
+    io = parser.add_argument_group('io',
+                                   'arguments related to script input/output, '
+                                   'note these will *not* be saved in metadata ')
     io.add_argument('--cancer_types', nargs='*',
                     help='cancer types to predict, if not included predict '
                         'all cancer types in TCGA')
@@ -38,10 +43,15 @@ def process_args():
                     help='where to write results to')
     io.add_argument('--verbose', action='store_true')
 
-    opts = p.add_argument_group('model_options',
-                                'parameters for training/evaluating model, '
-                                'these will affect output and are saved as '
-                                'experiment metadata ')
+    # argument group for parameters related to model training/evaluation
+    # (e.g. model hyperparameters, preprocessing options)
+    #
+    # these affect the output of the model, so we want to save them in the
+    # same directory as the experiment results
+    opts = parser.add_argument_group('model_options',
+                                     'parameters for training/evaluating model, '
+                                     'these will affect output and are saved as '
+                                     'experiment metadata ')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
     opts.add_argument('--num_folds', type=int, default=4,
@@ -54,7 +64,7 @@ def process_args():
                       choices=['expression', 'methylation'],
                       help='what data type to train model on')
 
-    args = p.parse_args()
+    args = parser.parse_args()
 
     args.results_dir = Path(args.results_dir).resolve()
 
@@ -70,15 +80,14 @@ def process_args():
     else:
         not_in_tcga = set(args.cancer_types) - set(tcga_cancer_types)
         if len(not_in_tcga) > 0:
-            p.error('some cancer types not present in TCGA: {}'.format(
-                ' '.join(not_in_tcga)))
+            parser.error('some cancer types not present in TCGA: {}'.format(
+                         ' '.join(not_in_tcga)))
 
     # split args into defined argument groups, since we'll use them differently
-    arg_groups = split_argument_groups(args, p)
+    arg_groups = split_argument_groups(args, parser)
     io_args, model_options = arg_groups['io'], arg_groups['model_options']
 
-    # add hyperparameter ranges from config file to model options
-    # TODO: could also add some info about preprocessing steps?
+    # add some additional hyperparameters/ranges from config file to model options
     model_options.alphas = cfg.alphas
     model_options.l1_ratios = cfg.l1_ratios
     model_options.standardize_data_types = cfg.standardize_data_types
