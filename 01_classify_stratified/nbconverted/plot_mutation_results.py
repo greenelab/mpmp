@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# ## Plot cancer type prediction results
+# ## Plot mutation prediction results
 
 # Notebook parameters:
-# * FILTER_CANCER_TYPES (list): cancer types to filter box plots to
 # * SIG_ALPHA (float): significance cutoff (after FDR correction)
 
 # In[1]:
@@ -26,7 +25,7 @@ import mpmp.utilities.analysis_utilities as au
 
 
 # set results directory
-results_dir = Path(cfg.results_dir, 'cancer_type').resolve()
+results_dir = Path(cfg.results_dir, 'gene').resolve()
 # set significance cutoff after FDR correction
 SIG_ALPHA = 0.001
 
@@ -35,7 +34,7 @@ SIG_ALPHA = 0.001
 
 
 # load raw data
-results_df = au.load_cancer_type_prediction_results(results_dir, 'cancer_type')
+results_df = au.load_stratified_prediction_results(results_dir, 'gene')
 print(results_df.shape)
 results_df.head()
 
@@ -43,48 +42,22 @@ results_df.head()
 # In[4]:
 
 
-# set this variable to filter plot to certain cancer types
-# if not included, plot all 33 of them
-# FILTER_CANCER_TYPES = ['LUAD', 'LUSC', 'THCA']
-FILTER_CANCER_TYPES = None
-filtered_df = results_df[
-    (results_df.signal == 'signal') &
-    (results_df.data_type == 'test')
-].copy()
-if FILTER_CANCER_TYPES is not None:
-    filtered_df = filtered_df[
-        (filtered_df.cancer_type.isin(FILTER_CANCER_TYPES))
-    ]
-else:
-    filtered_df.sort_values(by='cancer_type', inplace=True)
-
-sns.set({'figure.figsize': (20, 5)})
-sns.boxplot(data=filtered_df, x='cancer_type', y='aupr', hue='training_data',
-            hue_order=np.sort(filtered_df.training_data.unique()))
-plt.xlabel('TCGA cancer type')
-plt.ylabel('AUPR')
-plt.legend(title='Training data type')
-plt.title('Performance distribution for cancer type prediction, expression vs. methylation data')
-
-
-# In[5]:
-
-
 expression_df = (
     results_df[results_df.training_data == 'expression']
         .drop(columns=['training_data'])
 )
 expression_results_df = au.compare_results(expression_df,
-                                           identifier='cancer_type',
+                                           identifier='identifier',
                                            metric='aupr',
                                            correction=True,
                                            correction_method='fdr_bh',
                                            correction_alpha=SIG_ALPHA,
                                            verbose=True)
+expression_results_df.rename(columns={'identifier': 'gene'}, inplace=True)
 expression_results_df.sort_values(by='p_value').head(n=10)
 
 
-# In[6]:
+# In[5]:
 
 
 methylation_df = (
@@ -92,25 +65,26 @@ methylation_df = (
         .drop(columns=['training_data'])
 )
 methylation_results_df = au.compare_results(methylation_df,
-                                            identifier='cancer_type',
+                                            identifier='identifier',
                                             metric='aupr',
                                             correction=True,
                                             correction_method='fdr_bh',
                                             correction_alpha=SIG_ALPHA,
                                             verbose=True)
+methylation_results_df.rename(columns={'identifier': 'gene'}, inplace=True)
 methylation_results_df.sort_values(by='p_value').head(n=10)
 
 
-# In[7]:
+# In[6]:
 
 
 expression_results_df['nlog10_p'] = -np.log10(expression_results_df.corr_pval)
 methylation_results_df['nlog10_p'] = -np.log10(methylation_results_df.corr_pval)
 
-sns.set({'figure.figsize': (20, 8)})
+sns.set({'figure.figsize': (24, 8)})
 fig, axarr = plt.subplots(1, 2)
 
-# plot cancer type prediction from expression, in a volcano-like plot
+# plot mutation prediction from expression, in a volcano-like plot
 sns.scatterplot(data=expression_results_df, x='delta_mean', y='nlog10_p', hue='reject_null',
                 hue_order=[False, True], ax=axarr[0])
 # add vertical line at 0
@@ -119,89 +93,99 @@ axarr[0].axvline(x=0, linestyle=':', color='black')
 l = axarr[0].axhline(y=-np.log10(SIG_ALPHA), linestyle=':')
 # label horizontal line with significance threshold
 # (matplotlib makes this fairly difficult, sadly)
-axarr[0].text(0.9, -np.log10(SIG_ALPHA)+0.3,
+axarr[0].text(0.9, -np.log10(SIG_ALPHA)+0.2,
               r'$\alpha = {}$'.format(SIG_ALPHA),
               va='center', ha='center', color=l.get_color(),
               backgroundcolor=axarr[0].get_facecolor())
 axarr[0].set_xlabel('AUPR(signal) - AUPR(shuffled)')
 axarr[0].set_ylabel(r'$-\log_{10}($adjusted $p$-value$)$')
 axarr[0].set_xlim((-0.2, 1.0))
-axarr[0].set_ylim((0, expression_results_df.nlog10_p.max() + 5))
+y_max = max(expression_results_df.nlog10_p.max(), methylation_results_df.nlog10_p.max())
+axarr[0].set_ylim((0, y_max+5))
 axarr[0].legend(title=r'Reject $H_0$', loc='upper left')
-axarr[0].set_title(r'Cancer type prediction, expression data')
+axarr[0].set_title(r'Mutation prediction, expression data')
 
-# plot cancer type prediction from methylation, same as above
+# plot mutation prediction from methylation, same as above
 sns.scatterplot(data=methylation_results_df, x='delta_mean', y='nlog10_p', hue='reject_null',
                 hue_order=[False, True], ax=axarr[1])
 axarr[1].axvline(x=0, linestyle=':', color='black')
 l = axarr[1].axhline(y=-np.log10(SIG_ALPHA), linestyle=':')
-axarr[1].text(0.9, -np.log10(SIG_ALPHA)+0.3,
+axarr[1].text(0.9, -np.log10(SIG_ALPHA)+0.2,
               r'$\alpha = {}$'.format(SIG_ALPHA),
               va='center', ha='center', color=l.get_color(),
               backgroundcolor=axarr[0].get_facecolor())
 axarr[1].set_xlabel('AUPR(signal) - AUPR(shuffled)')
 axarr[1].set_ylabel(r'$-\log_{10}($adjusted $p$-value$)$')
 axarr[1].set_xlim((-0.2, 1.0))
-axarr[1].set_ylim((0, methylation_results_df.nlog10_p.max() + 5))
+axarr[1].set_ylim((0, y_max+5))
 axarr[1].legend(title=r'Reject $H_0$', loc='upper left')
-axarr[1].set_title(r'Cancer type prediction, methylation data')
+axarr[1].set_title(r'Mutation prediction, methylation data')
 
 def label_points(x, y, gene, sig, ax):
     text_labels = []
     a = pd.DataFrame({'x': x, 'y': y, 'gene': gene, 'sig': sig})
     for i, point in a.iterrows():
-        text_labels.append(
-            ax.text(point['x']+.005, point['y']+.2, str(point['gene']))
-        )
+        if point['y'] > -np.log10(SIG_ALPHA):
+            text_labels.append(
+                ax.text(point['x'], point['y'], str(point['gene']))
+            )
     return text_labels
 
-# label cancer types and adjust text to not overlap
+# label genes and adjust text to not overlap
 # automatic alignment isn't perfect, can align by hand in inkscape if necessary
 text_labels_expression = label_points(expression_results_df['delta_mean'],
                                       expression_results_df['nlog10_p'],
-                                      expression_results_df.identifier,
+                                      expression_results_df.gene,
                                       expression_results_df.reject_null,
                                       axarr[0])
-adjust_text(text_labels_expression, ax=axarr[0])
+adjust_text(text_labels_expression,
+            ax=axarr[0], 
+            expand_text=(1., 1.),
+            lim=5)
 
 text_labels_methylation = label_points(methylation_results_df['delta_mean'],
                                        methylation_results_df['nlog10_p'],
-                                       methylation_results_df.identifier,
+                                       methylation_results_df.gene,
                                        methylation_results_df.reject_null,
                                        axarr[1])
-adjust_text(text_labels_methylation, ax=axarr[1])
+adjust_text(text_labels_methylation,
+            ax=axarr[1],
+            expand_text=(1., 1.),
+            lim=5)
 
 
-# In[8]:
+# In[7]:
 
 
 compare_results_df = au.compare_results(methylation_df,
                                         pancancer_df=expression_df,
-                                        identifier='cancer_type',
+                                        identifier='identifier',
                                         metric='aupr',
                                         correction=True,
                                         correction_method='fdr_bh',
                                         correction_alpha=SIG_ALPHA,
                                         verbose=True)
+compare_results_df.rename(columns={'identifier': 'gene'}, inplace=True)
 compare_results_df.head()
 
 
-# In[11]:
+# In[8]:
 
 
 compare_results_df['nlog10_p'] = -np.log10(compare_results_df.corr_pval)
 
-sns.set({'figure.figsize': (12, 8)})
+sns.set({'figure.figsize': (16, 8)})
 sns.scatterplot(data=compare_results_df, x='delta_mean', y='nlog10_p', hue='reject_null')
 plt.axvline(x=0, linestyle=':', color='black')
 l = plt.axhline(y=-np.log10(SIG_ALPHA), linestyle=':')
-plt.text(0.9, -np.log10(SIG_ALPHA)+0.05,
+plt.text(0.7, -np.log10(SIG_ALPHA)+0.05,
          r'$\alpha = {}$'.format(SIG_ALPHA),
          va='center', ha='center', color=l.get_color(),
          backgroundcolor=plt.gca().get_facecolor())
 plt.xlabel('AUPR(expression) - AUPR(methylation)')
 plt.ylabel(r'$-\log_{10}($adjusted $p$-value$)$')
-plt.xlim((-1.0, 1.0))
+plt.xlim((-0.75, 0.75))
+plt.ylim((0, y_max+5))
 plt.legend(title=r'Reject $H_0$', loc='upper left')
 plt.title(r'Cancer type prediction, expression vs. methylation')
 
@@ -209,22 +193,25 @@ def label_points(x, y, gene, sig, ax):
     text_labels = []
     a = pd.DataFrame({'x': x, 'y': y, 'gene': gene, 'sig': sig})
     for i, point in a.iterrows():
-        if point['y'] > -np.log10(0.1):
+        if point['y'] > -np.log10(0.001):
             text_labels.append(
-                ax.text(point['x']+.005, point['y']+.1, str(point['gene']))
+                ax.text(point['x'], point['y'], str(point['gene']))
             )
-        elif point['x'] < 0.0:
+        elif point['x'] < -0.05:
             # align these left, otherwise can't read
             text_labels.append(
-                ax.text(point['x']-.01, point['y']+.1, str(point['gene']),
+                ax.text(point['x'], point['y'], str(point['gene']),
                         ha='right', va='bottom')
             )
     return text_labels
 
 text_labels = label_points(compare_results_df['delta_mean'],
                            compare_results_df['nlog10_p'],
-                           compare_results_df.identifier,
+                           compare_results_df.gene,
                            compare_results_df.reject_null,
                            plt.gca())
-adjust_text(text_labels, ax=plt.gca())
+adjust_text(text_labels,
+            ax=plt.gca(),
+            expand_text=(1., 1.),
+            lim=5)
 
