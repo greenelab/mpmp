@@ -228,6 +228,3 @@ def split_argument_groups(args, parser):
         arg_groups[group.title] = argparse.Namespace(**group_dict)
     return arg_groups
 
-
-
-
