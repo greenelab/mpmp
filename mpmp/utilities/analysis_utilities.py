@@ -36,13 +36,17 @@ def load_stratified_prediction_results(results_dir, experiment_descriptor):
     return results_df
 
 
-def load_preds_to_matrix(preds_dir, sample_info_df):
+def load_preds_to_matrix(preds_dir,
+                         sample_info_df,
+                         training_data='expression'):
     """Load model predictions into a heatmap/confusion matrix.
 
     Arguments
     ---------
     preds_dir (str): directory where preds files are located
     sample_info_df (pd.DataFrame): dataframe containing sample information
+    training_data (str): type of training data to filter to, if None don't
+                         filter
 
     Returns
     ---------
@@ -65,6 +69,9 @@ def load_preds_to_matrix(preds_dir, sample_info_df):
             if 'preds' not in results_filename:
                 continue
             if 'signal' not in results_filename:
+                continue
+            if (training_data is not None and
+                training_data not in results_filename):
                 continue
             cancer_type_preds_df = (
                 pd.read_csv(results_file, sep='\t', index_col=0)
