@@ -35,7 +35,7 @@ SIG_ALPHA = 0.001
 
 
 # load raw data
-results_df = au.load_cancer_type_prediction_results(results_dir, 'cancer_type')
+results_df = au.load_stratified_prediction_results(results_dir, 'cancer_type')
 print(results_df.shape)
 results_df.head()
 
@@ -186,7 +186,7 @@ compare_results_df = au.compare_results(methylation_df,
 compare_results_df.head()
 
 
-# In[11]:
+# In[9]:
 
 
 compare_results_df['nlog10_p'] = -np.log10(compare_results_df.corr_pval)
@@ -227,4 +227,65 @@ text_labels = label_points(compare_results_df['delta_mean'],
                            compare_results_df.reject_null,
                            plt.gca())
 adjust_text(text_labels, ax=plt.gca())
+
+
+# ## Confusion matrix
+
+# In[10]:
+
+
+import os
+
+import mpmp.utilities.data_utilities as du
+
+preds_dir = os.path.join(cfg.repo_root, 'results_preds', 'cancer_type')
+sample_info_df = du.load_sample_info()
+
+preds_expression_df = au.load_preds_to_matrix(preds_dir, sample_info_df,
+                                              training_data='expression')
+print(preds_expression_df.shape)
+preds_expression_df.iloc[:5, :5]
+
+
+# In[23]:
+
+
+sns.set({'figure.figsize': (15, 10)})
+ax = sns.heatmap(preds_expression_df, cbar_kws={'label': 'Predicted probability of positive label, averaged over samples'})
+# this is needed to increase colorbar label font size
+# https://stackoverflow.com/a/48587137
+ax.figure.axes[-1].yaxis.label.set_size(14)
+plt.xlabel('True cancer type label', size=14)
+plt.ylabel('Positive label used to train classifier', size=14)
+plt.title('Cancer type confusion matrix, gene expression data', size=14, pad=14)
+plt.tight_layout()
+
+
+# In[13]:
+
+
+preds_methylation_df = au.load_preds_to_matrix(preds_dir, sample_info_df,
+                                               training_data='methylation')
+print(preds_methylation_df.shape)
+preds_methylation_df.iloc[:5, :5]
+
+
+# In[24]:
+
+
+sns.set({'figure.figsize': (15, 10)})
+ax = sns.heatmap(preds_methylation_df, cbar_kws={'label': 'Predicted probability of positive label, averaged over samples'})
+# this is needed to increase colorbar label font size
+# https://stackoverflow.com/a/48587137
+ax.figure.axes[-1].yaxis.label.set_size(14)
+plt.xlabel('True cancer type label', size=14)
+plt.ylabel('Positive label used to train classifier', size=14)
+plt.title('Cancer type confusion matrix, methylation data', size=14, pad=14)
+plt.tight_layout()
+
+
+# In[ ]:
+
+
+
 
