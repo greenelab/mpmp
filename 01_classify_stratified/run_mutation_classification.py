@@ -89,6 +89,7 @@ def process_args():
     io_args, model_options = arg_groups['io'], arg_groups['model_options']
 
     # add some additional hyperparameters/ranges from config file to model options
+    # these shouldn't be changed by the user, so they aren't added as arguments
     model_options.alphas = cfg.alphas
     model_options.l1_ratios = cfg.l1_ratios
     model_options.standardize_data_types = cfg.standardize_data_types
