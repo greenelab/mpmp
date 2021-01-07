@@ -218,6 +218,7 @@ def split_argument_groups(args, parser):
 
     See: https://stackoverflow.com/a/46929320
     """
+    import argparse
     arg_groups = {}
     for group in parser._action_groups:
         if group.title in ['positional arguments', 'optional arguments']:

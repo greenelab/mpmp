@@ -128,6 +128,7 @@ if __name__ == '__main__':
     tcga_data = TCGADataModel(seed=model_options.seed,
                               subset_mad_genes=model_options.subset_mad_genes,
                               training_data=model_options.training_data,
+                              sample_info_df=sample_info_df,
                               verbose=io_args.verbose,
                               debug=model_options.debug)
 

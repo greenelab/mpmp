@@ -110,8 +110,7 @@ def save_results(output_dir,
     ])
 
     coef_df.to_csv(
-        check_file, sep="\t", index=False, compression="gzip",
-        float_format="%.5g"
+        check_file, sep="\t", index=False, float_format="%.5g"
     )
 
     output_file = construct_filename(output_dir,
@@ -121,7 +120,7 @@ def save_results(output_dir,
                                      'auc_threshold_metrics',
                                      '.tsv.gz')
     auc_df.to_csv(
-        output_file, sep="\t", index=False, compression="gzip", float_format="%.5g"
+        output_file, sep="\t", index=False, float_format="%.5g"
     )
 
     output_file = construct_filename(output_dir,
@@ -131,7 +130,7 @@ def save_results(output_dir,
                                      'aupr_threshold_metrics',
                                      '.tsv.gz')
     aupr_df.to_csv(
-        output_file, sep="\t", index=False, compression="gzip", float_format="%.5g"
+        output_file, sep="\t", index=False, float_format="%.5g"
     )
 
     output_file = construct_filename(output_dir,
@@ -141,7 +140,7 @@ def save_results(output_dir,
                                      'classify_metrics',
                                      '.tsv.gz')
     metrics_df.to_csv(
-        output_file, sep="\t", index=False, compression="gzip", float_format="%.5g"
+        output_file, sep="\t", index=False, float_format="%.5g"
     )
 
 
