@@ -39,6 +39,7 @@ def process_args():
                         'all cancer types in TCGA')
     io.add_argument('--log_file', default=None,
                     help='name of file to log skipped cancer types to')
+    io.add_argument('--output_preds', action='store_true')
     io.add_argument('--results_dir', default=cfg.results_dir,
                     help='where to write results to')
     io.add_argument('--verbose', action='store_true')
@@ -180,7 +181,8 @@ if __name__ == '__main__':
                                             sample_info_df,
                                             model_options.num_folds,
                                             shuffle_labels,
-                                            standardize_columns)
+                                            standardize_columns,
+                                            io_args.output_preds)
             except NoTestSamplesError:
                 if io_args.verbose:
                     print('Skipping due to no test samples: cancer type '

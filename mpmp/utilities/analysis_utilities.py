@@ -36,6 +36,57 @@ def load_stratified_prediction_results(results_dir, experiment_descriptor):
     return results_df
 
 
+def load_preds_to_matrix(preds_dir,
+                         sample_info_df,
+                         training_data='expression'):
+    """Load model predictions into a heatmap/confusion matrix.
+
+    Arguments
+    ---------
+    preds_dir (str): directory where preds files are located
+    sample_info_df (pd.DataFrame): dataframe containing sample information
+    training_data (str): type of training data to filter to, if None don't
+                         filter
+
+    Returns
+    ---------
+    preds_df (str): a cancer type x cancer type dataframe, index contains
+                    target label and columns are true labels, cells contain
+                    average positive class probability for a model trained on
+                    the target label and evaluated on the true label (high
+                    probability = model predicts column class when trained on
+                    row class)
+    """
+    preds_df = pd.DataFrame()
+    for identifier in Path(preds_dir).iterdir():
+        identifier_dir = Path(preds_dir, identifier)
+        if identifier_dir.is_file():
+            continue
+        for results_file in identifier_dir.iterdir():
+            if not results_file.is_file():
+                continue
+            results_filename = str(results_file.stem)
+            if 'preds' not in results_filename:
+                continue
+            if 'signal' not in results_filename:
+                continue
+            if (training_data is not None and
+                training_data not in results_filename):
+                continue
+            cancer_type_preds_df = (
+                pd.read_csv(results_file, sep='\t', index_col=0)
+                  .merge(sample_info_df[['cancer_type']],
+                         left_index=True, right_index=True)
+                  .drop(columns=['fold_no', 'true_class'])
+                  .groupby('cancer_type')
+                  .mean()
+                  .T
+                  .rename(index={'positive_prob': results_filename.split('_')[0]})
+            )
+            preds_df = pd.concat((preds_df, cancer_type_preds_df))
+    return preds_df.sort_index()
+
+
 def compare_results(single_cancer_df,
                     pancancer_df=None,
                     identifier='gene',
@@ -176,4 +227,5 @@ def compare_experiment(single_cancer_df,
         results.append([id_str, delta_mean, p_value])
 
     return pd.DataFrame(results, columns=['identifier', 'delta_mean', 'p_value'])
+
 
