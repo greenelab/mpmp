@@ -182,7 +182,7 @@ if __name__ == '__main__':
                                             model_options.num_folds,
                                             shuffle_labels,
                                             standardize_columns,
-                                            args.output_preds)
+                                            io.output_preds)
             except NoTestSamplesError:
                 if io_args.verbose:
                     print('Skipping due to no test samples: cancer type '
