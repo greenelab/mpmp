@@ -151,11 +151,14 @@ def save_results(output_dir,
     )
 
     if preds_df is not None:
-        output_file = Path(
-            output_dir, "{}_{}_{}_s{}_preds.tsv.gz".format(
-                identifier, training_data, signal, seed)).resolve()
+        output_file = construct_filename(output_dir,
+                                         identifier,
+                                         shuffle_labels,
+                                         model_options,
+                                         'preds',
+                                         '.tsv.gz')
         preds_df.to_csv(
-            output_file, sep="\t", compression="gzip", float_format="%.5g"
+            output_file, sep="\t", float_format="%.5g"
         )
 
 
