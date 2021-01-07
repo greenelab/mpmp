@@ -11,3 +11,7 @@ Here, we use the same mutation and copy number data, as well as the same preproc
 
 TCGA has profiled 33 different cancer types.
 We trained classifiers to distinguish each cancer type from all others ("one-vs-rest" classification), using each data modality separately.
+
+### Predicting mutations
+
+We trained classifiers to predict mutation status in a set of cancer genes derived from [Vogelstein and Kinzler 2004](https://www.nature.com/articles/nm1087). We also use each data modality separately for now.
