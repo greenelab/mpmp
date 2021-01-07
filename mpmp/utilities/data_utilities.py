@@ -213,3 +213,19 @@ def load_sample_info(verbose=False):
     return pd.read_csv(cfg.sample_info, sep='\t', index_col='sample_id')
 
 
+def split_argument_groups(args, parser):
+    """Split argparse script arguments into argument groups.
+
+    See: https://stackoverflow.com/a/46929320
+    """
+    import argparse
+    arg_groups = {}
+    for group in parser._action_groups:
+        if group.title in ['positional arguments', 'optional arguments']:
+            continue
+        group_dict = {
+            a.dest : getattr(args, a.dest, None) for a in group._group_actions
+        }
+        arg_groups[group.title] = argparse.Namespace(**group_dict)
+    return arg_groups
+
