@@ -247,7 +247,7 @@ print(preds_expression_df.shape)
 preds_expression_df.iloc[:5, :5]
 
 
-# In[23]:
+# In[11]:
 
 
 sns.set({'figure.figsize': (15, 10)})
@@ -261,7 +261,7 @@ plt.title('Cancer type confusion matrix, gene expression data', size=14, pad=14)
 plt.tight_layout()
 
 
-# In[13]:
+# In[12]:
 
 
 preds_methylation_df = au.load_preds_to_matrix(preds_dir, sample_info_df,
@@ -270,7 +270,7 @@ print(preds_methylation_df.shape)
 preds_methylation_df.iloc[:5, :5]
 
 
-# In[24]:
+# In[13]:
 
 
 sns.set({'figure.figsize': (15, 10)})
@@ -282,10 +282,4 @@ plt.xlabel('True cancer type label', size=14)
 plt.ylabel('Positive label used to train classifier', size=14)
 plt.title('Cancer type confusion matrix, methylation data', size=14, pad=14)
 plt.tight_layout()
-
-
-# In[ ]:
-
-
-
 
