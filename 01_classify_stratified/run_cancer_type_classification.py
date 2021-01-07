@@ -101,9 +101,7 @@ if __name__ == '__main__':
     # process command line arguments
     io_args, model_options, sample_info_df = process_args()
 
-    # create results dir if it doesn't exist
-    io_args.results_dir.mkdir(parents=True, exist_ok=True)
-    # create subdir for experiment if it doesn't exist
+    # create results dir and subdir for experiment if they don't exist
     experiment_dir = Path(io_args.results_dir, 'cancer_type').resolve()
     experiment_dir.mkdir(parents=True, exist_ok=True)
 

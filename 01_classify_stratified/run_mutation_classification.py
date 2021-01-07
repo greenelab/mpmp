@@ -103,9 +103,7 @@ if __name__ == '__main__':
     io_args, model_options = process_args()
     sample_info_df = du.load_sample_info(verbose=io_args.verbose)
 
-    # create results dir if it doesn't exist
-    io_args.results_dir.mkdir(parents=True, exist_ok=True)
-    # create subdir for experiment if it doesn't exist
+    # create results dir and subdir for experiment if they don't exist
     experiment_dir = Path(io_args.results_dir, 'gene').resolve()
     experiment_dir.mkdir(parents=True, exist_ok=True)
 
