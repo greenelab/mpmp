@@ -168,7 +168,7 @@ if __name__ == '__main__':
                     log_columns,
                     [cancer_type, model_options.training_data, shuffle_labels, 'file_exists']
                 )
-                fu.write_log_file(cancer_type_log_df, log_file)
+                fu.write_log_file(cancer_type_log_df, io_args.log_file)
                 continue
 
             try:
