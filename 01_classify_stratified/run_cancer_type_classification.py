@@ -16,6 +16,7 @@ from mpmp.exceptions import (
     ResultsFileExistsError,
     NoTrainSamplesError,
     NoTestSamplesError,
+    OneClassError,
 )
 from mpmp.utilities.classify_utilities import run_cv_stratified
 import mpmp.utilities.data_utilities as du
@@ -167,7 +168,7 @@ if __name__ == '__main__':
                     log_columns,
                     [cancer_type, model_options.training_data, shuffle_labels, 'file_exists']
                 )
-                fu.write_log_file(cancer_type_log_df, log_file)
+                fu.write_log_file(cancer_type_log_df, io_args.log_file)
                 continue
 
             try:
@@ -190,6 +191,14 @@ if __name__ == '__main__':
                 cancer_type_log_df = fu.generate_log_df(
                     log_columns,
                     [cancer_type, model_options.training_data, shuffle_labels, 'no_test_samples']
+                )
+            except OneClassError:
+                if io_args.verbose:
+                    print('Skipping due to one holdout class: cancer type '
+                          '{}'.format(cancer_type), file=sys.stderr)
+                cancer_type_log_df = fu.generate_log_df(
+                    log_columns,
+                    [cancer_type, model_options.training_data, shuffle_labels, 'one_class']
                 )
             else:
                 # only save results if no exceptions

@@ -269,3 +269,48 @@ def subset_by_mad(X_train_df, X_test_df, gene_features, subset_mad_genes, verbos
     test_df = X_test_df.reindex(valid_features, axis='columns')
     return train_df, test_df, gene_features
 
+
+def subsample_to_smallest_cancer_type(X_df,
+                                      y_df,
+                                      sample_info_df,
+                                      seed):
+    """TODO: document and test"""
+
+    # group train samples by cancer type
+    grouped_samples_df = (
+        sample_info_df.reindex(X_df.index)
+                      .groupby('cancer_type')
+    )
+
+    # get count of each sample type in given dataset
+    counts_df = (
+        grouped_samples_df.count()
+                          .drop(columns=['id_for_stratification'])
+                          .rename(columns={'sample_type': 'disease_count'})
+                          .sort_values(by='disease_count', ascending=True)
+    )
+
+    # get fewest samples in train set
+    smallest_count = counts_df.iloc[0, 0]
+
+    # subsample all cancer types in train set to smallest count
+    ss_ixs = np.array(
+        [np.random.choice(x, size=smallest_count)
+             for x in grouped_samples_df.groups.values()]).flatten()
+    X_ss_df = X_df.loc[ss_ixs, :]
+    y_ss_df = y_df.loc[ss_ixs, :]
+
+    # check that all cancer type counts are now the same
+    grouped_ss_df = (
+        sample_info_df.reindex(X_ss_df.index)
+                      .groupby('cancer_type')
+                      .count()
+                      .drop(columns=['id_for_stratification'])
+                      .rename(columns={'sample_type': 'disease_count'})
+                      .sort_values(by='disease_count', ascending=True)
+    )
+    assert min(grouped_ss_df.disease_count) == max(grouped_ss_df.disease_count)
+
+    # return subsampled data and labels
+    return X_ss_df, y_ss_df
+
