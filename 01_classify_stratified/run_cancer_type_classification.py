@@ -194,11 +194,11 @@ if __name__ == '__main__':
                 )
             except OneClassError:
                 if io_args.verbose:
-                    print('Skipping due to one holdout class: gene {}'.format(
-                        gene), file=sys.stderr)
+                    print('Skipping due to one holdout class: cancer type '
+                          '{}'.format(cancer_type), file=sys.stderr)
                 cancer_type_log_df = fu.generate_log_df(
                     log_columns,
-                    [gene, model_options.training_data, shuffle_labels, 'one_class']
+                    [cancer_type, model_options.training_data, shuffle_labels, 'one_class']
                 )
             else:
                 # only save results if no exceptions
