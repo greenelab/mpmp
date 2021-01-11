@@ -274,8 +274,12 @@ def subsample_to_smallest_cancer_type(X_df,
                                       y_df,
                                       sample_info_df,
                                       seed):
-    """TODO: document and test"""
+    """Subsample data to the size of the smallest cancer type in dataset.
 
+    Use sample_info_df, filtered to samples in X_df, to calculate the number of
+    samples present for each cancer type. Then randomly subsample each cancer
+    type to the smallest one, returning subsampled data and labels.
+    """
     # group train samples by cancer type
     grouped_samples_df = (
         sample_info_df.reindex(X_df.index)
