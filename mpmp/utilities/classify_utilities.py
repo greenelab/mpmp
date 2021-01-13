@@ -96,6 +96,13 @@ def run_cv_stratified(data_model,
                                                    standardize_columns,
                                                    data_model.subset_mad_genes)
 
+        if cfg.subsample_to_smallest:
+            sample_counts_df = pd.read_csv(cfg.sample_counts, sep='\t')
+            X_train_df, y_train_df = tu.subsample_to_smallest_cancer_type(
+                    X_train_df, y_train_df, sample_info, data_model.seed)
+            X_test_df, y_test_df = tu.subsample_to_smallest_cancer_type(
+                    X_test_df, y_test_df, sample_info, data_model.seed)
+
         try:
             model_results = train_model(
                 X_train=X_train_df,

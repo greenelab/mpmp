@@ -47,3 +47,7 @@ vogelstein_commit = "2a0683b68017fb226f4053e63415e4356191734f"
 # data types to standardize columns for
 standardize_data_types = ['expression']
 
+# subsample data to smallest cancer type
+# hopefully this will improve prediction for imbalanced cancer types
+subsample_to_smallest = True
+
