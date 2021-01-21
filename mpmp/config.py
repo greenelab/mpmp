@@ -10,7 +10,9 @@ results_dir = repo_root / 'results'
 raw_data_dir = data_dir / 'raw'
 pancan_data = data_dir / 'pancancer_data.pkl'
 rnaseq_data = data_dir / 'tcga_expression_matrix_processed.tsv.gz'
-methylation_data = data_dir / 'tcga_methylation_matrix_processed.tsv.gz'
+# methylation_data = data_dir / 'tcga_methylation_matrix_processed.tsv.gz'
+# TODO make this more permanent
+methylation_data = data_dir / 'methylation_preprocessed' / 'methylation_filtered_n500.tsv.gz'
 sample_counts = data_dir / 'tcga_sample_counts.tsv'
 sample_info = data_dir / 'tcga_sample_identifiers.tsv'
 
