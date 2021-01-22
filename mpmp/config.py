@@ -6,20 +6,31 @@ repo_root = pathlib.Path(__file__).resolve().parent.parent
 data_dir = repo_root / 'data'
 results_dir = repo_root / 'results'
 
-# locations of saved data
+# locations of saved data files
 raw_data_dir = data_dir / 'raw'
 pancan_data = data_dir / 'pancancer_data.pkl'
+sample_counts = data_dir / 'tcga_sample_counts.tsv'
+sample_info = data_dir / 'tcga_sample_identifiers.tsv'
+
+# locations of processed multimodal data files
 rnaseq_data = data_dir / 'tcga_expression_matrix_processed.tsv.gz'
 # methylation_data = data_dir / 'tcga_methylation_matrix_processed.tsv.gz'
 # TODO make this more permanent
-methylation_data = data_dir / 'methylation_preprocessed' / 'methylation_filtered_n500.tsv.gz'
-sample_counts = data_dir / 'tcga_sample_counts.tsv'
-sample_info = data_dir / 'tcga_sample_identifiers.tsv'
+methylation_data = data_dir / 'methylation_preprocessed' / 'methylation_processed_n10_i5.tsv.gz'
+data_types = {
+    'expression': rnaseq_data,
+    'methylation': methylation_data,
+}
+use_only_cross_data_samples = True
 
 # locations of subsampled data, for debugging and testing
 subsampled_data_dir = data_dir / 'subsampled'
 subsampled_expression = subsampled_data_dir / 'expression_subsampled.tsv.gz'
 subsampled_methylation = subsampled_data_dir / 'methylation_subsampled.tsv.gz'
+subsampled_data_types = {
+    'expression': subsampled_expression,
+    'methylation': subsampled_methylation,
+}
 
 # default seed for random number generator
 default_seed = 42
@@ -51,5 +62,5 @@ standardize_data_types = ['expression']
 
 # subsample data to smallest cancer type
 # hopefully this will improve prediction for imbalanced cancer types
-subsample_to_smallest = True
+subsample_to_smallest = False
 
