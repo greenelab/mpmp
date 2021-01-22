@@ -11,7 +11,7 @@ from mpmp.utilities.tcga_utilities import (
     process_y_matrix,
     process_y_matrix_cancertype,
     align_matrices,
-    get_cross_data_samples,
+    filter_to_cross_data_samples,
 )
 
 class TCGADataModel():
@@ -128,7 +128,7 @@ class TCGADataModel():
                 y_filtered_df.status.values)
 
         if cfg.use_only_cross_data_samples:
-            train_filtered_df, y_filtered_df = get_cross_data_samples(
+            train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
                 train_filtered_df,
                 y_filtered_df,
                 debug=self.debug,
@@ -174,7 +174,7 @@ class TCGADataModel():
                 y_filtered_df.status.values)
 
         if cfg.use_only_cross_data_samples:
-            train_filtered_df, y_filtered_df = get_cross_data_samples(
+            train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
                 train_filtered_df,
                 y_filtered_df,
                 debug=self.debug,

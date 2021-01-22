@@ -321,18 +321,18 @@ def subsample_to_smallest_cancer_type(X_df,
     return X_ss_df, y_ss_df
 
 
-def get_cross_data_samples(X_df, y_df, debug=False, verbose=False):
+def filter_to_cross_data_samples(X_df, y_df, debug=False, verbose=False):
     """Filter dataset to samples included in all data modalities."""
-    # TODO this function needs a better name
-    # TODO write tests for this function
+    # TODO write tests for this function?
 
     # first, get intersection of samples in all training datasets
     valid_samples = None
     data_types = cfg.subsampled_data_types if debug else cfg.data_types
     for data_type, data_file in data_types.items():
         # get sample IDs for the given data type/processed data file
-        print(data_type, data_file) # TODO format verbose output
-        # TODO this may take some time to load, so maybe cache it somewhere?
+        if verbose:
+            print('Loading sample IDs for {} data'.format(data_type))
+        # TODO this may take some time to load, so we could cache it somewhere
         df = pd.read_csv(data_file, sep='\t', usecols=[0], index_col=0)
         if valid_samples is None:
             valid_samples = df.index
@@ -340,6 +340,8 @@ def get_cross_data_samples(X_df, y_df, debug=False, verbose=False):
             valid_samples = valid_samples.intersection(df.index)
 
     # then reindex data and labels to common sample IDs
+    if verbose:
+        print('Taking intersection of sample IDs')
     return (X_df.reindex(valid_samples.intersection(X_df.index)),
             y_df.reindex(valid_samples.intersection(y_df.index)))
 
