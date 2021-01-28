@@ -14,14 +14,25 @@ sample_info = data_dir / 'tcga_sample_identifiers.tsv'
 
 # locations of processed multimodal data files
 rnaseq_data = data_dir / 'tcga_expression_matrix_processed.tsv.gz'
-# methylation_data = data_dir / 'tcga_methylation_matrix_processed.tsv.gz'
-# TODO make this more permanent
+# use this as default methylation data for now
+# this is 27K methylation data, 450K is too large to use unprocessed
 methylation_data = data_dir / 'methylation_preprocessed' / 'methylation_processed_n10_i5.tsv.gz'
 data_types = {
     'expression': rnaseq_data,
     'methylation': methylation_data,
 }
 use_only_cross_data_samples = True
+
+# locations of compressed multimodal data files
+exp_compressed_dir = data_dir / 'exp_compressed'
+me_compressed_dir = data_dir / 'me_compressed'
+compressed_data_types = {
+    # it doesn't really matter what dimension we choose here, they should
+    # all have the same set of samples which is what we need
+    'expression': exp_compressed_dir / 'exp_pc100.tsv.gz',
+    'me_27k': me_compressed_dir / 'me_27k_f10_i5_pc100.tsv.gz',
+    'me_450k': me_compressed_dir / 'me_450k_f10_i5_pc100.tsv.gz',
+}
 
 # locations of subsampled data, for debugging and testing
 subsampled_data_dir = data_dir / 'subsampled'
