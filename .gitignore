@@ -6,6 +6,8 @@
 data/raw/*
 data/subsampled/*
 data/expression_confusion_matrix.tsv
+data/me_compressed/*
+data/me_preprocessed/*
 data/tcga_expression_matrix_processed.tsv.gz
 data/tcga_methylation_matrix_processed.tsv.gz
 data/pancancer_data.pkl
