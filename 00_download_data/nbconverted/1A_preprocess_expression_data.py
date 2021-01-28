@@ -144,14 +144,8 @@ tcga_expr_df = tcga_expr_df.loc[~tcga_expr_df.index.duplicated(), :]
 # filter for valid Entrez gene identifiers
 tcga_expr_df = tcga_expr_df.loc[:, tcga_expr_df.columns.isin(gene_df.entrez_gene_id.astype(str))]
 
-
-# In[13]:
-
-
 tcga_expr_df.to_csv(cfg.rnaseq_data, sep='\t', compression='gzip', float_format='%.3g')
-
-
-# In[14]:
+# In[13]:
 
 
 print(tcga_expr_df.shape)
@@ -166,7 +160,7 @@ tcga_expr_df.head()
 # 
 # The goal is to use this info to stratify training (90%) and testing (10%) balanced by cancer-type and sample-type. 
 
-# In[15]:
+# In[14]:
 
 
 # extract sample type in the order of the gene expression matrix
@@ -192,7 +186,7 @@ tcga_id.stratify_samples_count = tcga_id.stratify_samples_count.replace(stratify
 tcga_id.loc[tcga_id.stratify_samples_count == 1, "stratify_samples"] = "other"
 
 
-# In[16]:
+# In[15]:
 
 
 # write out files for downstream use
@@ -207,7 +201,7 @@ print(tcga_id.shape)
 tcga_id.head()
 
 
-# In[17]:
+# In[16]:
 
 
 cancertype_count_df = (
@@ -219,5 +213,26 @@ cancertype_count_df = (
 file = os.path.join(cfg.data_dir, 'tcga_sample_counts.tsv')
 cancertype_count_df.to_csv(file, sep='\t', index=False)
 
-cancertype_count_df
+cancertype_count_df.head()
+
+
+# In[17]:
+
+
+# take PCA + save to file, for equal comparison with methylation
+from sklearn.decomposition import PCA
+
+pca_dir = os.path.join(cfg.data_dir, 'exp_compressed')
+os.makedirs(pca_dir, exist_ok=True)
+
+n_pcs_list = [100, 1000, 5000]
+for n_pcs in n_pcs_list:
+    pca = PCA(n_components=n_pcs)
+    exp_pca = pca.fit_transform(tcga_expr_df)
+    print(exp_pca.shape)
+    exp_pca = pd.DataFrame(exp_pca, index=tcga_expr_df.index)
+    exp_pca.to_csv(os.path.join(pca_dir,
+                               'exp_pc{}.tsv.gz'.format(n_pcs)),
+                   sep='\t',
+                   float_format='%.3g')
 
