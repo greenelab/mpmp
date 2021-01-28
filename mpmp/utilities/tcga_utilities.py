@@ -323,7 +323,6 @@ def subsample_to_smallest_cancer_type(X_df,
 
 def filter_to_cross_data_samples(X_df, y_df, debug=False, verbose=False):
     """Filter dataset to samples included in all data modalities."""
-    # TODO write tests for this function?
 
     # first, get intersection of samples in all training datasets
     valid_samples = None
