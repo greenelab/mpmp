@@ -6,6 +6,7 @@
 data/raw/*
 data/subsampled/*
 data/expression_confusion_matrix.tsv
+data/exp_compressed/*
 data/me_compressed/*
 data/me_preprocessed/*
 data/tcga_expression_matrix_processed.tsv.gz
