@@ -354,7 +354,13 @@ def filter_to_cross_data_samples(X_df,
 
     # then reindex data and labels to common sample IDs
     if verbose:
-        print('Taking intersection of sample IDs')
-    return (X_df.reindex(valid_samples.intersection(X_df.index)),
-            y_df.reindex(valid_samples.intersection(y_df.index)))
+        print('Taking intersection of sample IDs...', end='')
+
+    X_filtered_df = X_df.reindex(valid_samples.intersection(X_df.index))
+    y_filtered_df = y_df.reindex(valid_samples.intersection(y_df.index))
+
+    if verbose:
+        print('done')
+
+    return (X_filtered_df, y_filtered_df)
 

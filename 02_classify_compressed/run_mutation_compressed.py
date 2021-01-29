@@ -59,7 +59,7 @@ def process_args():
                                      'experiment metadata ')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
-    opts.add_argument('--n_components', type=int, default=100,
+    opts.add_argument('--n_dim', type=int, default=100,
                       choices=[100, 500, 1000], # TODO store this somewhere central
                       help='number of compressed components/dimensions to use')
     opts.add_argument('--num_folds', type=int, default=4,
@@ -127,7 +127,7 @@ if __name__ == '__main__':
     tcga_data = TCGADataModel(seed=model_options.seed,
                               training_data=model_options.training_data,
                               load_compressed_data=True,
-                              n_dim=model_options.n_components,
+                              n_dim=model_options.n_dim,
                               sample_info_df=sample_info_df,
                               verbose=io_args.verbose,
                               debug=model_options.debug)
@@ -162,11 +162,6 @@ if __name__ == '__main__':
                                                 classification,
                                                 gene_dir,
                                                 shuffle_labels=shuffle_labels)
-                print(tcga_data.X_df.shape)
-                print(tcga_data.X_df.head())
-                print(tcga_data.y_df.shape)
-                print(tcga_data.y_df.head())
-                exit()
             except ResultsFileExistsError:
                 # this happens if cross-validation for this gene has already been
                 # run (i.e. the results file already exists)
@@ -192,9 +187,8 @@ if __name__ == '__main__':
                 continue
 
             try:
-                # for now, don't standardize methylation data
-                standardize_columns = (model_options.training_data in
-                                       cfg.standardize_data_types)
+                # columns should be standardized before compression
+                # so we don't want to standardize them here
                 results = run_cv_stratified(tcga_data,
                                             'gene',
                                             gene,
@@ -202,8 +196,6 @@ if __name__ == '__main__':
                                             sample_info_df,
                                             model_options.num_folds,
                                             shuffle_labels,
-                                            # columns should be standardized before compression
-                                            # so we don't standardize them here
                                             standardize_columns=False)
             except NoTrainSamplesError:
                 if io_args.verbose:
