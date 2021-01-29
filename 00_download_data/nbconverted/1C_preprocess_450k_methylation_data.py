@@ -121,6 +121,14 @@ tcga_methylation_df.dropna(axis='columns', inplace=True)
 print(tcga_methylation_df.shape)
 
 
+# ### Dimension reduction
+# 
+# Since we can't realistically fit a logistic regression model to 300K features, compress the data using PCA with various dimensions, and save the results to tsv files.
+# 
+# Note that it's much faster to calculate this once for the largest dimensionality, then truncate it, than to recalculate the PCA for each number of PCs. However, using the sklearn PCA implementation, the results are actually slightly different for these two approaches (particularly for smaller PCs), since it uses a randomized thin SVD algorithm by default rather than calculating the exact SVD. 
+# 
+# I created [this issue](https://github.com/greenelab/mpmp/issues/15) to investigate/remind myself of this instability in the future, but I don't think it'll matter that much in practice.
+
 # In[9]:
 
 
