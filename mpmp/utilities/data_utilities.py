@@ -75,6 +75,36 @@ def load_methylation_data(verbose=False, debug=False):
     return methylation_df
 
 
+def load_compressed_data(data_type, n_dim, verbose=False, debug=False):
+    """Load compressed data for the given data type and compressed dimensions.
+
+    Arguments
+    ---------
+    data_type (str): data type to use
+    n_dim (int): number of latent dimensions to use
+    verbose (bool): whether or not to print verbose output
+    debug (bool): whether or not to subset data for faster debugging
+
+    Returns
+    -------
+    data_df: samples x latent dimensions dataframe
+    """
+    if debug:
+        raise NotImplementedError('no subsampled compressed data')
+    try:
+        data_df = pd.read_csv(
+            str(cfg.compressed_data_types[data_type]).format(n_dim),
+            index_col=0, sep='\t'
+        )
+    except OSError:
+        # compressed data does not exist for given n_dim
+        raise NotImplementedError(
+            'no compressed data for data_type {}, n_dim {}'.format(
+                data_type, n_dim)
+        )
+    return data_df
+
+
 def load_pancancer_data(verbose=False, test=False, subset_columns=None):
     """Load pan-cancer relevant data from previous Greene Lab repos.
 
