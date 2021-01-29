@@ -31,25 +31,44 @@ manifest_df = pd.read_csv(os.path.join(cfg.data_dir, 'manifest.tsv'),
 manifest_df.head(3)
 
 
-# In[ ]:
+# In[3]:
 
 
-tcga_methylation_df = (
-    pd.read_csv(os.path.join(cfg.raw_data_dir,
-                             manifest_df.loc['methylation_450k'].filename),
-                index_col=0,
-                sep='\t',
-                dtype='float32', # float64 won't fit in 64GB RAM
-                converters={0: str}) # don't convert the col names to float
-       .transpose()
-)
+# this is much faster than loading directly from .tsv
+# useful if you need to run this preprocessing script multiple times
+methylation_pickle = os.path.join(cfg.data_dir, 'methylation_450k.pkl')
+
+if os.path.isfile(methylation_pickle):
+    print('loading from pickle')
+    tcga_methylation_df = pd.read_pickle(methylation_pickle)
+else:
+    tcga_methylation_df = (
+        pd.read_csv(os.path.join(cfg.raw_data_dir,
+                                 manifest_df.loc['methylation_450k'].filename),
+                    index_col=0,
+                    sep='\t',
+                    dtype='float32', # float64 won't fit in 64GB RAM
+                    converters={0: str}) # don't convert the col names to float
+           .transpose()
+    )
 
 tcga_methylation_df.index.rename('sample_id', inplace=True)
+
 print(tcga_methylation_df.shape)
 tcga_methylation_df.iloc[:5, :5]
 
 
-# In[ ]:
+# In[4]:
+
+
+if os.path.isfile(methylation_pickle):
+    print('pickle already exists')
+else:
+    print('saving df to pickle')
+    tcga_methylation_df.to_pickle(methylation_pickle)
+
+
+# In[5]:
 
 
 # update sample IDs to remove multiple samples measured on the same tumor
@@ -59,15 +78,7 @@ tcga_methylation_df = tcga_methylation_df.loc[~tcga_methylation_df.index.duplica
 print(tcga_methylation_df.shape)
 
 
-# In[ ]:
-
-
-# as a simple approach, get rid of all NA columns
-# really we should do something more nuanced here like filter/impute
-# tcga_methylation_df.dropna(axis='columns', inplace=True)
-
-
-# In[ ]:
+# In[6]:
 
 
 # how many missing values does each probe (column) have?
@@ -76,10 +87,10 @@ print(sample_na.shape)
 sample_na.sort_values(ascending=False).head()
 
 
-# In[ ]:
+# In[7]:
 
 
-# remove 10 samples, then impute for probes with 1 or 2 NA values
+# remove 10 samples with most NAs, then impute for probes with 1 or 2 NA values
 n_filter = 10
 n_impute = 5
 
@@ -109,13 +120,8 @@ tcga_methylation_df = impute_leq(tcga_methylation_df, n_impute)
 tcga_methylation_df.dropna(axis='columns', inplace=True)
 print(tcga_methylation_df.shape)
 
-# filtered_file = os.path.join(output_dir,
-#                              'methylation_processed_n{}_i{}.tsv.gz'.format(n_filter, n_impute))
-# print(filtered_file)
-# methylation_processed_df.to_csv(filtered_file, sep='\t', float_format='%.3g')
 
-
-# In[ ]:
+# In[9]:
 
 
 from sklearn.decomposition import PCA
@@ -124,15 +130,19 @@ pca_dir = os.path.join(cfg.data_dir, 'me_compressed')
 os.makedirs(pca_dir, exist_ok=True)
 
 n_pcs_list = [100, 1000, 5000]
+
+# it's much faster to just calculate this once for max n_pcs, and truncate it,
+# than to recalculated it for each number of PCs we want
+pca = PCA(n_components=max(n_pcs_list))
+me_pca = pca.fit_transform(tcga_methylation_df)
+print(me_pca.shape)
+
 for n_pcs in n_pcs_list:
-    # could just calculate this once and truncate it
-    pca = PCA(n_components=n_pcs)
-    me_pca = pca.fit_transform(tcga_methylation_df)
-    print(me_pca.shape)
-    me_pca = pd.DataFrame(me_pca, index=tcga_methylation_df.index)
-    me_pca.to_csv(os.path.join(pca_dir,
-                               'me_450k_f{}_i{}_pc{}.tsv.gz'.format(
-                                   n_filter, n_impute, n_pcs)),
-                  sep='\t',
-                  float_format='%.3g')
+    me_pca_truncated = pd.DataFrame(me_pca[:, :n_pcs], index=tcga_methylation_df.index)
+    print(me_pca_truncated.shape)
+    me_pca_truncated.to_csv(
+        os.path.join(pca_dir, 'me_450k_f{}_i{}_pc{}.tsv.gz'.format(
+                         n_filter, n_impute, n_pcs)),
+        sep='\t',
+        float_format='%.3g')
 
