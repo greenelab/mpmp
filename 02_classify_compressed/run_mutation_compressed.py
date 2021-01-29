@@ -60,7 +60,7 @@ def process_args():
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
     opts.add_argument('--n_dim', type=int, default=100,
-                      choices=[100, 500, 1000], # TODO store this somewhere central
+                      choices=[100, 1000, 5000], # TODO store this somewhere central
                       help='number of compressed components/dimensions to use')
     opts.add_argument('--num_folds', type=int, default=4,
                       help='number of folds of cross-validation to run')
