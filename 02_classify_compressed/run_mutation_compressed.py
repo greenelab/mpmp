@@ -65,9 +65,6 @@ def process_args():
     opts.add_argument('--num_folds', type=int, default=4,
                       help='number of folds of cross-validation to run')
     opts.add_argument('--seed', type=int, default=cfg.default_seed)
-    opts.add_argument('--subset_mad_genes', type=int, default=cfg.num_features_raw,
-                      help='if included, subset gene features to this number of '
-                           'features having highest mean absolute deviation')
     opts.add_argument('--training_data', type=str, default='expression',
                       choices=['expression', 'methylation'],
                       help='what data type to train model on')
@@ -128,7 +125,6 @@ if __name__ == '__main__':
         log_df.to_csv(io_args.log_file, sep='\t')
 
     tcga_data = TCGADataModel(seed=model_options.seed,
-                              subset_mad_genes=model_options.subset_mad_genes,
                               training_data=model_options.training_data,
                               load_compressed_data=True,
                               n_dim=model_options.n_components,
@@ -206,7 +202,9 @@ if __name__ == '__main__':
                                             sample_info_df,
                                             model_options.num_folds,
                                             shuffle_labels,
-                                            standardize_columns)
+                                            # columns should be standardized before compression
+                                            # so we don't standardize them here
+                                            standardize_columns=False)
             except NoTrainSamplesError:
                 if io_args.verbose:
                     print('Skipping due to no train samples: gene {}'.format(

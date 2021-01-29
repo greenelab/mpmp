@@ -27,7 +27,7 @@ use_only_cross_data_samples = True
 exp_compressed_dir = data_dir / 'exp_compressed'
 me_compressed_dir = data_dir / 'me_compressed'
 compressed_data_types = {
-    'expression': exp_compressed_dir / 'exp_pc{}.tsv.gz',
+    'expression': exp_compressed_dir / 'exp_std_pc{}.tsv.gz',
     'me_27k': me_compressed_dir / 'me_27k_f10_i5_pc{}.tsv.gz',
     'me_450k': me_compressed_dir / 'me_450k_f10_i5_pc{}.tsv.gz',
 }
