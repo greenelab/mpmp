@@ -66,7 +66,7 @@ def process_args():
                       help='number of folds of cross-validation to run')
     opts.add_argument('--seed', type=int, default=cfg.default_seed)
     opts.add_argument('--training_data', type=str, default='expression',
-                      choices=['expression', 'methylation'],
+                      choices=['expression', 'me_27k', 'me_450k'],
                       help='what data type to train model on')
 
     args = parser.parse_args()
