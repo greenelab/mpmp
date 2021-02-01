@@ -115,7 +115,7 @@ def run_cv_stratified(data_model,
                 max_iter=cfg.max_iter
             )
         except ValueError as e:
-            if 'Only one class' in str(e):
+            if ('Only one class' in str(e)) or ('got 1 class' in str(e)):
                 raise OneClassError(
                     'Only one class present in test set for identifier: '
                     '{}'.format(identifier)

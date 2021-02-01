@@ -11,6 +11,7 @@ from mpmp.utilities.tcga_utilities import (
     process_y_matrix,
     process_y_matrix_cancertype,
     align_matrices,
+    filter_to_cross_data_samples,
 )
 
 class TCGADataModel():
@@ -47,6 +48,7 @@ class TCGADataModel():
         self.seed = seed
         self.subset_mad_genes = subset_mad_genes
         self.verbose = verbose
+        self.debug = debug
         self.test = test
 
         # load and store data in memory
@@ -125,6 +127,14 @@ class TCGADataModel():
             y_filtered_df.status = np.random.permutation(
                 y_filtered_df.status.values)
 
+        if cfg.use_only_cross_data_samples:
+            train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
+                train_filtered_df,
+                y_filtered_df,
+                debug=self.debug,
+                verbose=self.verbose
+            )
+
         self.X_df = train_filtered_df
         self.y_df = y_filtered_df
         self.gene_features = gene_features
@@ -163,9 +173,20 @@ class TCGADataModel():
             y_filtered_df.status = np.random.permutation(
                 y_filtered_df.status.values)
 
+        if cfg.use_only_cross_data_samples:
+            train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
+                train_filtered_df,
+                y_filtered_df,
+                debug=self.debug,
+                verbose=self.verbose
+            )
+
         self.X_df = train_filtered_df
         self.y_df = y_filtered_df
         self.gene_features = gene_features
+
+        assert np.count_nonzero(self.X_df.index.duplicated()) == 0
+        assert np.count_nonzero(self.y_df.index.duplicated()) == 0
 
     def _load_data(self,
                    train_data_type,
