@@ -36,6 +36,39 @@ def load_stratified_prediction_results(results_dir, experiment_descriptor):
     return results_df
 
 
+def load_compressed_prediction_results(results_dir, experiment_descriptor):
+    """Load results of compressed prediction experiments.
+
+    Arguments
+    ---------
+    results_dir (str): directory to look in for results, subdirectories should
+                       be experiments for individual genes or cancer types
+    experiment_descriptor (str): string describing this experiment, can be
+                                 useful to segment analyses involving multiple
+                                 experiments or results sets
+
+    Returns
+    -------
+    results_df (pd.DataFrame): results of classification experiments
+    """
+    results_df = pd.DataFrame()
+    results_dir = Path(results_dir)
+    for identifier in results_dir.iterdir():
+        identifier_dir = Path(results_dir, identifier)
+        if identifier_dir.is_file(): continue
+        for results_file in identifier_dir.iterdir():
+            if not results_file.is_file(): continue
+            results_filename = str(results_file.stem)
+            if 'classify' not in results_filename: continue
+            if results_filename[0] == '.': continue
+            n_dims = int(results_filename.split('_')[-3].replace('n', ''))
+            id_results_df = pd.read_csv(results_file, sep='\t')
+            id_results_df['n_dims'] = n_dims
+            id_results_df['experiment'] = experiment_descriptor
+            results_df = pd.concat((results_df, id_results_df))
+    return results_df
+
+
 def load_preds_to_matrix(preds_dir,
                          sample_info_df,
                          training_data='expression'):
