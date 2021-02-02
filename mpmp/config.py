@@ -21,6 +21,7 @@ data_types = {
     'expression': rnaseq_data,
     'methylation': methylation_data,
 }
+# If true, use only the samples present in both the 27k and 450k methylation datsets
 use_only_cross_data_samples = True
 
 # locations of compressed multimodal data files
@@ -72,4 +73,3 @@ standardize_data_types = ['expression']
 # subsample data to smallest cancer type
 # hopefully this will improve prediction for imbalanced cancer types
 subsample_to_smallest = False
-
