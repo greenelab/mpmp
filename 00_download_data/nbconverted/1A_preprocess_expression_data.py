@@ -220,7 +220,15 @@ cancertype_count_df.head()
 
 
 # take PCA + save to file, for equal comparison with methylation
+from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
+
+# standardize first for expression data
+tcga_scaled_df = pd.DataFrame(
+    StandardScaler().fit_transform(tcga_expr_df),
+    index=tcga_expr_df.index.copy(),
+    columns=tcga_expr_df.columns.copy(),
+)
 
 pca_dir = os.path.join(cfg.data_dir, 'exp_compressed')
 os.makedirs(pca_dir, exist_ok=True)
@@ -228,11 +236,11 @@ os.makedirs(pca_dir, exist_ok=True)
 n_pcs_list = [100, 1000, 5000]
 for n_pcs in n_pcs_list:
     pca = PCA(n_components=n_pcs)
-    exp_pca = pca.fit_transform(tcga_expr_df)
+    exp_pca = pca.fit_transform(tcga_scaled_df)
     print(exp_pca.shape)
-    exp_pca = pd.DataFrame(exp_pca, index=tcga_expr_df.index)
+    exp_pca = pd.DataFrame(exp_pca, index=tcga_scaled_df.index)
     exp_pca.to_csv(os.path.join(pca_dir,
-                               'exp_pc{}.tsv.gz'.format(n_pcs)),
+                               'exp_std_pc{}.tsv.gz'.format(n_pcs)),
                    sep='\t',
                    float_format='%.3g')
 
