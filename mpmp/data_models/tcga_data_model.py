@@ -26,6 +26,8 @@ class TCGADataModel():
                  seed=cfg.default_seed,
                  subset_mad_genes=-1,
                  training_data='expression',
+                 load_compressed_data=False,
+                 n_dim=None,
                  sample_info_df=None,
                  verbose=False,
                  debug=False,
@@ -39,7 +41,10 @@ class TCGADataModel():
         subset_mad_genes (int): how many genes to keep (top by mean absolute deviation).
                                 -1 doesn't do any filtering (all genes will be kept).
         training_data (str): what data type to train the model on
+        load_compressed_data (bool): whether or not to use compressed data
+        n_dim (int): how many dimensions to use for compression algorithm
         verbose (bool): whether or not to write verbose output
+        sample_info_df (pd.DataFrame): dataframe containing info about TCGA samples
         debug (bool): if True, use a subset of expression data for quick debugging
         test (bool): if True, don't save results to files
         """
@@ -47,12 +52,16 @@ class TCGADataModel():
         np.random.seed(seed)
         self.seed = seed
         self.subset_mad_genes = subset_mad_genes
+        self.compressed_data = load_compressed_data
+        self.n_dim = n_dim
         self.verbose = verbose
         self.debug = debug
         self.test = test
 
         # load and store data in memory
         self._load_data(train_data_type=training_data,
+                        compressed_data=load_compressed_data,
+                        n_dim=n_dim,
                         sample_info_df=sample_info_df,
                         debug=debug,
                         test=self.test)
@@ -146,10 +155,7 @@ class TCGADataModel():
                               use_pancancer=False,
                               shuffle_labels=False):
         """
-        Prepare to run cancer type experiments for a given gene.
-
-        This has to be rerun for each gene, since the data is filtered based
-        on label proportions for the given gene in each cancer type.
+        Prepare to run mutation prediction experiments for a given gene.
 
         Arguments
         ---------
@@ -177,6 +183,8 @@ class TCGADataModel():
             train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
                 train_filtered_df,
                 y_filtered_df,
+                compressed_data=self.compressed_data,
+                n_dim=self.n_dim,
                 debug=self.debug,
                 verbose=self.verbose
             )
@@ -190,6 +198,8 @@ class TCGADataModel():
 
     def _load_data(self,
                    train_data_type,
+                   compressed_data=False,
+                   n_dim=None,
                    sample_info_df=None,
                    debug=False,
                    test=False):
@@ -204,12 +214,17 @@ class TCGADataModel():
         test (bool): whether or not to subset columns in mutation data, for testing
         """
         # load training data
-        if train_data_type == 'expression':
+        if compressed_data:
+            self.data_df = du.load_compressed_data(train_data_type,
+                                                   n_dim=n_dim,
+                                                   verbose=self.verbose,
+                                                   debug=debug)
+        elif train_data_type == 'expression':
             self.data_df = du.load_expression_data(verbose=self.verbose,
-                                                    debug=debug)
+                                                   debug=debug)
         elif train_data_type == 'methylation':
             self.data_df = du.load_methylation_data(verbose=self.verbose,
-                                                     debug=debug)
+                                                    debug=debug)
 
         if sample_info_df is None:
             self.sample_info_df = du.load_sample_info(verbose=self.verbose)

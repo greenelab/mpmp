@@ -321,17 +321,31 @@ def subsample_to_smallest_cancer_type(X_df,
     return X_ss_df, y_ss_df
 
 
-def filter_to_cross_data_samples(X_df, y_df, debug=False, verbose=False):
+def filter_to_cross_data_samples(X_df,
+                                 y_df,
+                                 debug=False,
+                                 verbose=False,
+                                 compressed_data=False,
+                                 n_dim=None):
     """Filter dataset to samples included in all data modalities."""
 
     # first, get intersection of samples in all training datasets
+
+    if debug:
+        data_types = cfg.subsampled_data_types
+    elif compressed_data:
+        data_types = cfg.compressed_data_types
+    else:
+        data_types = cfg.data_types
+
     valid_samples = None
-    data_types = cfg.subsampled_data_types if debug else cfg.data_types
     for data_type, data_file in data_types.items():
         # get sample IDs for the given data type/processed data file
         if verbose:
             print('Loading sample IDs for {} data'.format(data_type))
         # TODO this may take some time to load, so we could cache it somewhere
+        if compressed_data:
+            data_file = str(data_file).format(n_dim)
         df = pd.read_csv(data_file, sep='\t', usecols=[0], index_col=0)
         if valid_samples is None:
             valid_samples = df.index
@@ -340,7 +354,13 @@ def filter_to_cross_data_samples(X_df, y_df, debug=False, verbose=False):
 
     # then reindex data and labels to common sample IDs
     if verbose:
-        print('Taking intersection of sample IDs')
-    return (X_df.reindex(valid_samples.intersection(X_df.index)),
-            y_df.reindex(valid_samples.intersection(y_df.index)))
+        print('Taking intersection of sample IDs...', end='')
+
+    X_filtered_df = X_df.reindex(valid_samples.intersection(X_df.index))
+    y_filtered_df = y_df.reindex(valid_samples.intersection(y_df.index))
+
+    if verbose:
+        print('done')
+
+    return (X_filtered_df, y_filtered_df)
 

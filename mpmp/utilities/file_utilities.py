@@ -32,19 +32,40 @@ def construct_filename(output_dir,
     if identifier is None:
         # this might be the case for files that pertain to the whole experiment
         # (e.g. metadata/parameters file)
-        return Path(output_dir,
-                    '{}_s{}_{}{}'.format(training_data,
-                                         seed,
-                                         file_descriptor,
-                                         extension))
+        try:
+            return Path(output_dir,
+                        '{}_s{}_n{}_{}{}'.format(training_data,
+                                                 seed,
+                                                 model_options.n_dim,
+                                                 file_descriptor,
+                                                 extension))
+        except AttributeError:
+            # no n_dim in model_options => not a compressed model
+            return Path(output_dir,
+                        '{}_s{}_{}{}'.format(training_data,
+                                             seed,
+                                             file_descriptor,
+                                             extension))
     else:
-        return Path(output_dir,
-                    '{}_{}_{}_s{}_{}{}'.format(identifier,
-                                               training_data,
-                                               signal,
-                                               seed,
-                                               file_descriptor,
-                                               extension))
+        # TODO probably a better way to do this
+        try:
+            return Path(output_dir,
+                        '{}_{}_{}_s{}_n{}_{}{}'.format(identifier,
+                                                       training_data,
+                                                       signal,
+                                                       seed,
+                                                       model_options.n_dim,
+                                                       file_descriptor,
+                                                       extension))
+        except AttributeError:
+            # no n_dim in model_options => not a compressed model
+            return Path(output_dir,
+                        '{}_{}_{}_s{}_{}{}'.format(identifier,
+                                                   training_data,
+                                                   signal,
+                                                   seed,
+                                                   file_descriptor,
+                                                   extension))
 
 
 def save_model_options(output_dir, model_options):
