@@ -343,10 +343,20 @@ def filter_to_cross_data_samples(X_df,
         # get sample IDs for the given data type/processed data file
         if verbose:
             print('Loading sample IDs for {} data'.format(data_type))
+
         # TODO this may take some time to load, so we could cache it somewhere
         if compressed_data:
             data_file = str(data_file).format(n_dim)
-        df = pd.read_csv(data_file, sep='\t', usecols=[0], index_col=0)
+
+        if (not compressed_data) and (data_type == 'me_450k'):
+            # use sample list from compressed 450K methylation data
+            # to avoid memory issues
+            # this is a hack that should probably be cleaned up eventually
+            df = pd.read_csv(str(cfg.compressed_data_types[data_type]).format('100'),
+                             sep='\t', usecols=[0], index_col=0)
+        else:
+            df = pd.read_csv(data_file, sep='\t', usecols=[0], index_col=0)
+
         if valid_samples is None:
             valid_samples = df.index
         else:
