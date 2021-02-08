@@ -166,20 +166,7 @@ axarr[0].set_ylabel('Number of valid probes')
 axarr[1].set_title('Samples removed vs. valid probes, large range')
 plt.tight_layout()
 
-# remove probes with missing values, and transpose to be a
-# samples x probes matrix
-tcga_methylation_df = (tcga_methylation_df
-    .dropna(axis='columns')
-    .sort_index(axis='rows')
-    .sort_index(axis='columns')
-)
 
-tcga_methylation_df.index.rename('sample_id', inplace=True)
-print(tcga_methylation_df.shape)# update sample IDs to remove multiple samples measured on the same tumor
-# and to map with the clinical information
-tcga_methylation_df.index = tcga_methylation_df.index.str.slice(start=0, stop=15)
-tcga_methylation_df = tcga_methylation_df.loc[~tcga_methylation_df.index.duplicated(), :]print(tcga_methylation_df.shape)
-tcga_methylation_df.iloc[:5, :5]tcga_methylation_df.to_csv(cfg.methylation_data, sep='\t', compression='gzip', float_format='%.3g')
 # In[10]:
 
 
@@ -224,10 +211,9 @@ print(tcga_methylation_df.shape)
 filtered_file = os.path.join(output_dir,
                              'methylation_processed_n{}_i{}.tsv.gz'.format(n_filter, n_impute))
 print(filtered_file)
+
 tcga_methylation_df.to_csv(filtered_file, sep='\t', float_format='%.3g')
-
-
-# In[12]:
+# In[11]:
 
 
 from sklearn.decomposition import PCA
@@ -236,14 +222,34 @@ pca_dir = os.path.join(cfg.data_dir, 'me_compressed')
 os.makedirs(pca_dir, exist_ok=True)
 
 n_pcs_list = [100, 1000, 5000]
+var_exp_list = []
 for n_pcs in n_pcs_list:
     pca = PCA(n_components=n_pcs)
     me_pca = pca.fit_transform(tcga_methylation_df)
     print(me_pca.shape)
+    var_exp_list.append(pca.explained_variance_ratio_)
     me_pca = pd.DataFrame(me_pca, index=tcga_methylation_df.index)
     me_pca.to_csv(os.path.join(pca_dir,
                                'me_27k_f{}_i{}_pc{}.tsv.gz'.format(
                                    n_filter, n_impute, n_pcs)),
                   sep='\t',
                   float_format='%.3g')
+
+
+# In[12]:
+
+
+# plot PCA variance explained
+sns.set({'figure.figsize': (15, 4)})
+fig, axarr = plt.subplots(1, 3)
+
+for ix, ve in enumerate(var_exp_list):
+    sns.lineplot(x=range(len(ve)), y=ve, ax=axarr[ix])
+    axarr[ix].set_title('{} PCs, total variance explained: {:.4f}'.format(
+        n_pcs_list[ix], sum(ve, 0)))
+    axarr[ix].set_xlabel('# of PCs')
+    if ix == 0:
+        axarr[ix].set_ylabel('Normalized component eigenvalue')
+plt.suptitle('27k methylation data, # PCs vs. variance explained')
+plt.subplots_adjust(top=0.85)
 

@@ -234,13 +234,36 @@ pca_dir = os.path.join(cfg.data_dir, 'exp_compressed')
 os.makedirs(pca_dir, exist_ok=True)
 
 n_pcs_list = [100, 1000, 5000]
+var_exp_list = []
 for n_pcs in n_pcs_list:
     pca = PCA(n_components=n_pcs)
     exp_pca = pca.fit_transform(tcga_scaled_df)
     print(exp_pca.shape)
+    var_exp_list.append(pca.explained_variance_ratio_)
     exp_pca = pd.DataFrame(exp_pca, index=tcga_scaled_df.index)
     exp_pca.to_csv(os.path.join(pca_dir,
                                'exp_std_pc{}.tsv.gz'.format(n_pcs)),
                    sep='\t',
                    float_format='%.3g')
+
+
+# In[18]:
+
+
+# plot PCA variance explained
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+sns.set({'figure.figsize': (15, 4)})
+fig, axarr = plt.subplots(1, 3)
+
+for ix, ve in enumerate(var_exp_list):
+    sns.lineplot(x=range(len(ve)), y=ve, ax=axarr[ix])
+    axarr[ix].set_title('{} PCs, total variance explained: {:.4f}'.format(
+        n_pcs_list[ix], sum(ve, 0)))
+    axarr[ix].set_xlabel('# of PCs')
+    if ix == 0:
+        axarr[ix].set_ylabel('Normalized component eigenvalue')
+plt.suptitle('Expression data, # PCs vs. variance explained')
+plt.subplots_adjust(top=0.85)
 

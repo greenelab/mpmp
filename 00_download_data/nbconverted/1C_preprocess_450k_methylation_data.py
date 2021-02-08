@@ -4,8 +4,6 @@
 # ## Preprocess pan-cancer 450K methylation data
 
 # Load the downloaded data and curate sample IDs.
-# 
-# TODO: look at cancer type composition of represented samples (are any missing?)
 
 # In[1]:
 
@@ -129,7 +127,7 @@ print(tcga_methylation_df.shape)
 # 
 # I created [this issue](https://github.com/greenelab/mpmp/issues/15) to investigate/remind myself of this instability in the future, but I don't think it'll matter that much in practice.
 
-# In[9]:
+# In[8]:
 
 
 from sklearn.decomposition import PCA
@@ -153,4 +151,26 @@ for n_pcs in n_pcs_list:
                          n_filter, n_impute, n_pcs)),
         sep='\t',
         float_format='%.3g')
+
+
+# In[9]:
+
+
+# plot PCA variance explained
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+sns.set({'figure.figsize': (15, 4)})
+fig, axarr = plt.subplots(1, 3)
+
+for ix, n_pcs in enumerate(n_pcs_list):
+    ve = pca.explained_variance_ratio_[:n_pcs]
+    sns.lineplot(x=range(n_pcs), y=ve, ax=axarr[ix])
+    axarr[ix].set_title('{} PCs, total variance explained: {:.4f}'.format(
+        n_pcs_list[ix], sum(ve, 0)))
+    axarr[ix].set_xlabel('# of PCs')
+    if ix == 0:
+        axarr[ix].set_ylabel('Normalized component eigenvalue')
+plt.suptitle('450k methylation data, # PCs vs. variance explained')
+plt.subplots_adjust(top=0.85)
 
