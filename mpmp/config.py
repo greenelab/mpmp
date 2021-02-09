@@ -10,6 +10,9 @@ results_dir = repo_root / 'results'
 raw_data_dir = data_dir / 'raw'
 pancan_data = data_dir / 'pancancer_data.pkl'
 sample_counts = data_dir / 'tcga_sample_counts.tsv'
+
+# location of sample info
+sample_info_dir = data_dir / 'sample_info'
 sample_info = data_dir / 'tcga_sample_identifiers.tsv'
 
 # locations of processed multimodal data files
