@@ -364,3 +364,42 @@ def filter_to_cross_data_samples(X_df,
 
     return (X_filtered_df, y_filtered_df)
 
+
+def get_and_save_sample_info(tcga_df,
+                             sampletype_codes_dict,
+                             cancertype_codes_dict,
+                             training_data='expression'):
+    """TODO: document"""
+
+    # extract sample type in the order of the gene expression matrix
+    tcga_id = pd.DataFrame(tcga_df.index)
+
+    # extract the last two digits of the barcode and recode sample-type
+    tcga_id = tcga_id.assign(sample_type = tcga_id.sample_id.str[-2:])
+    tcga_id.sample_type = tcga_id.sample_type.replace(sampletype_codes_dict)
+
+    # extract the first two ID numbers after `TCGA-` and recode cancer-type
+    tcga_id = tcga_id.assign(cancer_type = tcga_id.sample_id.str[5:7])
+    tcga_id.cancer_type = tcga_id.cancer_type.replace(cancertype_codes_dict)
+
+    # append cancer-type with sample-type to generate stratification variable
+    tcga_id = tcga_id.assign(id_for_stratification = tcga_id.cancer_type.str.cat(tcga_id.sample_type))
+
+    # get stratification counts - function cannot work with singleton strats
+    stratify_counts = tcga_id.id_for_stratification.value_counts().to_dict()
+
+    # recode stratification variables if they are singletons
+    tcga_id = tcga_id.assign(stratify_samples_count = tcga_id.id_for_stratification)
+    tcga_id.stratify_samples_count = tcga_id.stratify_samples_count.replace(stratify_counts)
+    tcga_id.loc[tcga_id.stratify_samples_count == 1, "stratify_samples"] = "other"
+
+    # write files for downstream use
+    os.makedirs(cfg.sample_info_dir, exist_ok=True)
+    fname = os.path.join(cfg.sample_info_dir,
+                         'tcga_{}_sample_identifiers.tsv'.format(training_data))
+
+    tcga_id.drop(['stratify_samples', 'stratify_samples_count'], axis='columns', inplace=True)
+    tcga_id.to_csv(fname, sep='\t', index=False)
+
+    return tcga_id
+
