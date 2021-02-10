@@ -13,16 +13,27 @@ sample_counts = data_dir / 'tcga_sample_counts.tsv'
 
 # location of sample info
 sample_info_dir = data_dir / 'sample_info'
-sample_info = data_dir / 'tcga_sample_identifiers.tsv'
+expression_sample_info = sample_info_dir / 'tcga_expression_sample_identifiers.tsv'
+me_27k_sample_info = sample_info_dir / 'tcga_me_27k_sample_identifiers.tsv'
+me_450k_sample_info = sample_info_dir / 'tcga_me_450k_sample_identifiers.tsv'
+rppa_sample_info = sample_info_dir / 'tcga_rppa_sample_identifiers.tsv'
+sample_infos = {
+    'expression': expression_sample_info,
+    'me_27k': me_27k_sample_info,
+    'me_450k': me_450k_sample_info,
+    'rppa': rppa_sample_info,
+}
 
 # locations of processed multimodal data files
-rnaseq_data = data_dir / 'tcga_expression_matrix_processed.tsv.gz'
-# use this as default methylation data for now
-# this is 27K methylation data, 450K is too large to use unprocessed
-methylation_data = data_dir / 'methylation_preprocessed' / 'methylation_processed_n10_i5.tsv.gz'
+expression_data = data_dir / 'tcga_expression_matrix_processed.tsv.gz'
+methylation_27k_data = data_dir / 'me_preprocessed' / 'methylation_processed_n10_i5.tsv.gz'
+methylation_450k_data = data_dir / 'methylation_450k_f10_i5_mad100000.pkl'
+rppa_data = data_dir / 'tcga_rppa_matrix_processed.tsv'
 data_types = {
-    'expression': rnaseq_data,
-    'methylation': methylation_data,
+    'expression': expression_data,
+    'me_27k': methylation_27k_data,
+    'me_450k': methylation_450k_data,
+    'rppa': rppa_data,
 }
 # If true, use only the samples present in both the 27k and 450k methylation datsets
 use_only_cross_data_samples = True
