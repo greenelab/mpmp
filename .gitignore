@@ -7,6 +7,7 @@ data/raw/*
 data/subsampled/*
 data/expression_confusion_matrix.tsv
 data/exp_compressed/*
+data/methylation_450k*.pkl
 data/me_compressed/*
 data/me_preprocessed/*
 data/tcga_rppa_matrix_preprocessed.tsv
