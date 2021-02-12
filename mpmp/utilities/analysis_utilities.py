@@ -1,3 +1,4 @@
+import os
 import sys
 from pathlib import Path
 
@@ -260,5 +261,53 @@ def compare_experiment(single_cancer_df,
         results.append([id_str, delta_mean, p_value])
 
     return pd.DataFrame(results, columns=['identifier', 'delta_mean', 'p_value'])
+
+
+def generate_nonzero_coefficients(results_dir):
+    """Generate coefficients from mutation prediction model fits.
+
+    Loading all coefficients into memory at once is prohibitive, so we generate
+    them individually and analyze/summarize in analysis scripts.
+
+    Arguments
+    ---------
+    results_dir (str): directory to look in for results, subdirectories should
+                       be experiments for individual genes
+
+    Yields
+    ------
+    identifier (str): identifier for given coefficients
+    coefs (dict): list of nonzero coefficients for each fold of CV, for the
+                  given identifier
+    """
+    coefs = {}
+    all_features = None
+    for gene_name in os.listdir(results_dir):
+        gene_dir = os.path.join(results_dir, gene_name)
+        if not os.path.isdir(gene_dir): continue
+        for coefs_file in os.listdir(gene_dir):
+            if coefs_file[0] == '.': continue
+            if 'signal' not in coefs_file: continue
+            if 'coefficients' not in coefs_file: continue
+            training_data = coefs_file.split('_')[1]
+            full_coefs_file = os.path.join(gene_dir, coefs_file)
+            coefs_df = pd.read_csv(full_coefs_file, sep='\t')
+            if all_features is None:
+                all_features = np.unique(coefs_df.feature.values)
+            identifier = '{}_{}'.format(gene_name, training_data)
+            coefs = process_coefs(coefs_df)
+            yield identifier, coefs
+
+
+def process_coefs(coefs_df):
+    """Process and return nonzero coefficients for a single identifier"""
+    id_coefs = []
+    for fold in np.sort(np.unique(coefs_df.fold.values)):
+        conditions = ((coefs_df.fold == fold) &
+                      (coefs_df['abs'] > 0))
+        nz_coefs_df = coefs_df[conditions]
+        id_coefs.append(list(zip(nz_coefs_df.feature.values,
+                                 nz_coefs_df.weight.values)))
+    return id_coefs
 
 
