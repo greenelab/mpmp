@@ -35,9 +35,7 @@ manifest_df.head(2)
 tcga_methylation_df = (
     pd.read_csv(os.path.join(cfg.raw_data_dir, manifest_df.loc['methylation_27k'].filename),
                 index_col=0,
-                sep='\t',
-                dtype='float64',
-                converters={0: str})
+                sep='\t')
       .transpose()
 )
 
@@ -212,8 +210,14 @@ filtered_file = os.path.join(output_dir,
                              'methylation_processed_n{}_i{}.tsv.gz'.format(n_filter, n_impute))
 print(filtered_file)
 
-tcga_methylation_df.to_csv(filtered_file, sep='\t', float_format='%.3g')
+
 # In[11]:
+
+
+tcga_methylation_df.to_csv(filtered_file, sep='\t', float_format='%.3g')
+
+
+# In[12]:
 
 
 from sklearn.decomposition import PCA
@@ -224,7 +228,7 @@ os.makedirs(pca_dir, exist_ok=True)
 n_pcs_list = [100, 1000, 5000]
 var_exp_list = []
 for n_pcs in n_pcs_list:
-    pca = PCA(n_components=n_pcs)
+    pca = PCA(n_components=n_pcs, random_state=cfg.default_seed)
     me_pca = pca.fit_transform(tcga_methylation_df)
     print(me_pca.shape)
     var_exp_list.append(pca.explained_variance_ratio_)
@@ -236,7 +240,7 @@ for n_pcs in n_pcs_list:
                   float_format='%.3g')
 
 
-# In[12]:
+# In[13]:
 
 
 # plot PCA variance explained
@@ -244,12 +248,12 @@ sns.set({'figure.figsize': (15, 4)})
 fig, axarr = plt.subplots(1, 3)
 
 for ix, ve in enumerate(var_exp_list):
-    sns.lineplot(x=range(len(ve)), y=ve, ax=axarr[ix])
-    axarr[ix].set_title('{} PCs, total variance explained: {:.4f}'.format(
+    sns.lineplot(x=range(len(ve)), y=np.cumsum(ve), ax=axarr[ix])
+    axarr[ix].set_title('{} PCs, variance explained: {:.4f}'.format(
         n_pcs_list[ix], sum(ve, 0)))
     axarr[ix].set_xlabel('# of PCs')
     if ix == 0:
-        axarr[ix].set_ylabel('Normalized component eigenvalue')
+        axarr[ix].set_ylabel('Cumulative variance explained')
 plt.suptitle('27k methylation data, # PCs vs. variance explained')
 plt.subplots_adjust(top=0.85)
 

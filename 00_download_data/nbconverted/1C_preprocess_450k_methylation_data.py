@@ -138,8 +138,8 @@ os.makedirs(pca_dir, exist_ok=True)
 n_pcs_list = [100, 1000, 5000]
 
 # it's much faster to just calculate this once for max n_pcs, and truncate it,
-# than to recalculated it for each number of PCs we want
-pca = PCA(n_components=max(n_pcs_list))
+# than to recalculate it for each number of PCs we want
+pca = PCA(n_components=max(n_pcs_list), random_state=cfg.default_seed)
 me_pca = pca.fit_transform(tcga_methylation_df)
 print(me_pca.shape)
 
@@ -153,7 +153,7 @@ for n_pcs in n_pcs_list:
         float_format='%.3g')
 
 
-# In[9]:
+# In[10]:
 
 
 # plot PCA variance explained
@@ -165,12 +165,12 @@ fig, axarr = plt.subplots(1, 3)
 
 for ix, n_pcs in enumerate(n_pcs_list):
     ve = pca.explained_variance_ratio_[:n_pcs]
-    sns.lineplot(x=range(n_pcs), y=ve, ax=axarr[ix])
-    axarr[ix].set_title('{} PCs, total variance explained: {:.4f}'.format(
+    sns.lineplot(x=range(n_pcs), y=np.cumsum(ve), ax=axarr[ix])
+    axarr[ix].set_title('{} PCs, variance explained: {:.4f}'.format(
         n_pcs_list[ix], sum(ve, 0)))
     axarr[ix].set_xlabel('# of PCs')
     if ix == 0:
-        axarr[ix].set_ylabel('Normalized component eigenvalue')
+        axarr[ix].set_ylabel('Cumulative variance explained')
 plt.suptitle('450k methylation data, # PCs vs. variance explained')
 plt.subplots_adjust(top=0.85)
 
