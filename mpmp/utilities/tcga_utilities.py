@@ -349,9 +349,10 @@ def filter_to_cross_data_samples(X_df,
             data_file = str(data_file).format(n_dim)
 
         if (not compressed_data) and (data_type == 'me_450k'):
-            # use sample list from compressed 450K methylation data
-            # to avoid memory issues
-            # this is a hack that should probably be cleaned up eventually
+            # use sample list from compressed 450K methylation data with 100
+            # PCs, to minimize memory usage
+            # the filtering steps in the 450K preprocessing notebook should
+            # ensure that the samples used here are the same
             df = pd.read_csv(str(cfg.compressed_data_types[data_type]).format('100'),
                              sep='\t', usecols=[0], index_col=0)
         else:

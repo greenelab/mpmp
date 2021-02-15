@@ -74,6 +74,8 @@ def load_methylation_data(training_data='methylation',
         if verbose:
             print('Loading DNA methylation data...', file=sys.stderr)
         if training_data == 'me_450k':
+            # since this dataset is so large, loading it from a pickle is
+            # much faster than loading it from a TSV or .gz file
             methylation_df = pd.read_pickle(cfg.data_types[training_data])
         else:
             methylation_df = pd.read_csv(cfg.data_types[training_data],
