@@ -9,7 +9,11 @@
 
 
 import os
+
+import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 import mpmp.config as cfg
 
@@ -144,8 +148,14 @@ tcga_expr_df = tcga_expr_df.loc[~tcga_expr_df.index.duplicated(), :]
 # filter for valid Entrez gene identifiers
 tcga_expr_df = tcga_expr_df.loc[:, tcga_expr_df.columns.isin(gene_df.entrez_gene_id.astype(str))]
 
-tcga_expr_df.to_csv(cfg.rnaseq_data, sep='\t', compression='gzip', float_format='%.3g')
+
 # In[13]:
+
+
+tcga_expr_df.to_csv(cfg.rnaseq_data, sep='\t', compression='gzip', float_format='%.3g')
+
+
+# In[14]:
 
 
 print(tcga_expr_df.shape)
@@ -160,7 +170,7 @@ tcga_expr_df.head()
 # 
 # The goal is to use this info to stratify training (90%) and testing (10%) balanced by cancer-type and sample-type. 
 
-# In[14]:
+# In[15]:
 
 
 # extract sample type in the order of the gene expression matrix
@@ -186,7 +196,7 @@ tcga_id.stratify_samples_count = tcga_id.stratify_samples_count.replace(stratify
 tcga_id.loc[tcga_id.stratify_samples_count == 1, "stratify_samples"] = "other"
 
 
-# In[15]:
+# In[16]:
 
 
 # write out files for downstream use
@@ -201,7 +211,7 @@ print(tcga_id.shape)
 tcga_id.head()
 
 
-# In[16]:
+# In[17]:
 
 
 cancertype_count_df = (
@@ -216,7 +226,7 @@ cancertype_count_df.to_csv(file, sep='\t', index=False)
 cancertype_count_df.head()
 
 
-# In[17]:
+# In[18]:
 
 
 # take PCA + save to file, for equal comparison with methylation
@@ -234,13 +244,34 @@ pca_dir = os.path.join(cfg.data_dir, 'exp_compressed')
 os.makedirs(pca_dir, exist_ok=True)
 
 n_pcs_list = [100, 1000, 5000]
+var_exp_list = []
 for n_pcs in n_pcs_list:
-    pca = PCA(n_components=n_pcs)
+    pca = PCA(n_components=n_pcs, random_state=cfg.default_seed)
     exp_pca = pca.fit_transform(tcga_scaled_df)
     print(exp_pca.shape)
+    var_exp_list.append(pca.explained_variance_ratio_)
     exp_pca = pd.DataFrame(exp_pca, index=tcga_scaled_df.index)
     exp_pca.to_csv(os.path.join(pca_dir,
                                'exp_std_pc{}.tsv.gz'.format(n_pcs)),
                    sep='\t',
                    float_format='%.3g')
+
+
+# In[19]:
+
+
+# plot PCA variance explained
+
+sns.set({'figure.figsize': (15, 4)})
+fig, axarr = plt.subplots(1, 3)
+
+for ix, ve in enumerate(var_exp_list):
+    sns.lineplot(x=range(len(ve)), y=np.cumsum(ve), ax=axarr[ix])
+    axarr[ix].set_title('{} PCs, variance explained: {:.4f}'.format(
+        n_pcs_list[ix], sum(ve, 0)))
+    axarr[ix].set_xlabel('# of PCs')
+    if ix == 0:
+        axarr[ix].set_ylabel('Cumulative variance explained')
+plt.suptitle('Expression data, # PCs vs. variance explained')
+plt.subplots_adjust(top=0.85)
 
