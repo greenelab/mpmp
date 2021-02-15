@@ -10,6 +10,7 @@ data/exp_compressed/*
 data/methylation_450k*.pkl
 data/me_compressed/*
 data/me_preprocessed/*
+data/sample_info/*
 data/tcga_rppa_matrix_preprocessed.tsv
 data/tcga_expression_matrix_processed.tsv.gz
 data/tcga_methylation_matrix_processed.tsv.gz
