@@ -63,7 +63,7 @@ def process_args():
                       help='if included, subset gene features to this number of '
                            'features having highest mean absolute deviation')
     opts.add_argument('--training_data', type=str, default='expression',
-                      choices=['expression', 'methylation'],
+                      choices=list(cfg.data_types.keys()),
                       help='what data type to train model on')
 
     args = parser.parse_args()
@@ -74,7 +74,7 @@ def process_args():
         args.log_file = Path(args.results_dir, 'log_skipped.tsv').resolve()
 
     # check that all provided cancer types are valid TCGA acronyms
-    sample_info_df = du.load_sample_info(args.verbose)
+    sample_info_df = du.load_sample_info(args.training_data, args.verbose)
     tcga_cancer_types = list(np.unique(sample_info_df.cancer_type))
 
     if args.cancer_types is None:

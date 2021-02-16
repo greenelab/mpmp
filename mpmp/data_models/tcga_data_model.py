@@ -219,23 +219,21 @@ class TCGADataModel():
                                                    n_dim=n_dim,
                                                    verbose=self.verbose,
                                                    debug=debug)
-        elif train_data_type == 'expression':
-            self.data_df = du.load_expression_data(verbose=self.verbose,
-                                                   debug=debug)
-        elif train_data_type in ['methylation', 'me_27k', 'me_450k']:
-            self.data_df = du.load_methylation_data(train_data_type,
-                                                    verbose=self.verbose,
-                                                    debug=debug)
+        else:
+            self.data_df = du.load_raw_data(train_data_type,
+                                            verbose=self.verbose,
+                                            debug=debug)
 
         if sample_info_df is None:
-            self.sample_info_df = du.load_sample_info(verbose=self.verbose)
+            self.sample_info_df = du.load_sample_info(train_data_type,
+                                                      verbose=self.verbose)
         else:
             # sometimes we load sample info in the calling script as part of
             # argument processing, etc
             # in that case, we don't need to load it again
             self.sample_info_df = sample_info_df
 
-        # load and unpack pancancer data
+        # load and unpack pancancer mutation/CNV/TMB data
         # this data is described in more detail in the load_pancancer_data docstring
         if test:
             # for testing, just load a subset of pancancer data,
