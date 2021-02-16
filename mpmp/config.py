@@ -35,7 +35,8 @@ data_types = {
     'me_450k': methylation_450k_data,
     'rppa': rppa_data,
 }
-# If true, use only the samples present in both the 27k and 450k methylation datsets
+# if true, use only the samples present in all datasets
+# if false, use all the samples present in the dataset being analyzed
 use_only_cross_data_samples = True
 
 # locations of compressed multimodal data files

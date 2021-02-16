@@ -119,6 +119,40 @@ tcga_methylation_df.dropna(axis='columns', inplace=True)
 print(tcga_methylation_df.shape)
 
 
+# ### Dimension "trimming" by MAD
+# 
+# Like with gene expression data where we generally use the top 8,000 (or so) genes by mean absolute deviation, one way to cut down on some of the dimensionality of this dataset is to filter features by MAD. Here, we'll filter to the top 100K features.
+
+# In[8]:
+
+
+mad_genes = tcga_methylation_df.mad(axis=0)
+mad_genes.sort_values(ascending=False, inplace=True)
+print(mad_genes.iloc[:10])
+
+
+# In[9]:
+
+
+n_mad_genes = 100000
+me_mad_df = tcga_methylation_df.loc[:, mad_genes.iloc[:n_mad_genes].index]
+me_mad_df.to_pickle(os.path.join(cfg.data_dir, 
+                                 'methylation_450k_f{}_i{}_mad{}.pkl'.format(
+                                     n_filter, n_impute, n_mad_genes)))
+
+
+# In[10]:
+
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+sns.set()
+sns.histplot(data=mad_genes)
+plt.xlabel('Mean absolute deviation')
+plt.ylabel('Count')
+
+
 # ### Dimension reduction
 # 
 # Since we can't realistically fit a logistic regression model to 300K features, compress the data using PCA with various dimensions, and save the results to tsv files.
@@ -127,7 +161,7 @@ print(tcga_methylation_df.shape)
 # 
 # I created [this issue](https://github.com/greenelab/mpmp/issues/15) to investigate/remind myself of this instability in the future, but I don't think it'll matter that much in practice.
 
-# In[8]:
+# In[11]:
 
 
 from sklearn.decomposition import PCA
@@ -153,7 +187,7 @@ for n_pcs in n_pcs_list:
         float_format='%.3g')
 
 
-# In[10]:
+# In[12]:
 
 
 # plot PCA variance explained

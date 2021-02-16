@@ -222,8 +222,9 @@ class TCGADataModel():
         elif train_data_type == 'expression':
             self.data_df = du.load_expression_data(verbose=self.verbose,
                                                    debug=debug)
-        elif train_data_type == 'methylation':
-            self.data_df = du.load_methylation_data(verbose=self.verbose,
+        elif train_data_type in ['methylation', 'me_27k', 'me_450k']:
+            self.data_df = du.load_methylation_data(train_data_type,
+                                                    verbose=self.verbose,
                                                     debug=debug)
 
         if sample_info_df is None:
