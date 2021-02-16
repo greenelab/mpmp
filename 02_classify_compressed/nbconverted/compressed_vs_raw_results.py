@@ -230,7 +230,7 @@ for ix, gene in enumerate(genes):
 plt.tight_layout()
 
 
-# In[9]:
+# In[12]:
 
 
 raw_compare_df['n_dims'] = 'raw'
@@ -239,23 +239,43 @@ compare_df = (
       .sort_values(by=['training_data', 'n_dims'])
 )
 
-sns.set({'figure.figsize': (18, 6)})
-fig, axarr = plt.subplots(1, 2)
+sns.set({'figure.figsize': (18, 12)})
+fig, axarr = plt.subplots(2, 2)
 
 # plot mean performance over all genes in Vogelstein dataset
-sns.boxplot(data=compare_df, x='n_dims', y='delta_mean', hue='training_data', ax=axarr[0])
-axarr[0].set_title('Prediction for all genes, performance vs. PCA components')
-axarr[0].set_xlabel('Number of PCA components')
-axarr[0].set_ylabel('AUPR(signal) - AUPR(shuffled)')
-axarr[0].set_ylim(-0.3, max(compare_df.delta_mean + 0.05))
+ax = axarr[0, 0]
+sns.boxplot(data=compare_df, x='n_dims', y='delta_mean', hue='training_data', ax=ax)
+ax.set_title('Prediction for all genes, performance vs. PCA components')
+ax.set_xlabel('Number of PCA components')
+ax.set_ylabel('AUPR(signal) - AUPR(shuffled)')
+ax.set_ylim(-0.3, max(compare_df.delta_mean + 0.05))
+
 
 # plot mean performance for genes that are significant for at least one data type
+ax = axarr[0, 1]
 gene_list = compare_df[compare_df.reject_null == True].gene.unique()
-sns.boxplot(data=compare_df[compare_df.gene.isin(gene_list)], x='n_dims', y='delta_mean', hue='training_data', ax=axarr[1])
-axarr[1].set_title('Prediction for sig genes only, performance vs. PCA components')
-axarr[1].set_xlabel('Number of PCA components')
-axarr[1].set_ylabel('AUPR(signal) - AUPR(shuffled)')
-axarr[1].set_ylim(-0.2, max(compare_df.delta_mean + 0.05))
+print(gene_list.shape)
+print(gene_list)
+sns.boxplot(data=compare_df[compare_df.gene.isin(gene_list)], x='n_dims', y='delta_mean', hue='training_data', ax=ax)
+ax.set_title('Prediction for sig genes only, performance vs. PCA components')
+ax.set_xlabel('Number of PCA components')
+ax.set_ylabel('AUPR(signal) - AUPR(shuffled)')
+ax.set_ylim(-0.2, max(compare_df.delta_mean + 0.05))
+
+ax = axarr[1, 0]
+sns.stripplot(data=compare_df, x='n_dims', y='delta_mean', hue='training_data', dodge=True, ax=ax)
+ax.set_title('Prediction for all genes, performance vs. PCA components')
+ax.set_xlabel('Number of PCA components')
+ax.set_ylabel('AUPR(signal) - AUPR(shuffled)')
+ax.set_ylim(-0.3, max(compare_df.delta_mean + 0.05))
+
+ax = axarr[1, 1]
+sns.stripplot(data=compare_df[compare_df.gene.isin(gene_list)], x='n_dims', y='delta_mean',
+              hue='training_data', dodge=True, ax=ax)
+ax.set_title('Prediction for sig genes only, performance vs. PCA components')
+ax.set_xlabel('Number of PCA components')
+ax.set_ylabel('AUPR(signal) - AUPR(shuffled)')
+ax.set_ylim(-0.2, max(compare_df.delta_mean + 0.05))
 
 
 # Takeaways:
