@@ -131,10 +131,6 @@ if __name__ == '__main__':
                               sample_info_df=sample_info_df,
                               verbose=io_args.verbose,
                               debug=model_options.debug)
-    print(tcga_data.data_df.shape)
-    print(tcga_data.sample_info_df.shape)
-    exit()
-
     genes_df = tcga_data.load_gene_set(io_args.gene_set)
 
     # we want to run mutation prediction experiments:
