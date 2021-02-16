@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 import mpmp.config as cfg
+import mpmp.utilities.tcga_utilities as tu
 
 
 # ### Load and process methylation data
@@ -34,10 +35,10 @@ manifest_df.head(2)
 
 tcga_methylation_df = (
     pd.read_csv(os.path.join(cfg.raw_data_dir, manifest_df.loc['methylation_27k'].filename),
-                index_col=0,
-                sep='\t')
+                index_col=0, sep='\t')
       .transpose()
 )
+tcga_methylation_df.index.rename('sample_id', inplace=True)
 
 print(tcga_methylation_df.shape)
 tcga_methylation_df.iloc[:5, :5]
@@ -217,7 +218,75 @@ print(filtered_file)
 tcga_methylation_df.to_csv(filtered_file, sep='\t', float_format='%.3g')
 
 
+# ### Read TCGA Barcode Curation Information
+# 
+# Extract information from TCGA barcodes - `cancer-type` and `sample-type`. See https://github.com/cognoma/cancer-data for more details
+
+# In[11]:
+
+
+# commit from https://github.com/cognoma/cancer-data/
+sample_commit = 'da832c5edc1ca4d3f665b038d15b19fced724f4c'
+url = 'https://raw.githubusercontent.com/cognoma/cancer-data/{}/mapping/tcga_cancertype_codes.csv'.format(sample_commit)
+cancer_types_df = pd.read_csv(url,
+                              dtype='str',
+                              keep_default_na=False)
+
+cancertype_codes_dict = dict(zip(cancer_types_df['TSS Code'],
+                                 cancer_types_df.acronym))
+cancer_types_df.head(2)
+
+
 # In[12]:
+
+
+url = 'https://raw.githubusercontent.com/cognoma/cancer-data/{}/mapping/tcga_sampletype_codes.csv'.format(sample_commit)
+sample_types_df = pd.read_csv(url, dtype='str')
+
+sampletype_codes_dict = dict(zip(sample_types_df.Code,
+                                 sample_types_df.Definition))
+sample_types_df.head(2)
+
+
+# ### Process TCGA cancer type and sample type info from barcodes
+# 
+# See https://gdc.cancer.gov/resources-tcga-users/tcga-code-tables/tissue-source-site-codes for more details.
+
+# In[13]:
+
+
+# get sample info and save to file
+
+tcga_id = tu.get_and_save_sample_info(tcga_methylation_df,
+                                      sampletype_codes_dict,
+                                      cancertype_codes_dict,
+                                      training_data='me_27k')
+
+print(tcga_id.shape)
+tcga_id.head()
+
+
+# In[14]:
+
+
+# get cancer type counts and save to file
+cancertype_count_df = (
+    pd.DataFrame(tcga_id.cancer_type.value_counts())
+    .reset_index()
+    .rename({'index': 'cancertype', 'cancer_type': 'n ='}, axis='columns')
+)
+
+file = os.path.join(cfg.sample_info_dir, 'tcga_me_27k_sample_counts.tsv')
+cancertype_count_df.to_csv(file, sep='\t', index=False)
+
+cancertype_count_df.head()
+
+
+# ### Dimension reduction
+# 
+# Compress the data using PCA with various dimensions, and save the results to tsv files.
+
+# In[15]:
 
 
 from sklearn.decomposition import PCA
