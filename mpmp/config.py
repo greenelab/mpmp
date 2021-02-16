@@ -16,10 +16,14 @@ sample_info = data_dir / 'tcga_sample_identifiers.tsv'
 rnaseq_data = data_dir / 'tcga_expression_matrix_processed.tsv.gz'
 # use this as default methylation data for now
 # this is 27K methylation data, 450K is too large to use unprocessed
-methylation_data = data_dir / 'methylation_preprocessed' / 'methylation_processed_n10_i5.tsv.gz'
+methylation_27k_data = data_dir / 'me_preprocessed' / 'methylation_processed_n10_i5.tsv.gz'
+# for 450K, trim to top 100K features by MAD
+methylation_450k_data = data_dir / 'methylation_450k_f10_i5_mad100000.pkl'
 data_types = {
     'expression': rnaseq_data,
-    'methylation': methylation_data,
+    'methylation': methylation_27k_data,
+    'me_27k': methylation_27k_data,
+    'me_450k': methylation_450k_data,
 }
 # If true, use only the samples present in both the 27k and 450k methylation datsets
 use_only_cross_data_samples = True

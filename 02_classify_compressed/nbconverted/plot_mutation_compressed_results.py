@@ -86,7 +86,7 @@ compare_df = (
 )
 compare_df['nlog10_p'] = -np.log10(compare_df.corr_pval)
 
-sns.set({'figure.figsize': (24, 18)})
+sns.set({'figure.figsize': (20, 16)})
 sns.set_style('whitegrid')
 fig, axarr = plt.subplots(3, 3)
 
@@ -101,26 +101,26 @@ for row_ix, n_dims in enumerate(compare_df.n_dims.unique()):
         sns.scatterplot(data=data_df, x='delta_mean', y='nlog10_p', hue='reject_null',
                         hue_order=[False, True], ax=ax)
         # add vertical line at 0
-        ax.axvline(x=0, linestyle=':', color='black')
+        ax.axvline(x=0, linestyle='--', color='black', linewidth=1.25)
         # add horizontal line at statistical significance threshold
-        l = ax.axhline(y=-np.log10(SIG_ALPHA), linestyle=':')
+        l = ax.axhline(y=-np.log10(SIG_ALPHA), linestyle='--', linewidth=1.25)
         # label horizontal line with significance threshold
         # (matplotlib makes this fairly difficult, sadly)
         ax.text(0.9, -np.log10(SIG_ALPHA)+0.2,
-                       r'$\alpha = {}$'.format(SIG_ALPHA),
-                       va='center', ha='center', color=l.get_color(),
-                       backgroundcolor=ax.get_facecolor())
+                r'$\mathbf{{\alpha = {}}}$'.format(SIG_ALPHA),
+                va='center', ha='center', color=l.get_color(),
+                backgroundcolor=ax.get_facecolor())
         ax.set_xlabel('AUPR(signal) - AUPR(shuffled)')
         ax.set_ylabel(r'$-\log_{10}($adjusted $p$-value$)$')
         ax.set_xlim((-0.2, 1.0))
         y_max = max(compare_df.nlog10_p)
-        ax.set_ylim((0, y_max+5))
+        ax.set_ylim((0, y_max+2))
         ax.legend(title=r'Reject $H_0$', loc='upper left')
         ax.set_title(r'{} PCs, {} data ({}/{} significant genes)'.format(
             n_dims, training_data_type,
             np.count_nonzero(data_df.reject_null),
             data_df.shape[0]
-        ))
+        ), size=13, pad=10)
 
         # label genes and adjust text to not overlap
         # automatic alignment isn't perfect, can align by hand in inkscape if necessary
@@ -133,6 +133,10 @@ for row_ix, n_dims in enumerate(compare_df.n_dims.unique()):
                     ax=ax, 
                     expand_text=(1., 1.),
                     lim=5)
+        
+plt.suptitle('Mutation prediction, signal vs. shuffled results', size=16)
+plt.tight_layout(w_pad=2, h_pad=2)
+plt.subplots_adjust(top=0.94)
 
 
 # In[6]:
@@ -238,7 +242,7 @@ def label_points(x, y, gene, sig, ax):
 # within each choice of compression dimension
 import itertools as it
 
-sns.set({'figure.figsize': (24, 18)})
+sns.set({'figure.figsize': (20, 16)})
 sns.set_style('whitegrid')
 fig, axarr = plt.subplots(3, 3)
 
@@ -269,25 +273,23 @@ for row_ix, n_dims in enumerate(results_df.n_dims.unique()):
         sns.scatterplot(data=compare_train_df, x='delta_mean', y='nlog10_p', hue='reject_null',
                         hue_order=[False, True], ax=ax)
         # add vertical line at 0
-        ax.axvline(x=0, linestyle=':', color='black')
+        ax.axvline(x=0, linestyle='--', color='black', linewidth=1.25)
         # add horizontal line at statistical significance threshold
-        l = ax.axhline(y=-np.log10(SIG_ALPHA), linestyle=':')
+        l = ax.axhline(y=-np.log10(SIG_ALPHA), linestyle='--', linewidth=1.25)
         # label horizontal line with significance threshold
         # (matplotlib makes this fairly difficult, sadly)
-        ax.text(0.6, -np.log10(SIG_ALPHA)+0.05,
-                r'$\alpha = {}$'.format(SIG_ALPHA),
+        ax.text(0.6, -np.log10(SIG_ALPHA)+0.01,
+                r'$\mathbf{{\alpha = {}}}$'.format(SIG_ALPHA),
                 va='center', ha='center', color=l.get_color(),
                 backgroundcolor=ax.get_facecolor())
         # NOTE compare_results function takes df2 - df1, so we have to invert them here
         ax.set_xlabel('AUPR({}) - AUPR({})'.format(train_2, train_1))
         ax.set_ylabel(r'$-\log_{10}($adjusted $p$-value$)$')
         ax.set_xlim((-0.75, 0.75))
-        y_max = max(compare_train_df.nlog10_p)
-        # ax.set_ylim((0, y_max+5))
-        ax.set_ylim((0, 8))
+        ax.set_ylim((0, 7))
         ax.legend(title=r'Reject $H_0$', loc='upper left')
-        ax.set_title(r'Mutation prediction, {} PCs, {} vs. {}'.format(
-            n_dims, train_2, train_1))
+        ax.set_title(r'{} PCs, {} vs. {}'.format(n_dims, train_2, train_1),
+                     size=13, pad=10)
 
         # label genes and adjust text to not overlap
         # automatic alignment isn't perfect, can align by hand in inkscape if necessary
@@ -300,4 +302,8 @@ for row_ix, n_dims in enumerate(results_df.n_dims.unique()):
                     ax=ax, 
                     expand_text=(1., 1.),
                     lim=5)
+        
+plt.suptitle('Mutation prediction, comparison of data types', size=16)
+plt.tight_layout(w_pad=2, h_pad=2)
+plt.subplots_adjust(top=0.94)
 

@@ -50,11 +50,14 @@ def load_expression_data(scale_input=False, verbose=False, debug=False):
     return rnaseq_df
 
 
-def load_methylation_data(verbose=False, debug=False):
+def load_methylation_data(training_data='methylation',
+                          verbose=False,
+                          debug=False):
     """Load and preprocess saved TCGA DNA methylation data.
 
     Arguments
     ---------
+    training_data (str): what type of methylation data to use (27K or 450K)
     verbose (bool): whether or not to print verbose output
     debug (bool): whether or not to subset data for faster debugging
 
@@ -70,8 +73,13 @@ def load_methylation_data(verbose=False, debug=False):
     else:
         if verbose:
             print('Loading DNA methylation data...', file=sys.stderr)
-        methylation_df = pd.read_csv(cfg.methylation_data, index_col=0, sep='\t')
-
+        if training_data == 'me_450k':
+            # since this dataset is so large, loading it from a pickle is
+            # much faster than loading it from a TSV or .gz file
+            methylation_df = pd.read_pickle(cfg.data_types[training_data])
+        else:
+            methylation_df = pd.read_csv(cfg.data_types[training_data],
+                                         index_col=0, sep='\t')
     return methylation_df
 
 
