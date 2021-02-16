@@ -384,15 +384,15 @@ def get_and_save_sample_info(tcga_df,
 
     Also save info to a TSV file, to use for classification/analysis later.
 
-    Arguments:
-    ----------
+    Arguments
+    ---------
     tcga_df (pd.DataFrame): df with sample IDs as index
     sampletype_codes_dict (dict): maps last 2 digits of TCGA barcode to sample type
     cancertype_codes_dict (dict): maps first 2 digits of TCGA barcode to cancer type
     training_data (str): describes what type of data is being downloaded
 
-    Returns:
-    --------
+    Returns
+    -------
     tcga_id (pd.DataFrame): df describing sample type/cancer type for included samples
     """
 
