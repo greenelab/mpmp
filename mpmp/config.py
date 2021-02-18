@@ -10,22 +10,33 @@ results_dir = repo_root / 'results'
 raw_data_dir = data_dir / 'raw'
 pancan_data = data_dir / 'pancancer_data.pkl'
 sample_counts = data_dir / 'tcga_sample_counts.tsv'
-sample_info = data_dir / 'tcga_sample_identifiers.tsv'
+
+# location of sample info
+sample_info_dir = data_dir / 'sample_info'
+expression_sample_info = sample_info_dir / 'tcga_expression_sample_identifiers.tsv'
+me_27k_sample_info = sample_info_dir / 'tcga_me_27k_sample_identifiers.tsv'
+me_450k_sample_info = sample_info_dir / 'tcga_me_450k_sample_identifiers.tsv'
+rppa_sample_info = sample_info_dir / 'tcga_rppa_sample_identifiers.tsv'
+sample_infos = {
+    'expression': expression_sample_info,
+    'me_27k': me_27k_sample_info,
+    'me_450k': me_450k_sample_info,
+    'rppa': rppa_sample_info,
+}
 
 # locations of processed multimodal data files
-rnaseq_data = data_dir / 'tcga_expression_matrix_processed.tsv.gz'
-# use this as default methylation data for now
-# this is 27K methylation data, 450K is too large to use unprocessed
+expression_data = data_dir / 'tcga_expression_matrix_processed.tsv.gz'
 methylation_27k_data = data_dir / 'me_preprocessed' / 'methylation_processed_n10_i5.tsv.gz'
-# for 450K, trim to top 100K features by MAD
 methylation_450k_data = data_dir / 'methylation_450k_f10_i5_mad100000.pkl'
+rppa_data = data_dir / 'tcga_rppa_matrix_processed.tsv'
 data_types = {
-    'expression': rnaseq_data,
-    'methylation': methylation_27k_data,
+    'expression': expression_data,
     'me_27k': methylation_27k_data,
     'me_450k': methylation_450k_data,
+    'rppa': rppa_data,
 }
-# If true, use only the samples present in both the 27k and 450k methylation datsets
+# if true, use only the samples present in all datasets
+# if false, use all the samples present in the dataset being analyzed
 use_only_cross_data_samples = True
 
 # locations of compressed multimodal data files
@@ -70,6 +81,18 @@ top50_base_url = "https://github.com/greenelab/BioBombe/raw"
 top50_commit = "aedc9dfd0503edfc5f25611f5eb112675b99edc9"
 vogelstein_base_url = "https://github.com/greenelab/pancancer/raw"
 vogelstein_commit = "2a0683b68017fb226f4053e63415e4356191734f"
+
+# repo/commit information to retrieve TCGA code -> (sample|cancer) type map
+# we get this from cognoma: https://github.com/cognoma/cancer-data/
+sample_commit = 'da832c5edc1ca4d3f665b038d15b19fced724f4c'
+cancer_types_url = (
+    'https://raw.githubusercontent.com/cognoma/cancer-data/{}/mapping/tcga_cancertype_codes.csv'.format(
+        sample_commit)
+)
+sample_types_url = (
+    'https://raw.githubusercontent.com/cognoma/cancer-data/{}/mapping/tcga_sampletype_codes.csv'.format(
+        sample_commit)
+)
 
 # data types to standardize columns for
 standardize_data_types = ['expression']

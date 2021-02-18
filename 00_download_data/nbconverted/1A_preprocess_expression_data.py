@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 import mpmp.config as cfg
+import mpmp.utilities.tcga_utilities as tu
 
 
 # ### Read TCGA Barcode Curation Information
@@ -25,26 +26,16 @@ import mpmp.config as cfg
 # In[2]:
 
 
-# commit from https://github.com/cognoma/cancer-data/
-sample_commit = 'da832c5edc1ca4d3f665b038d15b19fced724f4c'
-url = 'https://raw.githubusercontent.com/cognoma/cancer-data/{}/mapping/tcga_cancertype_codes.csv'.format(sample_commit)
-cancer_types_df = pd.read_csv(url,
-                              dtype='str',
-                              keep_default_na=False)
-
-cancertype_codes_dict = dict(zip(cancer_types_df['TSS Code'],
-                                 cancer_types_df.acronym))
+(cancer_types_df,
+ cancertype_codes_dict,
+ sample_types_df,
+ sampletype_codes_dict) = tu.get_tcga_barcode_info()
 cancer_types_df.head(2)
 
 
 # In[3]:
 
 
-url = 'https://raw.githubusercontent.com/cognoma/cancer-data/{}/mapping/tcga_sampletype_codes.csv'.format(sample_commit)
-sample_types_df = pd.read_csv(url, dtype='str')
-
-sampletype_codes_dict = dict(zip(sample_types_df.Code,
-                                 sample_types_df.Definition))
 sample_types_df.head(2)
 
 
@@ -162,69 +153,45 @@ print(tcga_expr_df.shape)
 tcga_expr_df.head()
 
 
-# ### Process TCGA cancer-type and sample-type info from barcodes
+# ### Process TCGA cancer type and sample type info from barcodes
 # 
 # Cancer-type includes `OV`, `BRCA`, `LUSC`, `LUAD`, etc. while sample-type includes `Primary`, `Metastatic`, `Solid Tissue Normal`, etc.
 # 
 # See https://gdc.cancer.gov/resources-tcga-users/tcga-code-tables/tissue-source-site-codes for more details.
 # 
-# The goal is to use this info to stratify training (90%) and testing (10%) balanced by cancer-type and sample-type. 
+# The goal is to use this info to stratify train and test sets by cancer type and sample type. 
 
 # In[15]:
 
 
-# extract sample type in the order of the gene expression matrix
-tcga_id = pd.DataFrame(tcga_expr_df.index)
-
-# extract the last two digits of the barcode and recode sample-type
-tcga_id = tcga_id.assign(sample_type = tcga_id.sample_id.str[-2:])
-tcga_id.sample_type = tcga_id.sample_type.replace(sampletype_codes_dict)
-
-# extract the first two ID numbers after `TCGA-` and recode cancer-type
-tcga_id = tcga_id.assign(cancer_type = tcga_id.sample_id.str[5:7])
-tcga_id.cancer_type = tcga_id.cancer_type.replace(cancertype_codes_dict)
-
-# append cancer-type with sample-type to generate stratification variable
-tcga_id = tcga_id.assign(id_for_stratification = tcga_id.cancer_type.str.cat(tcga_id.sample_type))
-
-# get stratification counts - function cannot work with singleton strats
-stratify_counts = tcga_id.id_for_stratification.value_counts().to_dict()
-
-# recode stratification variables if they are singletons
-tcga_id = tcga_id.assign(stratify_samples_count = tcga_id.id_for_stratification)
-tcga_id.stratify_samples_count = tcga_id.stratify_samples_count.replace(stratify_counts)
-tcga_id.loc[tcga_id.stratify_samples_count == 1, "stratify_samples"] = "other"
-
-
-# In[16]:
-
-
-# write out files for downstream use
-file = os.path.join(cfg.data_dir, 'tcga_sample_identifiers.tsv')
-
-(
-    tcga_id.drop(['stratify_samples', 'stratify_samples_count'], axis='columns')
-    .to_csv(file, sep='\t', index=False)
-)
+# get sample info and save to file
+tcga_id = tu.get_and_save_sample_info(tcga_expr_df,
+                                      sampletype_codes_dict,
+                                      cancertype_codes_dict)
 
 print(tcga_id.shape)
 tcga_id.head()
 
 
-# In[17]:
+# In[15]:
 
 
+# get cancer type counts and save to file
 cancertype_count_df = (
     pd.DataFrame(tcga_id.cancer_type.value_counts())
     .reset_index()
     .rename({'index': 'cancertype', 'cancer_type': 'n ='}, axis='columns')
 )
 
-file = os.path.join(cfg.data_dir, 'tcga_sample_counts.tsv')
+file = os.path.join(cfg.sample_info_dir, 'tcga_expression_sample_counts.tsv')
 cancertype_count_df.to_csv(file, sep='\t', index=False)
 
 cancertype_count_df.head()
 
+
+# ### Dimension reduction
+# 
+# Compress the data using PCA with various dimensions, and save the results to tsv files.
 
 # In[18]:
 

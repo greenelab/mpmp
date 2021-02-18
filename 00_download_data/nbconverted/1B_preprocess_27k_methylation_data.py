@@ -16,11 +16,32 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 import mpmp.config as cfg
+import mpmp.utilities.tcga_utilities as tu
+
+
+# ### Read TCGA Barcode Curation Information
+# 
+# Extract information from TCGA barcodes - `cancer-type` and `sample-type`. See https://github.com/cognoma/cancer-data for more details
+
+# In[2]:
+
+
+(cancer_types_df,
+ cancertype_codes_dict,
+ sample_types_df,
+ sampletype_codes_dict) = tu.get_tcga_barcode_info()
+cancer_types_df.head(2)
+
+
+# In[3]:
+
+
+sample_types_df.head(2)
 
 
 # ### Load and process methylation data
 
-# In[2]:
+# In[4]:
 
 
 # first load manifest file, this tells us the filenames of the raw data files
@@ -29,21 +50,21 @@ manifest_df = pd.read_csv(os.path.join(cfg.data_dir, 'manifest.tsv'),
 manifest_df.head(2)
 
 
-# In[3]:
+# In[5]:
 
 
 tcga_methylation_df = (
     pd.read_csv(os.path.join(cfg.raw_data_dir, manifest_df.loc['methylation_27k'].filename),
-                index_col=0,
-                sep='\t')
+                index_col=0, sep='\t')
       .transpose()
 )
+tcga_methylation_df.index.rename('sample_id', inplace=True)
 
 print(tcga_methylation_df.shape)
 tcga_methylation_df.iloc[:5, :5]
 
 
-# In[4]:
+# In[6]:
 
 
 # how many missing values does each probe (column) have?
@@ -55,7 +76,7 @@ print(probe_na.shape)
 probe_na.sort_values(ascending=False).head()
 
 
-# In[5]:
+# In[7]:
 
 
 # how many missing values does each probe (column) have?
@@ -64,7 +85,7 @@ print(sample_na.shape)
 sample_na.sort_values(ascending=False).head()
 
 
-# In[6]:
+# In[8]:
 
 
 # how many probes (columns) have missing values?
@@ -92,7 +113,7 @@ axarr[1].set_ylabel('Probe count')
 axarr[1].set_title('Methylation NA count per probe, <20 NA values')
 
 
-# In[7]:
+# In[9]:
 
 
 # as an alternate approach to imputation, we could filter out "bad" samples,
@@ -119,7 +140,7 @@ axarr[1].set_ylabel('Sample count')
 axarr[1].set_title('Methylation NA count per sample, >500 NA values')
 
 
-# In[8]:
+# In[10]:
 
 
 # now, the question we want to answer is: if we remove "bad" samples,
@@ -148,7 +169,7 @@ probe_counts_small = count_probes_for_range(range(20))
 probe_counts_large = count_probes_for_range(range(0, 510, 10))
 
 
-# In[9]:
+# In[11]:
 
 
 sns.set({'figure.figsize': (12, 6)})
@@ -165,7 +186,7 @@ axarr[1].set_title('Samples removed vs. valid probes, large range')
 plt.tight_layout()
 
 
-# In[10]:
+# In[12]:
 
 
 # remove 10 samples, then impute for probes with 1 or 2 NA values
@@ -211,13 +232,51 @@ filtered_file = os.path.join(output_dir,
 print(filtered_file)
 
 
-# In[11]:
+# In[13]:
 
 
 tcga_methylation_df.to_csv(filtered_file, sep='\t', float_format='%.3g')
 
 
-# In[12]:
+# ### Process TCGA cancer type and sample type info from barcodes
+# 
+# See https://gdc.cancer.gov/resources-tcga-users/tcga-code-tables/tissue-source-site-codes for more details.
+
+# In[14]:
+
+
+# get sample info and save to file
+
+tcga_id = tu.get_and_save_sample_info(tcga_methylation_df,
+                                      sampletype_codes_dict,
+                                      cancertype_codes_dict,
+                                      training_data='me_27k')
+
+print(tcga_id.shape)
+tcga_id.head()
+
+
+# In[15]:
+
+
+# get cancer type counts and save to file
+cancertype_count_df = (
+    pd.DataFrame(tcga_id.cancer_type.value_counts())
+    .reset_index()
+    .rename({'index': 'cancertype', 'cancer_type': 'n ='}, axis='columns')
+)
+
+file = os.path.join(cfg.sample_info_dir, 'tcga_me_27k_sample_counts.tsv')
+cancertype_count_df.to_csv(file, sep='\t', index=False)
+
+cancertype_count_df.head()
+
+
+# ### Dimension reduction
+# 
+# Compress the data using PCA with various dimensions, and save the results to tsv files.
+
+# In[16]:
 
 
 from sklearn.decomposition import PCA
@@ -240,7 +299,7 @@ for n_pcs in n_pcs_list:
                   float_format='%.3g')
 
 
-# In[13]:
+# In[17]:
 
 
 # plot PCA variance explained

@@ -16,11 +16,32 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 import mpmp.config as cfg
+import mpmp.utilities.tcga_utilities as tu
+
+
+# ### Read TCGA Barcode Curation Information
+# 
+# Extract information from TCGA barcodes - `cancer-type` and `sample-type`. See https://github.com/cognoma/cancer-data for more details
+
+# In[2]:
+
+
+(cancer_types_df,
+ cancertype_codes_dict,
+ sample_types_df,
+ sampletype_codes_dict) = tu.get_tcga_barcode_info()
+cancer_types_df.head(2)
+
+
+# In[3]:
+
+
+sample_types_df.head(2)
 
 
 # ### Load and process methylation data
 
-# In[2]:
+# In[4]:
 
 
 # first load manifest file, this tells us the filenames of the raw data files
@@ -29,7 +50,7 @@ manifest_df = pd.read_csv(os.path.join(cfg.data_dir, 'manifest.tsv'),
 manifest_df.head(3)
 
 
-# In[3]:
+# In[5]:
 
 
 # this is much faster than loading directly from .tsv
@@ -56,7 +77,7 @@ print(tcga_methylation_df.shape)
 tcga_methylation_df.iloc[:5, :5]
 
 
-# In[4]:
+# In[6]:
 
 
 if os.path.isfile(methylation_pickle):
@@ -66,7 +87,7 @@ else:
     tcga_methylation_df.to_pickle(methylation_pickle)
 
 
-# In[5]:
+# In[7]:
 
 
 # update sample IDs to remove multiple samples measured on the same tumor
@@ -76,16 +97,16 @@ tcga_methylation_df = tcga_methylation_df.loc[~tcga_methylation_df.index.duplica
 print(tcga_methylation_df.shape)
 
 
-# In[6]:
+# In[8]:
 
 
-# how many missing values does each probe (column) have?
+# how many missing values does each sample have?
 sample_na = tcga_methylation_df.transpose().isna().sum()
 print(sample_na.shape)
 sample_na.sort_values(ascending=False).head()
 
 
-# In[7]:
+# In[9]:
 
 
 # remove 10 samples with most NAs, then impute for probes with 1 or 2 NA values
@@ -119,11 +140,44 @@ tcga_methylation_df.dropna(axis='columns', inplace=True)
 print(tcga_methylation_df.shape)
 
 
+# ### Process TCGA cancer type and sample type info from barcodes
+# 
+# See https://gdc.cancer.gov/resources-tcga-users/tcga-code-tables/tissue-source-site-codes for more details.
+
+# In[10]:
+
+
+# get sample info and save to file
+tcga_id = tu.get_and_save_sample_info(tcga_methylation_df,
+                                      sampletype_codes_dict,
+                                      cancertype_codes_dict,
+                                      training_data='me_450k')
+
+print(tcga_id.shape)
+tcga_id.head()
+
+
+# In[11]:
+
+
+# get cancer type counts and save to file
+cancertype_count_df = (
+    pd.DataFrame(tcga_id.cancer_type.value_counts())
+    .reset_index()
+    .rename({'index': 'cancertype', 'cancer_type': 'n ='}, axis='columns')
+)
+
+file = os.path.join(cfg.sample_info_dir, 'tcga_me_450k_sample_counts.tsv')
+cancertype_count_df.to_csv(file, sep='\t', index=False)
+
+cancertype_count_df.head()
+
+
 # ### Dimension "trimming" by MAD
 # 
 # Like with gene expression data where we generally use the top 8,000 (or so) genes by mean absolute deviation, one way to cut down on some of the dimensionality of this dataset is to filter features by MAD. Here, we'll filter to the top 100K features.
 
-# In[8]:
+# In[12]:
 
 
 mad_genes = tcga_methylation_df.mad(axis=0)
@@ -131,7 +185,7 @@ mad_genes.sort_values(ascending=False, inplace=True)
 print(mad_genes.iloc[:10])
 
 
-# In[9]:
+# In[13]:
 
 
 n_mad_genes = 100000
@@ -141,7 +195,7 @@ me_mad_df.to_pickle(os.path.join(cfg.data_dir,
                                      n_filter, n_impute, n_mad_genes)))
 
 
-# In[10]:
+# In[14]:
 
 
 import matplotlib.pyplot as plt
@@ -161,7 +215,7 @@ plt.ylabel('Count')
 # 
 # I created [this issue](https://github.com/greenelab/mpmp/issues/15) to investigate/remind myself of this instability in the future, but I don't think it'll matter that much in practice.
 
-# In[11]:
+# In[15]:
 
 
 from sklearn.decomposition import PCA
@@ -187,7 +241,7 @@ for n_pcs in n_pcs_list:
         float_format='%.3g')
 
 
-# In[12]:
+# In[16]:
 
 
 # plot PCA variance explained
