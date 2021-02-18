@@ -426,7 +426,9 @@ def get_and_save_sample_info(tcga_df,
     tcga_id.sample_type = tcga_id.sample_type.replace(sampletype_codes_dict)
 
     # extract the first two ID numbers after `TCGA-` and recode cancer-type
-    tcga_id = tcga_id.assign(cancer_type = tcga_id.sample_id.str[5:7])
+    tcga_id = tcga_id.assign(
+        cancer_type=tcga_id.sample_id.str.split('TCGA-', expand=True)[1].str[:2]
+     )
     tcga_id.cancer_type = tcga_id.cancer_type.replace(cancertype_codes_dict)
 
     # append cancer-type with sample-type to generate stratification variable
