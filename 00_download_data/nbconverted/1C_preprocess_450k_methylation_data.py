@@ -19,9 +19,29 @@ import mpmp.config as cfg
 import mpmp.utilities.tcga_utilities as tu
 
 
-# ### Load and process methylation data
+# ### Read TCGA Barcode Curation Information
+# 
+# Extract information from TCGA barcodes - `cancer-type` and `sample-type`. See https://github.com/cognoma/cancer-data for more details
 
 # In[2]:
+
+
+(cancer_types_df,
+ cancertype_codes_dict,
+ sample_types_df,
+ sampletype_codes_dict) = tu.get_tcga_barcode_info()
+cancer_types_df.head(2)
+
+
+# In[3]:
+
+
+sample_types_df.head(2)
+
+
+# ### Load and process methylation data
+
+# In[4]:
 
 
 # first load manifest file, this tells us the filenames of the raw data files
@@ -30,7 +50,7 @@ manifest_df = pd.read_csv(os.path.join(cfg.data_dir, 'manifest.tsv'),
 manifest_df.head(3)
 
 
-# In[3]:
+# In[5]:
 
 
 # this is much faster than loading directly from .tsv
@@ -57,7 +77,7 @@ print(tcga_methylation_df.shape)
 tcga_methylation_df.iloc[:5, :5]
 
 
-# In[4]:
+# In[6]:
 
 
 if os.path.isfile(methylation_pickle):
@@ -67,7 +87,7 @@ else:
     tcga_methylation_df.to_pickle(methylation_pickle)
 
 
-# In[5]:
+# In[7]:
 
 
 # update sample IDs to remove multiple samples measured on the same tumor
@@ -77,7 +97,7 @@ tcga_methylation_df = tcga_methylation_df.loc[~tcga_methylation_df.index.duplica
 print(tcga_methylation_df.shape)
 
 
-# In[6]:
+# In[8]:
 
 
 # how many missing values does each sample have?
@@ -86,7 +106,7 @@ print(sample_na.shape)
 sample_na.sort_values(ascending=False).head()
 
 
-# In[7]:
+# In[9]:
 
 
 # remove 10 samples with most NAs, then impute for probes with 1 or 2 NA values
@@ -118,36 +138,6 @@ print(tcga_methylation_df.shape)
 tcga_methylation_df = impute_leq(tcga_methylation_df, n_impute)
 tcga_methylation_df.dropna(axis='columns', inplace=True)
 print(tcga_methylation_df.shape)
-
-
-# ### Read TCGA Barcode Curation Information
-# 
-# Extract information from TCGA barcodes - `cancer-type` and `sample-type`. See https://github.com/cognoma/cancer-data for more details
-
-# In[8]:
-
-
-# commit from https://github.com/cognoma/cancer-data/
-sample_commit = 'da832c5edc1ca4d3f665b038d15b19fced724f4c'
-url = 'https://raw.githubusercontent.com/cognoma/cancer-data/{}/mapping/tcga_cancertype_codes.csv'.format(sample_commit)
-cancer_types_df = pd.read_csv(url,
-                              dtype='str',
-                              keep_default_na=False)
-
-cancertype_codes_dict = dict(zip(cancer_types_df['TSS Code'],
-                                 cancer_types_df.acronym))
-cancer_types_df.head(2)
-
-
-# In[9]:
-
-
-url = 'https://raw.githubusercontent.com/cognoma/cancer-data/{}/mapping/tcga_sampletype_codes.csv'.format(sample_commit)
-sample_types_df = pd.read_csv(url, dtype='str')
-
-sampletype_codes_dict = dict(zip(sample_types_df.Code,
-                                 sample_types_df.Definition))
-sample_types_df.head(2)
 
 
 # ### Process TCGA cancer type and sample type info from barcodes

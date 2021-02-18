@@ -26,26 +26,16 @@ import mpmp.utilities.tcga_utilities as tu
 # In[2]:
 
 
-# commit from https://github.com/cognoma/cancer-data/
-sample_commit = 'da832c5edc1ca4d3f665b038d15b19fced724f4c'
-url = 'https://raw.githubusercontent.com/cognoma/cancer-data/{}/mapping/tcga_cancertype_codes.csv'.format(sample_commit)
-cancer_types_df = pd.read_csv(url,
-                              dtype='str',
-                              keep_default_na=False)
-
-cancertype_codes_dict = dict(zip(cancer_types_df['TSS Code'],
-                                 cancer_types_df.acronym))
+(cancer_types_df,
+ cancertype_codes_dict,
+ sample_types_df,
+ sampletype_codes_dict) = tu.get_tcga_barcode_info()
 cancer_types_df.head(2)
 
 
 # In[3]:
 
 
-url = 'https://raw.githubusercontent.com/cognoma/cancer-data/{}/mapping/tcga_sampletype_codes.csv'.format(sample_commit)
-sample_types_df = pd.read_csv(url, dtype='str')
-
-sampletype_codes_dict = dict(zip(sample_types_df.Code,
-                                 sample_types_df.Definition))
 sample_types_df.head(2)
 
 
