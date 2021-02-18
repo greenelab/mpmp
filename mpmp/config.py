@@ -82,6 +82,18 @@ top50_commit = "aedc9dfd0503edfc5f25611f5eb112675b99edc9"
 vogelstein_base_url = "https://github.com/greenelab/pancancer/raw"
 vogelstein_commit = "2a0683b68017fb226f4053e63415e4356191734f"
 
+# repo/commit information to retrieve TCGA code -> (sample|cancer) type map
+# we get this from cognoma: https://github.com/cognoma/cancer-data/
+sample_commit = 'da832c5edc1ca4d3f665b038d15b19fced724f4c'
+cancer_types_url = (
+    'https://raw.githubusercontent.com/cognoma/cancer-data/{}/mapping/tcga_cancertype_codes.csv'.format(
+        sample_commit)
+)
+sample_types_url = (
+    'https://raw.githubusercontent.com/cognoma/cancer-data/{}/mapping/tcga_sampletype_codes.csv'.format(
+        sample_commit)
+)
+
 # data types to standardize columns for
 standardize_data_types = ['expression', 'rppa']
 

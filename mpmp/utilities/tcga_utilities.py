@@ -375,6 +375,28 @@ def filter_to_cross_data_samples(X_df,
 
     return (X_filtered_df, y_filtered_df)
 
+def get_tcga_barcode_info():
+    """Map TCGA barcodes to cancer type and sample type.
+
+    This information is pulled from the cognoma cancer-data repo:
+    https://github.com/cognoma/cancer-data/
+    """
+    # get code -> cancer type map
+    cancer_types_df = pd.read_csv(cfg.cancer_types_url,
+                                  dtype='str',
+                                  keep_default_na=False)
+    cancertype_codes_dict = dict(zip(cancer_types_df['TSS Code'],
+                                     cancer_types_df.acronym))
+    # get code -> sample type map
+    sample_types_df = pd.read_csv(cfg.sample_types_url,
+                                  dtype='str')
+    sampletype_codes_dict = dict(zip(sample_types_df.Code,
+                                     sample_types_df.Definition))
+    return (cancer_types_df,
+            cancertype_codes_dict,
+            sample_types_df,
+            sampletype_codes_dict)
+
 
 def get_and_save_sample_info(tcga_df,
                              sampletype_codes_dict,
@@ -404,7 +426,9 @@ def get_and_save_sample_info(tcga_df,
     tcga_id.sample_type = tcga_id.sample_type.replace(sampletype_codes_dict)
 
     # extract the first two ID numbers after `TCGA-` and recode cancer-type
-    tcga_id = tcga_id.assign(cancer_type = tcga_id.sample_id.str[5:7])
+    tcga_id = tcga_id.assign(
+        cancer_type=tcga_id.sample_id.str.split('TCGA-', expand=True)[1].str[:2]
+     )
     tcga_id.cancer_type = tcga_id.cancer_type.replace(cancertype_codes_dict)
 
     # append cancer-type with sample-type to generate stratification variable

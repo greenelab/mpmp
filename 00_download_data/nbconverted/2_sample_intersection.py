@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from venn import venn
 
 import mpmp.config as cfg
 
@@ -40,8 +41,7 @@ print('\n'.join(['{}\t{}'.format(n, len(v)) for n, v in sample_lists.items()]))
 # In[4]:
 
 
-# do venn diagram
-from venn import venn
+# plot venn diagram of data without mutations
 sns.set_style('white')
 venn(sample_lists)
 plt.title('Sample overlap between TCGA data types', size=14)
@@ -78,7 +78,6 @@ sample_lists['mutation'] = set(mutation_df.index)
 
 
 # venn diagram including mutation info
-from venn import venn
 sns.set_style('white')
 venn(sample_lists)
 plt.title('Sample overlap between TCGA data types', size=14)
@@ -173,6 +172,7 @@ diff_df.head(33)
 # In[11]:
 
 
+# make sure number of removed samples equals number of samples we started with
 compare_df = pd.concat((
     pd.DataFrame(
         sample_info_dfs['expression'].groupby('cancer_type').size().fillna(0),
