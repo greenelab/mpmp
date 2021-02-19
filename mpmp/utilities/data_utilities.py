@@ -14,73 +14,47 @@ from sklearn.preprocessing import MinMaxScaler
 
 import mpmp.config as cfg
 
-def load_expression_data(scale_input=False, verbose=False, debug=False):
-    """Load and preprocess saved TCGA gene expression data.
+def load_raw_data(train_data_type, scale_input=False, verbose=False, debug=False):
+    """Load and preprocess saved TCGA data.
 
     Arguments
     ---------
-    scale_input (bool): whether or not to scale the expression data
+    train_data_type (str): type of data to load, options in config
     verbose (bool): whether or not to print verbose output
     debug (bool): whether or not to subset data for faster debugging
 
     Returns
     -------
-    rnaseq_df: samples x genes expression dataframe
+    data_df: samples x features dataframe
     """
     if debug:
         if verbose:
-            print('Loading subset of gene expression data for debugging...',
-                  file=sys.stderr)
-        rnaseq_df = pd.read_csv(cfg.subsampled_expression, index_col=0, sep='\t')
+            print(
+                'Loading subset of {} data for debugging...'.format(train_data_type),
+                file=sys.stderr
+            )
+        try:
+            data_df = pd.read_csv(cfg.subsampled_data[train_data_type],
+                                  index_col=0, sep='\t')
+        except KeyError:
+            raise NotImplementedError('No debugging subset generated for '
+                                      '{} data'.format(train_data_type))
     else:
         if verbose:
-            print('Loading gene expression data...', file=sys.stderr)
-        rnaseq_df = pd.read_csv(cfg.rnaseq_data, index_col=0, sep='\t')
-
-    # Scale RNAseq matrix the same way RNAseq was scaled for
-    # compression algorithms
-    if scale_input:
-        fitted_scaler = MinMaxScaler().fit(rnaseq_df)
-        rnaseq_df = pd.DataFrame(
-            fitted_scaler.transform(rnaseq_df),
-            columns=rnaseq_df.columns,
-            index=rnaseq_df.index,
-        )
-
-    return rnaseq_df
-
-
-def load_methylation_data(training_data='methylation',
-                          verbose=False,
-                          debug=False):
-    """Load and preprocess saved TCGA DNA methylation data.
-
-    Arguments
-    ---------
-    training_data (str): what type of methylation data to use (27K or 450K)
-    verbose (bool): whether or not to print verbose output
-    debug (bool): whether or not to subset data for faster debugging
-
-    Returns
-    -------
-    methylation_df: samples x probes methylation dataframe
-    """
-    if debug:
-        if verbose:
-            print('Loading subset of DNA methylation data for debugging...',
-                  file=sys.stderr)
-        rnaseq_df = pd.read_csv(cfg.subsampled_methylation, index_col=0, sep='\t')
-    else:
-        if verbose:
-            print('Loading DNA methylation data...', file=sys.stderr)
-        if training_data == 'me_450k':
-            # since this dataset is so large, loading it from a pickle is
-            # much faster than loading it from a TSV or .gz file
-            methylation_df = pd.read_pickle(cfg.data_types[training_data])
+            print(
+                'Loading {} data...'.format(train_data_type),
+                file=sys.stderr
+            )
+        if train_data_type == 'me_450k':
+            # since this dataset is so large, storing it as a pickle is
+            # much faster than loading it from a .tsv or .gz file
+            data_df = pd.read_pickle(cfg.data_types[train_data_type])
         else:
-            methylation_df = pd.read_csv(cfg.data_types[training_data],
-                                         index_col=0, sep='\t')
-    return methylation_df
+            data_df = pd.read_csv(cfg.data_types[train_data_type],
+                                  index_col=0, sep='\t')
+
+    # TODO: option for standardization?
+    return data_df
 
 
 def load_compressed_data(data_type, n_dim, verbose=False, debug=False):
@@ -245,10 +219,11 @@ def load_pancancer_data_from_repo(subset_columns=None):
     )
 
 
-def load_sample_info(verbose=False):
+def load_sample_info(train_data_type, verbose=False):
     if verbose:
         print('Loading sample info...', file=sys.stderr)
-    return pd.read_csv(cfg.sample_info, sep='\t', index_col='sample_id')
+    return pd.read_csv(cfg.sample_infos[train_data_type],
+                       sep='\t', index_col='sample_id')
 
 
 def split_argument_groups(args, parser):
