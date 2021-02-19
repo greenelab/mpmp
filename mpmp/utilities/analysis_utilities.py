@@ -60,6 +60,8 @@ def load_compressed_prediction_results(results_dir, experiment_descriptor):
         for results_file in identifier_dir.iterdir():
             if not results_file.is_file(): continue
             results_filename = str(results_file.stem)
+            if (('n1000' not in results_filename) and
+                ('n5000' not in results_filename)): continue # TODO make more general
             if 'classify' not in results_filename: continue
             if results_filename[0] == '.': continue
             n_dims = int(results_filename.split('_')[-3].replace('n', ''))
