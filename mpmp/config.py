@@ -17,11 +17,13 @@ expression_sample_info = sample_info_dir / 'tcga_expression_sample_identifiers.t
 me_27k_sample_info = sample_info_dir / 'tcga_me_27k_sample_identifiers.tsv'
 me_450k_sample_info = sample_info_dir / 'tcga_me_450k_sample_identifiers.tsv'
 rppa_sample_info = sample_info_dir / 'tcga_rppa_sample_identifiers.tsv'
+mut_sigs_sample_info = sample_info_dir / 'tcga_mut_sigs_sample_identifiers.tsv'
 sample_infos = {
     'expression': expression_sample_info,
     'me_27k': me_27k_sample_info,
     'me_450k': me_450k_sample_info,
     'rppa': rppa_sample_info,
+    'mut_sigs': mut_sigs_sample_info,
 }
 
 # locations of processed multimodal data files
@@ -29,11 +31,13 @@ expression_data = data_dir / 'tcga_expression_matrix_processed.tsv.gz'
 methylation_27k_data = data_dir / 'me_preprocessed' / 'methylation_processed_n10_i5.tsv.gz'
 methylation_450k_data = data_dir / 'methylation_450k_f10_i5_mad100000.pkl'
 rppa_data = data_dir / 'tcga_rppa_matrix_processed.tsv'
+mut_sigs_data = data_dir / 'tcga_wes_sbs_mutational_signatures.tsv'
 data_types = {
     'expression': expression_data,
     'me_27k': methylation_27k_data,
     'me_450k': methylation_450k_data,
     'rppa': rppa_data,
+    'mut_sigs': mut_sigs_data,
 }
 # if true, use only the samples present in all datasets
 # if false, use all the samples present in the dataset being analyzed
