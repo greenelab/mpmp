@@ -66,7 +66,7 @@ def process_args():
                       help='if included, subset gene features to this number of '
                            'features having highest mean absolute deviation')
     opts.add_argument('--training_data', type=str, default='expression',
-                      choices=['expression', 'me_27k', 'me_450k'],
+                      choices=list(cfg.data_types.keys()),
                       help='what data type to train model on')
 
     args = parser.parse_args()
@@ -101,7 +101,8 @@ if __name__ == '__main__':
 
     # process command line arguments
     io_args, model_options = process_args()
-    sample_info_df = du.load_sample_info(verbose=io_args.verbose)
+    sample_info_df = du.load_sample_info(model_options.training_data,
+                                         verbose=io_args.verbose)
 
     # create results dir and subdir for experiment if they don't exist
     experiment_dir = Path(io_args.results_dir, 'gene').resolve()

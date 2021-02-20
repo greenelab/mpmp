@@ -219,16 +219,14 @@ class TCGADataModel():
                                                    n_dim=n_dim,
                                                    verbose=self.verbose,
                                                    debug=debug)
-        elif train_data_type == 'expression':
-            self.data_df = du.load_expression_data(verbose=self.verbose,
-                                                   debug=debug)
-        elif train_data_type in ['methylation', 'me_27k', 'me_450k']:
-            self.data_df = du.load_methylation_data(train_data_type,
-                                                    verbose=self.verbose,
-                                                    debug=debug)
+        else:
+            self.data_df = du.load_raw_data(train_data_type,
+                                            verbose=self.verbose,
+                                            debug=debug)
 
         if sample_info_df is None:
-            self.sample_info_df = du.load_sample_info(verbose=self.verbose)
+            self.sample_info_df = du.load_sample_info(train_data_type,
+                                                      verbose=self.verbose)
         else:
             # sometimes we load sample info in the calling script as part of
             # argument processing, etc
