@@ -44,6 +44,8 @@ results_df = au.load_stratified_prediction_results(results_dir, 'gene')
 # and it's much easier/faster to fit models on
 results_df = results_df[results_df.training_data.isin(['expression', 'rppa'])]
 
+# make sure that we're correctly pointing to raw data for non-methylation data types
+# and that we have data for two replicates (two random seeds)
 print(results_df.shape)
 print(results_df.seed.unique())
 print(results_df.training_data.unique())
@@ -55,6 +57,9 @@ results_df.head()
 
 # load compressed data for me_27k and me_450k
 compressed_results_df = au.load_compressed_prediction_results(results_dir, 'gene')
+
+# make sure that we're correctly pointing to compressed methylation data
+# and that we have data for one dimension and two replicates (two random seeds)
 print(compressed_results_df.seed.unique())
 print(compressed_results_df.training_data.unique())
 print(compressed_results_df.n_dims.unique())
