@@ -95,7 +95,7 @@ sample_types_url = (
 )
 
 # data types to standardize columns for
-standardize_data_types = ['expression']
+standardize_data_types = ['expression', 'rppa']
 
 # subsample data to smallest cancer type
 # hopefully this will improve prediction for imbalanced cancer types

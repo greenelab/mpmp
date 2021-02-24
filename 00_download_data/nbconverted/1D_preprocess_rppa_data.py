@@ -165,7 +165,7 @@ neq_df.head()
 # In[13]:
 
 
-rppa_file = os.path.join(cfg.data_dir, 'tcga_rppa_matrix_preprocessed.tsv')
+rppa_file = os.path.join(cfg.data_dir, 'tcga_rppa_matrix_processed.tsv')
 (tcga_rppa_df
     .drop(columns=['TumorType'])
     .to_csv(rppa_file, sep='\t', float_format='%.3g')
