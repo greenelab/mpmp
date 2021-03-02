@@ -246,9 +246,3 @@ for ix, training_data in enumerate(data_types):
                              np.count_nonzero(compare_results_df.reject_null),
                              compare_results_df.shape[0]))
 
-
-# In[9]:
-
-
-all_results_df[all_results_df.gene == 'FBXW7']
-
