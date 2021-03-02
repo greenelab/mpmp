@@ -236,7 +236,7 @@ class TCGADataModel():
             # in that case, we don't need to load it again
             self.sample_info_df = sample_info_df
 
-        # load and unpack pancancer data
+        # load and unpack pancancer mutation/CNV/TMB data
         # this data is described in more detail in the load_pancancer_data docstring
         if test:
             # for testing, just load a subset of pancancer data,

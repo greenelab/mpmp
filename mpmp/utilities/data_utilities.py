@@ -14,7 +14,7 @@ from sklearn.preprocessing import MinMaxScaler
 
 import mpmp.config as cfg
 
-def load_raw_data(train_data_type, scale_input=False, verbose=False, debug=False):
+def load_raw_data(train_data_type, verbose=False, debug=False):
     """Load and preprocess saved TCGA data.
 
     Arguments
@@ -53,7 +53,6 @@ def load_raw_data(train_data_type, scale_input=False, verbose=False, debug=False
             data_df = pd.read_csv(cfg.data_types[train_data_type],
                                   index_col=0, sep='\t')
 
-    # TODO: option for standardization?
     return data_df
 
 
