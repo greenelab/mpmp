@@ -321,6 +321,17 @@ def subsample_to_smallest_cancer_type(X_df,
     return X_ss_df, y_ss_df
 
 
+def get_overlap_data_types(debug=False, compressed_data=False):
+    """Get data types to restrict training samples to."""
+    if debug:
+        data_types = cfg.subsampled_data_types
+    elif compressed_data:
+        data_types = cfg.compressed_data_types
+    else:
+        data_types = cfg.data_types
+    return data_types
+
+
 def filter_to_cross_data_samples(X_df,
                                  y_df,
                                  debug=False,
@@ -331,12 +342,7 @@ def filter_to_cross_data_samples(X_df,
 
     # first, get intersection of samples in all training datasets
 
-    if debug:
-        data_types = cfg.subsampled_data_types
-    elif compressed_data:
-        data_types = cfg.compressed_data_types
-    else:
-        data_types = cfg.data_types
+    data_types = get_overlap_data_types(debug, compressed_data)
 
     valid_samples = None
     for data_type, data_file in data_types.items():
