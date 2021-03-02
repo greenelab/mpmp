@@ -27,7 +27,7 @@ import mpmp.utilities.analysis_utilities as au
 
 
 # set results directory
-results_dir = Path(cfg.results_dir, 'rppa_results', 'gene').resolve()
+results_dir = Path(cfg.results_dir, 'mut_sigs_results', 'gene').resolve()
 # set significance cutoff after FDR correction
 SIG_ALPHA = 0.001
 
@@ -42,7 +42,7 @@ results_df = au.load_stratified_prediction_results(results_dir, 'gene')
 # the results in 02_classify_compressed/compressed_vs_raw_results.ipynb show that
 # performance is equal or slightly better for PCA compressed methylation data,
 # and it's much easier/faster to fit models on
-results_df = results_df[results_df.training_data.isin(['expression', 'rppa'])]
+results_df = results_df[results_df.training_data.isin(['expression', 'rppa', 'mut_sigs'])]
 
 # make sure that we're correctly pointing to raw data for non-methylation data types
 # and that we have data for two replicates (two random seeds)
@@ -94,6 +94,14 @@ for training_data in results_df.training_data.unique():
     data_results_df['training_data'] = training_data
     data_results_df.rename(columns={'identifier': 'gene'}, inplace=True)
     all_results_df = pd.concat((all_results_df, data_results_df))
+    
+# now filter out genes that don't have comparisons for all data types
+data_type_counts = all_results_df.groupby('gene').count().training_data
+valid_genes = data_type_counts[data_type_counts == len(results_df.training_data.unique())].index
+all_results_df = all_results_df[
+    all_results_df.gene.isin(valid_genes)
+]
+
 all_results_df.sort_values(by='p_value').head(10)
 
 
@@ -102,8 +110,9 @@ all_results_df.sort_values(by='p_value').head(10)
 
 all_results_df['nlog10_p'] = -np.log10(all_results_df.corr_pval)
 
-sns.set({'figure.figsize': (20, 14)})
-fig, axarr = plt.subplots(2, 2)
+sns.set({'figure.figsize': (24, 14)})
+sns.set_style('whitegrid')
+fig, axarr = plt.subplots(2, 3)
 
 # all plots should have the same axes for a fair comparison
 xlim = (-0.2, 1.0)
@@ -123,7 +132,7 @@ def label_points(x, y, gene, ax):
 
 # plot mutation prediction from expression, in a volcano-like plot
 for ix, training_data in enumerate(sorted(all_results_df.training_data.unique())):
-    ax = axarr[ix // 2, ix % 2]
+    ax = axarr[ix // 3, ix % 3]
     data_results_df = all_results_df[all_results_df.training_data == training_data]
     sns.scatterplot(data=data_results_df, x='delta_mean', y='nlog10_p', hue='reject_null',
                     hue_order=[False, True], ax=ax)
@@ -155,6 +164,12 @@ for ix, training_data in enumerate(sorted(all_results_df.training_data.unique())
                 ax=ax, 
                 expand_text=(1., 1.),
                 lim=5)
+    
+    print('{}: {}/{}'.format(
+        training_data,
+        np.count_nonzero(data_results_df.reject_null),
+        data_results_df.shape[0]
+    ))
 
 
 # In[8]:
@@ -175,6 +190,7 @@ def label_points(x, y, gene, ax):
     return text_labels
 
 sns.set({'figure.figsize': (20, 14)})
+sns.set_style('whitegrid')
 fig, axarr = plt.subplots(2, 2)
 
 # all plots should have the same axes for a fair comparison
@@ -227,4 +243,8 @@ for ix, training_data in enumerate(data_types):
                 ax=ax,
                 expand_text=(1., 1.),
                 lim=5)
+    
+    print('{}: {}/{}'.format(training_data,
+                             np.count_nonzero(compare_results_df.reject_null),
+                             compare_results_df.shape[0]))
 
