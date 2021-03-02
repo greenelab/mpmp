@@ -52,7 +52,6 @@ def load_raw_data(train_data_type, verbose=False, debug=False):
         else:
             data_df = pd.read_csv(cfg.data_types[train_data_type],
                                   index_col=0, sep='\t')
-
     return data_df
 
 

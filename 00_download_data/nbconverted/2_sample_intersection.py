@@ -79,7 +79,6 @@ sample_lists['mutation'] = set(mutation_df.index)
 
 # venn diagram including mutation info
 sns.set_style('white')
-# venn(sample_lists)
 pseudovenn(sample_lists, legend_loc='upper left')
 plt.title('Sample overlap between TCGA data types', size=14)
 

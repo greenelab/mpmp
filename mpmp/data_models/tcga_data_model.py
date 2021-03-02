@@ -185,7 +185,6 @@ class TCGADataModel():
                 y_filtered_df,
                 # setting this to False because I want to use the overlap of
                 # all the data types, not just the ones with compressed data
-                # TODO: find a more permanent solution for this
                 compressed_data=False,
                 n_dim=self.n_dim,
                 debug=self.debug,

@@ -66,7 +66,6 @@ assert sample_info_df.index.equals(data_df.index)
 
 # data_cancer_types = sorted(sample_info_df.cancer_type.unique())
 data_cancer_types = ['LUAD', 'LUSC', 'THCA', 'LGG', 'GBM', 'BRCA']
-# data_cancer_types = ['LUAD', 'LUSC', 'LAML']
 data_types_df = (data_df
     .merge(sample_info_df, left_index=True, right_index=True)
     .query('cancer_type in @data_cancer_types')
