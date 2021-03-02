@@ -34,7 +34,7 @@ def load_raw_data(train_data_type, verbose=False, debug=False):
                 file=sys.stderr
             )
         try:
-            data_df = pd.read_csv(cfg.subsampled_data[train_data_type],
+            data_df = pd.read_csv(cfg.subsampled_data_types[train_data_type],
                                   index_col=0, sep='\t')
         except KeyError:
             raise NotImplementedError('No debugging subset generated for '
