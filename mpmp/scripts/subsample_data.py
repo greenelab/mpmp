@@ -40,6 +40,10 @@ def subsample_stratified(data_df, sample_info_df):
                                        random_state=cfg.default_seed,
                                        stratify=stratify_samples_id.sample_count)
 
+    # also subsample columns/features, this speeds up testing considerably
+    subsample_df = subsample_df.sample(n=100, axis=1,
+                                       random_state=cfg.default_seed)
+
     return subsample_df
 
 if __name__ == '__main__':
@@ -49,12 +53,13 @@ if __name__ == '__main__':
     p.add_argument('--verbose', action='store_true')
     args = p.parse_args()
 
-    sample_info_df = du.load_sample_info(verbose=args.verbose)
-
     cfg.subsampled_data_dir.mkdir(parents=True, exist_ok=True)
 
     if args.dataset in ['expression', 'all']:
-        rnaseq_df = du.load_expression_data(verbose=args.verbose)
+        sample_info_df = du.load_sample_info(train_data_type='expression',
+                                             verbose=args.verbose)
+        rnaseq_df = du.load_raw_data(train_data_type='expression',
+                                     verbose=args.verbose)
         if args.verbose:
             print('Generating subsampled expression data...', end='')
         subsample_df = subsample_stratified(rnaseq_df, sample_info_df)
@@ -64,7 +69,10 @@ if __name__ == '__main__':
             print('done')
 
     if args.dataset in ['methylation', 'all']:
-        methylation_df = du.load_methylation_data(verbose=args.verbose)
+        sample_info_df = du.load_sample_info(train_data_type='me_27k',
+                                             verbose=args.verbose)
+        methylation_df = du.load_raw_data(train_data_type='me_27k',
+                                          verbose=args.verbose)
         if args.verbose:
             print('Generating subsampled methylation data...', end='')
         subsample_df = subsample_stratified(methylation_df, sample_info_df)
