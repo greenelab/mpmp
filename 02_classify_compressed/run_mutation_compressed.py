@@ -67,7 +67,7 @@ def process_args():
                       help='number of folds of cross-validation to run')
     opts.add_argument('--seed', type=int, default=cfg.default_seed)
     opts.add_argument('--training_data', type=str, default='expression',
-                      choices=['expression', 'me_27k', 'me_450k'],
+                      choices=list(cfg.compressed_data_types.keys()),
                       help='what data type to train model on')
 
     args = parser.parse_args()
@@ -198,7 +198,7 @@ if __name__ == '__main__':
 
             try:
                 # columns should be standardized before compression
-                # so we don't want to standardize them here
+                # so we don't want to standardize them again here
                 results = run_cv_stratified(tcga_data,
                                             'gene',
                                             gene,

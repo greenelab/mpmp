@@ -183,7 +183,9 @@ class TCGADataModel():
             train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
                 train_filtered_df,
                 y_filtered_df,
-                compressed_data=self.compressed_data,
+                # setting this to False because I want to use the overlap of
+                # all the data types, not just the ones with compressed data
+                compressed_data=False,
                 n_dim=self.n_dim,
                 use_subsampled=(self.debug or self.test),
                 verbose=self.verbose

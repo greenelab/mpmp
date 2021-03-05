@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from venn import venn
+from venn import venn, pseudovenn
 
 import mpmp.config as cfg
 
@@ -79,7 +79,7 @@ sample_lists['mutation'] = set(mutation_df.index)
 
 # venn diagram including mutation info
 sns.set_style('white')
-venn(sample_lists)
+pseudovenn(sample_lists, legend_loc='upper left')
 plt.title('Sample overlap between TCGA data types', size=14)
 
 
@@ -103,6 +103,7 @@ print(
     sample_info_dfs['expression'].shape,
     sample_info_dfs['me_27k'].shape,
     sample_info_dfs['me_450k'].shape,
+    sample_info_dfs['mut_sigs'].shape,
     sample_info_dfs['rppa'].shape
 )
 sample_info_dfs['expression'].head()
@@ -116,7 +117,7 @@ sample_info_dfs['expression'].head()
 
 # here, we specify these manually since the order matters
 # (i.e. order in data_types => order in which new data is "added")
-data_types = ['expression', 'me_27k', 'me_450k', 'rppa']
+data_types = ['expression', 'me_27k', 'me_450k', 'mut_sigs', 'rppa']
 
 exp_cancer_types = (sample_info_dfs['expression']
     .groupby('cancer_type')
@@ -196,7 +197,7 @@ def flip(items, ncol):
     return it.chain(*[items[i::ncol] for i in range(ncol)])
 
 sns.set()
-diff_df.T.plot.bar(stacked=True, figsize=(12, 6))
+diff_df.T.plot.bar(stacked=True, figsize=(12, 6), linewidth=0)
 h, l = plt.gca().get_legend_handles_labels()
 plt.legend(flip(h, 8), flip(l, 8), bbox_to_anchor=(-0.025, -0.55),
            loc='lower left', ncol=8, title='Cancer type')
@@ -218,7 +219,7 @@ diff_norm_df.head()
 
 
 sns.set()
-diff_norm_df.T.plot.bar(stacked=True, figsize=(12, 6))
+diff_norm_df.T.plot.bar(stacked=True, figsize=(12, 6), linewidth=0)
 h, l = plt.gca().get_legend_handles_labels()
 plt.legend(flip(h, 8), flip(l, 8), bbox_to_anchor=(-0.025, -0.55),
            loc='lower left', ncol=8, title='Cancer type')
