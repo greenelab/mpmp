@@ -87,6 +87,7 @@ def run_cv_stratified(data_model,
                         identifier)
                 )
 
+        # TODO: why do this here rather than in data loading functions?
         y_train_df = data_model.y_df.reindex(X_train_raw_df.index)
         y_test_df = data_model.y_df.reindex(X_test_raw_df.index)
 

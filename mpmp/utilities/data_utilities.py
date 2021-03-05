@@ -224,6 +224,16 @@ def load_sample_info(train_data_type, verbose=False):
                        sep='\t', index_col='sample_id')
 
 
+def load_purity(verbose=False):
+    if verbose:
+        print('Loading tumor purity info...', file=sys.stderr)
+    # TODO: preprocess this in a noteboook?
+    purity_df = pd.read_csv(cfg.tumor_purity_data,
+                            sep='\t', index_col='array')
+    purity_df.index.rename('sample_id', inplace=True)
+    return purity_df.loc[:, ['purity']]
+
+
 def split_argument_groups(args, parser):
     """Split argparse script arguments into argument groups.
 

@@ -20,6 +20,7 @@ from mpmp.exceptions import (
 from mpmp.utilities.classify_utilities import run_cv_stratified
 import mpmp.utilities.data_utilities as du
 import mpmp.utilities.file_utilities as fu
+from mpmp.utilities.tcga_utilities import get_overlap_data_types
 
 def process_args():
     """Parse and format command line arguments."""
@@ -78,6 +79,11 @@ def process_args():
     model_options.l1_ratios = cfg.l1_ratios
     model_options.standardize_data_types = cfg.standardize_data_types
 
+    # add information about valid samples to model options
+    model_options.sample_overlap_data_types = list(
+        get_overlap_data_types(debug=model_options.debug).keys()
+    )
+
     return io_args, model_options
 
 if __name__ == '__main__':
@@ -86,5 +92,45 @@ if __name__ == '__main__':
     io_args, model_options = process_args()
     sample_info_df = du.load_sample_info(model_options.training_data,
                                          verbose=io_args.verbose)
-    print(sample_info_df.shape)
+
+    # create results dir and subdir for experiment if they don't exist
+    experiment_dir = Path(io_args.results_dir, 'purity').resolve()
+    experiment_dir.mkdir(parents=True, exist_ok=True)
+
+    # save model options for this experiment
+    # (hyperparameters, preprocessing info, etc)
+    fu.save_model_options(experiment_dir, model_options)
+
+    # create empty log file if it doesn't exist
+    log_columns = [
+        'training_data',
+        'shuffle_labels',
+        'skip_reason'
+    ]
+    if io_args.log_file.exists() and io_args.log_file.is_file():
+        log_df = pd.read_csv(io_args.log_file, sep='\t')
+    else:
+        log_df = pd.DataFrame(columns=log_columns)
+        log_df.to_csv(io_args.log_file, sep='\t')
+
+    tcga_data = TCGADataModel(seed=model_options.seed,
+                              subset_mad_genes=model_options.subset_mad_genes,
+                              training_data=model_options.training_data,
+                              sample_info_df=sample_info_df,
+                              verbose=io_args.verbose,
+                              debug=model_options.debug)
+
+    # we want to run purity prediction experiments for true labels and
+    # shuffled labels (the latter as a lower baseline)
+    progress = tqdm([False, True],
+                    ncols=100,
+                    file=sys.stdout)
+    for shuffle_labels in progress:
+        progress.set_description('shuffle labels: {}'.format(shuffle_labels))
+        tcga_data.process_purity_data(experiment_dir,
+                                      shuffle_labels=shuffle_labels)
+        print(tcga_data.X_df.shape)
+        print(tcga_data.y_df.shape)
+        exit()
+
 

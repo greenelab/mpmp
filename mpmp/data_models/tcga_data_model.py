@@ -183,7 +183,7 @@ class TCGADataModel():
             train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
                 train_filtered_df,
                 y_filtered_df,
-                # setting this to False because I want to use the overlap of
+                # setting this to False because we want to use the overlap of
                 # all the data types, not just the ones with compressed data
                 compressed_data=False,
                 n_dim=self.n_dim,
@@ -197,6 +197,34 @@ class TCGADataModel():
 
         assert np.count_nonzero(self.X_df.index.duplicated()) == 0
         assert np.count_nonzero(self.y_df.index.duplicated()) == 0
+
+    def process_purity_data(self, output_dir, shuffle_labels=False):
+        """Prepare to run experiments predicting tumor purity.
+
+        Arguments
+        ---------
+        output_dir (str): directory to write output to, if None don't write output
+        shuffle_labels (bool): whether or not to shuffle labels (negative control)
+        """
+        y_df_raw = du.load_purity(verbose=self.verbose)
+
+        if cfg.use_only_cross_data_samples:
+            train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
+                self.data_df,
+                y_df_raw,
+                # setting this to False because we want to use the overlap of
+                # all the data types, not just the ones with compressed data
+                compressed_data=False,
+                n_dim=self.n_dim,
+                debug=self.debug,
+                verbose=self.verbose
+            )
+            self.X_df = train_filtered_df
+            self.y_df = y_filtered_df
+        else:
+            # filter to samples in common between training data and tumor purity
+            self.X_df = self.data_df
+            self.y_df = y_df_raw
 
     def _load_data(self,
                    train_data_type,
