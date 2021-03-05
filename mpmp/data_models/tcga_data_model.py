@@ -140,7 +140,7 @@ class TCGADataModel():
             train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
                 train_filtered_df,
                 y_filtered_df,
-                debug=self.debug,
+                use_subsampled=(self.debug or self.test),
                 verbose=self.verbose
             )
 
@@ -185,7 +185,7 @@ class TCGADataModel():
                 y_filtered_df,
                 compressed_data=self.compressed_data,
                 n_dim=self.n_dim,
-                debug=self.debug,
+                use_subsampled=(self.debug or self.test),
                 verbose=self.verbose
             )
 
@@ -218,11 +218,11 @@ class TCGADataModel():
             self.data_df = du.load_compressed_data(train_data_type,
                                                    n_dim=n_dim,
                                                    verbose=self.verbose,
-                                                   debug=debug)
+                                                   load_subset=(debug or test))
         else:
             self.data_df = du.load_raw_data(train_data_type,
                                             verbose=self.verbose,
-                                            debug=debug)
+                                            load_subset=(debug or test))
 
         if sample_info_df is None:
             self.sample_info_df = du.load_sample_info(train_data_type,
@@ -238,9 +238,10 @@ class TCGADataModel():
         if test:
             # for testing, just load a subset of pancancer data,
             # this is much faster than loading mutation data for all genes
+            import mpmp.test_config as tcfg
             pancan_data = du.load_pancancer_data(verbose=self.verbose,
                                                  test=True,
-                                                 subset_columns=cfg.test_genes)
+                                                 subset_columns=tcfg.test_genes)
         else:
             pancan_data = du.load_pancancer_data(verbose=self.verbose)
 
