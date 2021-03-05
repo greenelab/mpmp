@@ -4,7 +4,6 @@
 
 # don't track large data files
 data/raw/*
-data/subsampled/*
 data/expression_confusion_matrix.tsv
 data/exp_compressed/*
 data/methylation_450k*.pkl
