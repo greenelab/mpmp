@@ -14,20 +14,20 @@ from sklearn.preprocessing import MinMaxScaler
 
 import mpmp.config as cfg
 
-def load_raw_data(train_data_type, verbose=False, debug=False):
+def load_raw_data(train_data_type, verbose=False, load_subset=False):
     """Load and preprocess saved TCGA data.
 
     Arguments
     ---------
     train_data_type (str): type of data to load, options in config
     verbose (bool): whether or not to print verbose output
-    debug (bool): whether or not to subset data for faster debugging
+    load_subset (bool): whether or not to subset data for faster debugging
 
     Returns
     -------
     data_df: samples x features dataframe
     """
-    if debug:
+    if load_subset:
         if verbose:
             print(
                 'Loading subset of {} data for debugging...'.format(train_data_type),
@@ -106,6 +106,7 @@ def load_pancancer_data(verbose=False, test=False, subset_columns=None):
     Arguments
     ---------
     verbose (bool): whether or not to print verbose output
+    test (bool): whether or not to load data subset for testing
 
     Returns
     -------
@@ -115,7 +116,8 @@ def load_pancancer_data(verbose=False, test=False, subset_columns=None):
     # loading this data from the pancancer repo is very slow, so we
     # cache it in a pickle to speed up loading
     if test:
-        data_filepath = cfg.test_pancan_data
+        import mpmp.test_config as tcfg
+        data_filepath = tcfg.test_pancan_data
     else:
         data_filepath = cfg.pancan_data
 

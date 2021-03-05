@@ -36,7 +36,7 @@ def test_filtering_expression(expression_data, methylation_data):
 
     X_exp_df, y_exp_df = tu.filter_to_cross_data_samples(expression_df,
                                                          expression_labels_df,
-                                                         debug=True)
+                                                         use_subsampled=True)
 
     # check that the indexes are the same
     assert X_exp_df.index.equals(y_exp_df.index)
@@ -61,7 +61,7 @@ def test_filtering_methylation(expression_data, methylation_data):
 
     X_me_df, y_me_df = tu.filter_to_cross_data_samples(methylation_df,
                                                        methylation_labels_df,
-                                                       debug=True)
+                                                       use_subsampled=True)
     # check that the indexes are the same
     assert X_me_df.index.equals(y_me_df.index)
 
