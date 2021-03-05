@@ -14,6 +14,7 @@ data/sample_info/*
 data/tcga_rppa_matrix_processed.tsv
 data/tcga_expression_matrix_processed.tsv.gz
 data/tcga_methylation_matrix_processed.tsv.gz
+data/tcga_wes_sbs_mutational_signatures.tsv
 data/pancancer_data.pkl
 
 # don't track results files
