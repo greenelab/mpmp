@@ -58,6 +58,10 @@ def process_args():
                                      'parameters for training/evaluating model, '
                                      'these will affect output and are saved as '
                                      'experiment metadata ')
+    opts.add_argument('--compressed_only', action='store_true',
+                      help='only use TCGA samples that we have compressed '
+                           'data for. the default is to use only TCGA samples '
+                           'that we have any data for, not just compressed')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
     opts.add_argument('--n_dim', type=int, default=100,
