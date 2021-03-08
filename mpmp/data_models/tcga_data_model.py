@@ -201,7 +201,10 @@ class TCGADataModel():
         assert np.count_nonzero(self.X_df.index.duplicated()) == 0
         assert np.count_nonzero(self.y_df.index.duplicated()) == 0
 
-    def process_purity_data(self, output_dir, shuffle_labels=False):
+    def process_purity_data(self,
+                            output_dir,
+                            shuffle_labels=False,
+                            compressed_only=False):
         """Prepare to run experiments predicting tumor purity.
 
         Arguments
@@ -215,9 +218,11 @@ class TCGADataModel():
             train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
                 self.data_df,
                 y_df_raw,
-                # setting this to False because we want to use the overlap of
-                # all the data types, not just the ones with compressed data
-                compressed_data=False,
+                # if this option is True, use only samples for which we have
+                # compressed data. if false, take overlap of samples for which
+                # we have non-compressed data (generally a subset of compressed
+                # data samples)
+                compressed_data_only=compressed_only,
                 n_dim=self.n_dim,
                 use_subsampled=(self.debug or self.test),
                 verbose=self.verbose

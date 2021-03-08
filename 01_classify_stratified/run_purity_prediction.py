@@ -81,7 +81,7 @@ def process_args():
 
     # add information about valid samples to model options
     model_options.sample_overlap_data_types = list(
-        get_overlap_data_types(debug=model_options.debug).keys()
+        get_overlap_data_types(use_subsampled=model_options.debug).keys()
     )
 
     return io_args, model_options
@@ -132,5 +132,4 @@ if __name__ == '__main__':
         print(tcga_data.X_df.shape)
         print(tcga_data.y_df.shape)
         exit()
-
 
