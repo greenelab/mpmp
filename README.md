@@ -24,4 +24,8 @@ conda env create --file environment.yml
 conda activate mpmp
 ```
 
+## Testing pipeline
 
+You can run the testing suite using `pytest tests` or a similar command from the base directory (i.e. where this README is). This involves both unit tests for individual functions and regression tests that ensure that changes to the code do not affect model predictions. To run only the regression tests, use `pytest tests/test_model.py`.
+
+If you make a change to the code that is intended to affect the model output, you'll need to update the saved model output for the regression tests. This can be done by running the script at `mpmp/scripts/generate_test_data.py`. Note that this script will overwrite the existing model output files in the `tests/data` directory, so make sure this is what you want.
