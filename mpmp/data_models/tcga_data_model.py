@@ -212,14 +212,26 @@ class TCGADataModel():
         output_dir (str): directory to write output to, if None don't write output
         shuffle_labels (bool): whether or not to shuffle labels (negative control)
         """
-        y_df_raw = du.load_purity(verbose=self.verbose)
+        y_df_raw = du.load_purity(self.mut_burden_df, self.sample_info_df,
+                                  verbose=self.verbose)
+
+        filtered_data = self._filter_data(
+            self.data_df,
+            y_df_raw,
+            add_cancertype_covariate=True
+        )
+        train_filtered_df, y_filtered_df, gene_features = filtered_data
+
+        if shuffle_labels:
+            y_filtered_df.status = np.random.permutation(
+                y_filtered_df.status.values)
 
         if cfg.use_only_cross_data_samples:
             train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
-                self.data_df,
-                y_df_raw,
+                train_filtered_df,
+                y_filtered_df,
                 # if this option is True, use only samples for which we have
-                # compressed data. if false, take overlap of samples for which
+                # compressed data. if False, take overlap of samples for which
                 # we have non-compressed data (generally a subset of compressed
                 # data samples)
                 compressed_data_only=compressed_only,
@@ -227,12 +239,14 @@ class TCGADataModel():
                 use_subsampled=(self.debug or self.test),
                 verbose=self.verbose
             )
-            self.X_df = train_filtered_df
-            self.y_df = y_filtered_df
-        else:
-            # filter to samples in common between training data and tumor purity
-            self.X_df = self.data_df
-            self.y_df = y_df_raw
+
+        # filter to samples in common between training data and tumor purity
+        self.X_df = train_filtered_df
+        self.y_df = y_filtered_df
+        self.gene_features = gene_features
+
+        assert np.count_nonzero(self.X_df.index.duplicated()) == 0
+        assert np.count_nonzero(self.y_df.index.duplicated()) == 0
 
     def _load_data(self,
                    train_data_type,

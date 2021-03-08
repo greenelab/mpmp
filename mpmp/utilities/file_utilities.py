@@ -29,7 +29,8 @@ def construct_filename(output_dir,
     training_data = model_options.training_data
     signal = 'shuffled' if shuffle_labels else 'signal'
     seed = model_options.seed
-    if identifier is None:
+    # TODO: think about how to condense this code
+    if (identifier is None) and (shuffle_labels is None):
         # this might be the case for files that pertain to the whole experiment
         # (e.g. metadata/parameters file)
         try:
@@ -46,6 +47,25 @@ def construct_filename(output_dir,
                                              seed,
                                              file_descriptor,
                                              extension))
+    elif identifier is None:
+        # this might be the case for files that pertain to the whole experiment
+        # (e.g. metadata/parameters file)
+        try:
+            return Path(output_dir,
+                        '{}_{}_s{}_n{}_{}{}'.format(training_data,
+                                                    signal,
+                                                    seed,
+                                                    model_options.n_dim,
+                                                    file_descriptor,
+                                                    extension))
+        except AttributeError:
+            # no n_dim in model_options => not a compressed model
+            return Path(output_dir,
+                        '{}_{}_s{}_{}{}'.format(training_data,
+                                                signal,
+                                                seed,
+                                                file_descriptor,
+                                                extension))
     else:
         # TODO probably a better way to do this
         try:
