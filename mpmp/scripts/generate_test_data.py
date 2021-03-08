@@ -14,7 +14,8 @@ import mpmp.utilities.data_utilities as du
 
 def generate_data_model(data_type, verbose=False):
     """Load data model and sample info data"""
-    tcga_data = TCGADataModel(test=True, verbose=verbose)
+    tcga_data = TCGADataModel(training_data=data_type,
+                              test=True, verbose=verbose)
     sample_info_df = du.load_sample_info(train_data_type=data_type,
                                          verbose=verbose)
     return tcga_data, sample_info_df

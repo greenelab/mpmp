@@ -49,7 +49,8 @@ def subsample_stratified(data_df, sample_info_df):
 if __name__ == '__main__':
     p = argparse.ArgumentParser()
     p.add_argument('--dataset', type=str,
-                   choices=['expression', 'methylation', 'all'])
+                   choices=['expression', 'me_27k', 'all'],
+                   default='all')
     p.add_argument('--verbose', action='store_true')
     args = p.parse_args()
 
@@ -68,7 +69,7 @@ if __name__ == '__main__':
         if args.verbose:
             print('done')
 
-    if args.dataset in ['methylation', 'all']:
+    if args.dataset in ['me_27k', 'all']:
         sample_info_df = du.load_sample_info(train_data_type='me_27k',
                                              verbose=args.verbose)
         methylation_df = du.load_raw_data(train_data_type='me_27k',
