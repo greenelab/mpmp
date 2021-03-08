@@ -55,7 +55,7 @@ def load_raw_data(train_data_type, verbose=False, load_subset=False):
     return data_df
 
 
-def load_compressed_data(data_type, n_dim, verbose=False, debug=False):
+def load_compressed_data(data_type, n_dim, verbose=False, load_subset=False):
     """Load compressed data for the given data type and compressed dimensions.
 
     Arguments
@@ -69,7 +69,7 @@ def load_compressed_data(data_type, n_dim, verbose=False, debug=False):
     -------
     data_df: samples x latent dimensions dataframe
     """
-    if debug:
+    if load_subset:
         raise NotImplementedError('no subsampled compressed data')
     try:
         data_df = pd.read_csv(

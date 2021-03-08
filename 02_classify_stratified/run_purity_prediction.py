@@ -60,6 +60,8 @@ def process_args():
     opts.add_argument('--training_data', type=str, default='expression',
                       choices=list(cfg.data_types.keys()),
                       help='what data type to train model on')
+    opts.add_argument('--use_compressed', action='store_true',
+                      help='use PCA compressed data rather than raw features')
 
     args = parser.parse_args()
 
@@ -67,6 +69,12 @@ def process_args():
 
     if args.log_file is None:
         args.log_file = Path(args.results_dir, 'log_skipped.tsv').resolve()
+
+    if args.use_compressed and args.training_data not in cfg.compressed_data_types:
+        parser.error(
+            'data type {} does not have a compressed data source'.format(
+                args.training_data)
+        )
 
     # split args into defined argument groups, since we'll use them differently
     arg_groups = du.split_argument_groups(args, parser)
@@ -80,7 +88,10 @@ def process_args():
 
     # add information about valid samples to model options
     model_options.sample_overlap_data_types = list(
-        get_overlap_data_types(use_subsampled=model_options.debug).keys()
+        get_overlap_data_types(
+            use_subsampled=model_options.debug,
+            compressed_data=model_options.use_compressed
+        ).keys()
     )
 
     return io_args, model_options
@@ -115,6 +126,8 @@ if __name__ == '__main__':
     tcga_data = TCGADataModel(seed=model_options.seed,
                               subset_mad_genes=model_options.subset_mad_genes,
                               training_data=model_options.training_data,
+                              load_compressed_data=model_options.use_compressed,
+                              n_dim=(5000 if model_options.use_compressed else None),
                               sample_info_df=sample_info_df,
                               verbose=io_args.verbose,
                               debug=model_options.debug)

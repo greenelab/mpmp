@@ -102,7 +102,7 @@ def process_args():
     # add information about valid samples to model options
     model_options.sample_overlap_data_types = list(
         get_overlap_data_types(
-            debug=model_options.debug,
+            use_subsampled=model_options.debug,
             compressed_data=True
         ).keys()
     )

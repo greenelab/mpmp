@@ -11,5 +11,8 @@ for seed in 42 1; do
         echo "Running: $cmd"
         eval $cmd
     done
-    # TODO: try using compressed data for methylation?
+    # use compressed data for 450K methylation
+    cmd="python 02_classify_stratified/run_purity_prediction.py --results_dir $RESULTS_DIR --training_data me_450k --seed $seed --use_compressed 2>$ERRORS_DIR/errors_me_450k_s${seed}.txt"
+    echo "Running: $cmd"
+    eval $cmd
 done
