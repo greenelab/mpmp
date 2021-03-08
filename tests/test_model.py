@@ -5,25 +5,30 @@ import pytest
 import numpy as np
 import pandas as pd
 
-import mpmp.test_config as cfg
+import mpmp.test_config as tcfg
 from mpmp.data_models.tcga_data_model import TCGADataModel
 import mpmp.utilities.classify_utilities as cu
 import mpmp.utilities.data_utilities as du
 
-@pytest.fixture(scope='module')
-def data_model():
+@pytest.fixture
+def data_model(data_type):
     """Load data model and sample info data"""
-    # TODO: define results dir?
-    tcga_data = TCGADataModel(debug=True, test=True)
-    sample_info_df = du.load_sample_info(train_data_type='expression')
+    # passing arguments to fixtures (like data_type here), then using them
+    # in tests isn't widely documented in pytest, but seems to work
+    # see, e.g. https://stackoverflow.com/a/60148972
+    tcga_data = TCGADataModel(training_data=data_type,
+                              debug=True, test=True)
+    sample_info_df = du.load_sample_info(train_data_type=data_type)
     return tcga_data, sample_info_df
 
+@pytest.mark.parametrize('data_type', [tcfg.test_data_types[0]])
 def test_simple(data_model):
     """Just test that the data model loads correctly with test option"""
     assert data_model is not None
 
-@pytest.mark.parametrize("gene_info", cfg.stratified_gene_info)
-def test_stratified_classification(data_model, gene_info):
+@pytest.mark.parametrize('data_type', tcfg.test_data_types)
+@pytest.mark.parametrize('gene_info', tcfg.stratified_gene_info)
+def test_stratified_classification(data_model, data_type, gene_info):
     """Regression test for prediction using stratified cross-validation"""
     tcga_data, sample_info_df = data_model
     gene, classification = gene_info
@@ -34,13 +39,13 @@ def test_stratified_classification(data_model, gene_info):
     results = cu.run_cv_stratified(tcga_data,
                                    'gene',
                                    gene,
-                                   'expression',
+                                   data_type,
                                    sample_info_df,
                                    num_folds=4,
                                    standardize_columns=True,
                                    shuffle_labels=False)
     metrics_df = pd.concat(results['gene_metrics'])
-    results_file = cfg.test_stratified_results.format(gene)
+    results_file = tcfg.test_stratified_results.format(data_type, gene)
     old_results = np.loadtxt(results_file)
     # make sure our results haven't changed; i.e. regression testing for model
     # if a change to model output is intentional, the saved results can be
