@@ -71,6 +71,32 @@ def load_compressed_prediction_results(results_dir, experiment_descriptor):
             results_df = pd.concat((results_df, id_results_df))
     return results_df
 
+
+def load_purity_binarized_results(results_dir):
+    """Load results of tumor purity prediction results.
+
+    Labels are binarized into above/below median.
+
+    Arguments
+    ---------
+    results_dir (str): directory containing results files
+
+    Returns
+    -------
+    results_df (pd.DataFrame): results of classification experiments
+    """
+    results_df = pd.DataFrame()
+    results_dir = Path(results_dir)
+    for results_file in results_dir.iterdir():
+        if not results_file.is_file(): continue
+        results_filename = str(results_file.stem)
+        if 'classify' not in results_filename: continue
+        if results_filename[0] == '.': continue
+        id_results_df = pd.read_csv(results_file, sep='\t')
+        results_df = pd.concat((results_df, id_results_df))
+    return results_df
+
+
 def check_compressed_file(results_filename):
     """Check if results file is from compressed experiments."""
 
