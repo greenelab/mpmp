@@ -81,6 +81,12 @@ def process_args():
     arg_groups = du.split_argument_groups(args, parser)
     io_args, model_options = arg_groups['io'], arg_groups['model_options']
 
+    # always use 5000 PCs
+    if model_options.use_compressed:
+        model_options.n_dim = 5000
+    else:
+        model_options.n_dim = None
+
     # add some additional hyperparameters/ranges from config file to model options
     # these shouldn't be changed by the user, so they aren't added as arguments
     model_options.alphas = cfg.alphas
@@ -128,7 +134,7 @@ if __name__ == '__main__':
                               subset_mad_genes=model_options.subset_mad_genes,
                               training_data=model_options.training_data,
                               load_compressed_data=model_options.use_compressed,
-                              n_dim=(5000 if model_options.use_compressed else None),
+                              n_dim=model_options.n_dim,
                               sample_info_df=sample_info_df,
                               verbose=io_args.verbose,
                               debug=model_options.debug)
