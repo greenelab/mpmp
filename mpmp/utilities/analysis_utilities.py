@@ -94,6 +94,8 @@ def load_purity_binarized_results(results_dir):
         if 'classify' not in results_filename: continue
         if results_filename[0] == '.': continue
         id_results_df = pd.read_csv(results_file, sep='\t')
+        if check_compressed_file(results_filename):
+            id_results_df.training_data += '_compressed'
         results_df = pd.concat((results_df, id_results_df))
     return results_df
 
@@ -108,6 +110,7 @@ def load_purity_by_cancer_type(results_dir, sample_info_df):
         if results_filename[0] == '.': continue
         if check_compressed_file(results_filename):
             training_data = '_'.join(results_filename.split('_')[:-4])
+            training_data += '_compressed'
             signal = results_filename.split('_')[-4]
             seed = int(results_filename.split('_')[-3].replace('s', ''))
         else:
