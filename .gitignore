@@ -4,13 +4,14 @@
 
 # don't track large data files
 data/raw/*
-data/subsampled/*
 data/expression_confusion_matrix.tsv
 data/exp_compressed/*
 data/methylation_450k*.pkl
 data/me_compressed/*
 data/me_preprocessed/*
-data/sample_info/*
+data/sample_info/*_mut_sigs_*
+data/sample_info/*_me_450k_*
+data/sample_info/*_rppa_*
 data/tcga_rppa_matrix_processed.tsv
 data/tcga_expression_matrix_processed.tsv.gz
 data/tcga_methylation_matrix_processed.tsv.gz

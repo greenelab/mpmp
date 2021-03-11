@@ -55,10 +55,10 @@ compressed_data_types = {
 # locations of subsampled data, for debugging and testing
 subsampled_data_dir = data_dir / 'subsampled'
 subsampled_expression = subsampled_data_dir / 'expression_subsampled.tsv.gz'
-subsampled_methylation = subsampled_data_dir / 'methylation_subsampled.tsv.gz'
+subsampled_methylation = subsampled_data_dir / 'me_27k_subsampled.tsv.gz'
 subsampled_data_types = {
     'expression': subsampled_expression,
-    'methylation': subsampled_methylation,
+    'me_27k': subsampled_methylation,
 }
 
 # default seed for random number generator
