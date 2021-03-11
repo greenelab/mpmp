@@ -50,6 +50,10 @@ def process_args():
                                      'parameters for training/evaluating model, '
                                      'these will affect output and are saved as '
                                      'experiment metadata ')
+    opts.add_argument('--classify', action='store_true',
+                      help='if included, binarize tumor purity values into '
+                           'above and below median, otherwise predict '
+                           'continuous purity values using regression')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
     opts.add_argument('--num_folds', type=int, default=4,
@@ -166,7 +170,12 @@ if __name__ == '__main__':
             continue
 
         tcga_data.process_purity_data(experiment_dir,
+                                      classify=model_options.classify,
                                       shuffle_labels=shuffle_labels)
+        print(tcga_data.X_df.iloc[:5, -5:])
+        print(tcga_data.y_df.head())
+        print(tcga_data.y_df.status.isna().sum())
+        exit()
 
         try:
             # for now, don't standardize methylation data

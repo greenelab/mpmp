@@ -203,6 +203,7 @@ class TCGADataModel():
 
     def process_purity_data(self,
                             output_dir,
+                            classify=False,
                             shuffle_labels=False,
                             compressed_only=False):
         """Prepare to run experiments predicting tumor purity.
@@ -210,9 +211,13 @@ class TCGADataModel():
         Arguments
         ---------
         output_dir (str): directory to write output to, if None don't write output
+        classify (bool): if True do classification, else regression
         shuffle_labels (bool): whether or not to shuffle labels (negative control)
+        compressed_only (bool): if True, use intersection of compressed samples
         """
-        y_df_raw = du.load_purity(self.mut_burden_df, self.sample_info_df,
+        y_df_raw = du.load_purity(self.mut_burden_df,
+                                  self.sample_info_df,
+                                  classify=classify,
                                   verbose=self.verbose)
 
         filtered_data = self._filter_data(
