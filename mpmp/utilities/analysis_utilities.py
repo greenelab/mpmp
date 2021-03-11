@@ -74,7 +74,7 @@ def load_compressed_prediction_results(results_dir, experiment_descriptor):
 
 
 def load_purity_binarized_results(results_dir):
-    """Load results of tumor purity prediction results.
+    """Load results of tumor purity prediction experiments.
 
     Labels are binarized into above/below median.
 
@@ -101,6 +101,19 @@ def load_purity_binarized_results(results_dir):
 
 
 def load_purity_by_cancer_type(results_dir, sample_info_df):
+    """Load results of tumor purity prediction, grouped by cancer type.
+
+    Assumes labels are binarized into above/below median.
+
+    Arguments
+    ---------
+    results_dir (str): directory containing results files
+    sample_info_df (pd.DataFrame): contains cancer type info for samples
+
+    Returns
+    -------
+    results_df (pd.DataFrame): results of classification experiments
+    """
     results_df = pd.DataFrame()
     results_dir = Path(results_dir)
     for results_file in results_dir.iterdir():
@@ -132,6 +145,7 @@ def calculate_metrics_for_cancer_type(id_results_df,
                                       signal,
                                       seed,
                                       sample_info_df):
+    """Calculate classification metrics by cancer type for a single result."""
     from mpmp.utilities.classify_utilities import get_threshold_metrics
     cancer_type_results = []
     for fold in id_results_df.fold_no.unique():
@@ -162,7 +176,6 @@ def calculate_metrics_for_cancer_type(id_results_df,
     return pd.DataFrame(cancer_type_results,
                         columns=['training_data', 'signal', 'seed',
                                  'fold_no', 'cancer_type', 'aupr'])
-
 
 
 def check_compressed_file(results_filename):
