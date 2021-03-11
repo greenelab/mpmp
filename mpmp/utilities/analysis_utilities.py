@@ -132,7 +132,7 @@ def calculate_metrics_for_cancer_type(id_results_df,
                                       signal,
                                       seed,
                                       sample_info_df):
-    from mpmp.utilities.classify_utilities import get_threshold_metrics
+    from mpmp.prediction.classification import get_threshold_metrics
     cancer_type_results = []
     for fold in id_results_df.fold_no.unique():
         fold_df = (id_results_df[id_results_df.fold_no == fold]
