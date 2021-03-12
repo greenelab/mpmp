@@ -47,10 +47,9 @@ def run_cv_stratified(data_model,
 
     Returns
     -------
-    TODO: this
+    results (dict): maps results metrics to values across CV folds
     """
     if classify:
-        # TODO how to not hard-code these
         results = {
             '{}_metrics'.format(exp_string): [],
             '{}_auc'.format(exp_string): [],

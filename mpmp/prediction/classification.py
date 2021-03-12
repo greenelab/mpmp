@@ -30,7 +30,7 @@ def train_classifier(X_train,
                      n_folds=4,
                      max_iter=1000):
     """
-    Build the logic and sklearn pipelines to train x matrix based on input y
+    Build the logic and sklearn pipelines to predict binary y from dataset x
 
     Arguments
     ---------

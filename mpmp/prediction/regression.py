@@ -21,7 +21,7 @@ def train_regressor(X_train,
                     n_folds=4,
                     max_iter=1000):
     """
-    Build the logic and sklearn pipelines to predict real-valued y from x
+    Build the logic and sklearn pipelines to predict real-valued y from dataset x
 
     Arguments
     ---------
@@ -38,7 +38,7 @@ def train_regressor(X_train,
     The full pipeline sklearn object and y matrix predictions for training,
     testing, and cross validation
     """
-    # Setup the classifier parameters
+    # Setup the regression parameters
     reg_parameters = {
         "regress__loss": ["squared_loss"],
         "regress__penalty": ["elasticnet"],
@@ -95,7 +95,7 @@ def get_preds(X_test_df, y_test_df, cv_pipeline, fold_no):
 
     return pd.DataFrame({
         'fold_no': fold_no,
-        'true_output': y_test_df.status,
+        'true_label': y_test_df.status,
         'predicted_output': y_probs_test[:, 1]
     }, index=y_test_df.index)
 
