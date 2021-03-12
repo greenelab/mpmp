@@ -81,11 +81,10 @@ def process_args():
     arg_groups = du.split_argument_groups(args, parser)
     io_args, model_options = arg_groups['io'], arg_groups['model_options']
 
-    # always use 5000 PCs
+    # always use 5000 PCs if `use_compressed==True`
+    model_options.n_dim = None
     if model_options.use_compressed:
         model_options.n_dim = 5000
-    else:
-        model_options.n_dim = None
 
     # add some additional hyperparameters/ranges from config file to model options
     # these shouldn't be changed by the user, so they aren't added as arguments
@@ -207,5 +206,4 @@ if __name__ == '__main__':
 
         if purity_log_df is not None:
             fu.write_log_file(purity_log_df, io_args.log_file)
-
 
