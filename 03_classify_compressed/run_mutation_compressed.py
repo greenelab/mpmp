@@ -211,6 +211,14 @@ if __name__ == '__main__':
                                             model_options.num_folds,
                                             shuffle_labels,
                                             standardize_columns=False)
+                # only save results if no exceptions
+                fu.save_results(gene_dir,
+                                check_file,
+                                results,
+                                'gene',
+                                gene,
+                                shuffle_labels,
+                                model_options)
             except NoTrainSamplesError:
                 if io_args.verbose:
                     print('Skipping due to no train samples: gene {}'.format(
@@ -227,15 +235,6 @@ if __name__ == '__main__':
                     log_columns,
                     [gene, model_options.training_data, shuffle_labels, 'one_class']
                 )
-            else:
-                # only save results if no exceptions
-                fu.save_results(gene_dir,
-                                check_file,
-                                results,
-                                'gene',
-                                gene,
-                                shuffle_labels,
-                                model_options)
 
             if mutation_log_df is not None:
                 fu.write_log_file(mutation_log_df, io_args.log_file)

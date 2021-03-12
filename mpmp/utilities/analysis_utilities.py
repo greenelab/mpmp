@@ -74,7 +74,7 @@ def load_compressed_prediction_results(results_dir, experiment_descriptor):
 
 
 def load_purity_binarized_results(results_dir):
-    """Load results of tumor purity prediction results.
+    """Load results of tumor purity prediction experiments.
 
     Labels are binarized into above/below median.
 
@@ -101,6 +101,19 @@ def load_purity_binarized_results(results_dir):
 
 
 def load_purity_by_cancer_type(results_dir, sample_info_df):
+    """Load results of tumor purity prediction, grouped by cancer type.
+
+    Assumes labels are binarized into above/below median.
+
+    Arguments
+    ---------
+    results_dir (str): directory containing results files
+    sample_info_df (pd.DataFrame): contains cancer type info for samples
+
+    Returns
+    -------
+    results_df (pd.DataFrame): results of classification experiments
+    """
     results_df = pd.DataFrame()
     results_dir = Path(results_dir)
     for results_file in results_dir.iterdir():
@@ -155,14 +168,18 @@ def calculate_metrics_for_cancer_type(id_results_df,
                         get_threshold_metrics(samples_df.true_class,
                                               samples_df.positive_prob)
                     )['aupr']
+                    auroc = (
+                        get_threshold_metrics(samples_df.true_class,
+                                              samples_df.positive_prob)
+                    )['auroc']
             except ValueError: # only one class in y_true
                 aupr = np.nan
+                auroc = np.nan
             cancer_type_results.append((training_data, signal, seed,
-                                        fold, cancer_type, aupr))
+                                        fold, cancer_type, aupr, auroc))
     return pd.DataFrame(cancer_type_results,
                         columns=['training_data', 'signal', 'seed',
-                                 'fold_no', 'cancer_type', 'aupr'])
-
+                                 'fold_no', 'cancer_type', 'aupr', 'auroc'])
 
 
 def check_compressed_file(results_filename):

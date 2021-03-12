@@ -191,6 +191,14 @@ if __name__ == '__main__':
                                             shuffle_labels,
                                             standardize_columns,
                                             io_args.output_preds)
+                # only save results if no exceptions
+                fu.save_results(cancer_type_dir,
+                                check_file,
+                                results,
+                                'cancer_type',
+                                cancer_type,
+                                shuffle_labels,
+                                model_options)
             except NoTestSamplesError:
                 if io_args.verbose:
                     print('Skipping due to no test samples: cancer type '
@@ -207,15 +215,6 @@ if __name__ == '__main__':
                     log_columns,
                     [cancer_type, model_options.training_data, shuffle_labels, 'one_class']
                 )
-            else:
-                # only save results if no exceptions
-                fu.save_results(cancer_type_dir,
-                                check_file,
-                                results,
-                                'cancer_type',
-                                cancer_type,
-                                shuffle_labels,
-                                model_options)
 
             if cancer_type_log_df is not None:
                 fu.write_log_file(cancer_type_log_df, io_args.log_file)

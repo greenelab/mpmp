@@ -49,8 +49,10 @@ if __name__ == '__main__':
     p.add_argument('--verbose', action='store_true')
     args = p.parse_args()
 
-    # NOTE this will overwrite existing results files
-    # (could eventually add a warning for this?)
+    # NOTE this will silently overwrite existing test output files,
+    # if they exist already
+    # could eventually add a warning for this, but these files are tracked
+    # in git so I'm not too concerned for the time being
     for data_type in tcfg.test_data_types:
         tcga_data, sample_info_df = generate_data_model(data_type, args.verbose)
         generate_stratified_test_data(tcga_data, data_type, sample_info_df,

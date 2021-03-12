@@ -4,6 +4,8 @@
 # ## Download multiple modalities of pan-cancer data from TCGA
 # 
 # The data is accessed directly from the [Genome Data Commons](https://gdc.cancer.gov/about-data/publications/pancanatlas).
+# 
+# NOTE: this download script uses the `md5sum` shell utility to verify file hashes. This script was developed and tested on a Linux machine, and `md5sum` commands may have to be changed to work on other platforms.
 
 # In[1]:
 
@@ -32,8 +34,7 @@ manifest_df.head()
 # In[3]:
 
 
-if not os.path.exists(cfg.raw_data_dir):
-    os.makedirs(cfg.raw_data_dir)
+os.makedirs(cfg.raw_data_dir, exist_ok=True)
     
 rnaseq_id, rnaseq_filename = manifest_df.loc['rna_seq'].id, manifest_df.loc['rna_seq'].filename
 url = 'http://api.gdc.cancer.gov/data/{}'.format(rnaseq_id)

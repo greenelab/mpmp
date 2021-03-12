@@ -343,8 +343,6 @@ def filter_to_cross_data_samples(X_df,
     # first, get intersection of samples in all training datasets
 
     data_types = get_overlap_data_types(use_subsampled, compressed_data_only)
-
-    # TODO this may take some time to load, so we could cache it somewhere
     valid_samples = None
     for data_type, data_file in data_types.items():
         # get sample IDs for the given data type/processed data file
