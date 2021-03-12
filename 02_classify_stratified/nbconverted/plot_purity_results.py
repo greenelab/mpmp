@@ -47,18 +47,25 @@ results_df.head()
 # In[4]:
 
 
-sns.set({'figure.figsize': (8, 6)})
+sns.set({'figure.figsize': (14, 6)})
 sns.set_style('whitegrid')
+fig, axarr = plt.subplots(1, 2)
+
 plot_df = (
     results_df[results_df.data_type == 'test']
       .sort_values(by=['signal', 'training_data'])
 )
 
-sns.boxplot(data=plot_df, x='signal', y='aupr', hue='training_data')
-plt.title('Binarized tumor purity prediction performance, by data type')
-plt.legend(title='Data type')
-plt.xlabel('Signal or shuffled')
-plt.ylabel('AUPR')
+sns.boxplot(data=plot_df, x='signal', y='aupr', hue='training_data', ax=axarr[0])
+axarr[0].set_title('Binarized tumor purity prediction performance, by data type')
+axarr[0].set_xlabel('Signal or shuffled')
+axarr[0].set_ylabel('AUPR')
+axarr[0].legend(title='Data type')
+sns.boxplot(data=plot_df, x='signal', y='auroc', hue='training_data', ax=axarr[1])
+axarr[1].set_title('Binarized tumor purity prediction performance, by data type')
+axarr[1].set_xlabel('Signal or shuffled')
+axarr[1].set_ylabel('AUROC')
+axarr[1].legend(title='Data type')
 
 
 # In[5]:
@@ -77,19 +84,28 @@ results_df.head()
 # In[6]:
 
 
-sns.set({'figure.figsize': (22, 6)})
+sns.set({'figure.figsize': (22, 12)})
 sns.set_style('whitegrid')
+fig, axarr = plt.subplots(2, 1)
+
+# ovarian cancer has some NaN metric values due to extreme class imbalance,
+# so we just filter it out here
 plot_df = (
     results_df[(results_df.signal == 'signal') &
                ~(results_df.cancer_type.isin(['OV']))]
       .sort_values(by=['training_data', 'cancer_type'])
 )
 
-sns.boxplot(data=plot_df, x='cancer_type', y='aupr', hue='training_data')
-plt.title('Binarized tumor purity prediction performance, split by cancer type')
-plt.legend(title='Data type')
-plt.xlabel('Test cancer type')
-plt.ylabel('AUPR')
+sns.boxplot(data=plot_df, x='cancer_type', y='aupr', hue='training_data', ax=axarr[0])
+axarr[0].set_title('Binarized tumor purity prediction performance, split by cancer type')
+axarr[0].set_xlabel('Test cancer type')
+axarr[0].set_ylabel('AUPR')
+axarr[0].legend(title='Data type')
+sns.boxplot(data=plot_df, x='cancer_type', y='auroc', hue='training_data', ax=axarr[1])
+axarr[1].set_title('Binarized tumor purity prediction performance, split by cancer type')
+axarr[1].set_xlabel('Test cancer type')
+axarr[1].set_ylabel('AUROC')
+axarr[1].legend(title='Data type')
 
 
 # In[7]:
@@ -108,17 +124,24 @@ top_cancer_types.head()
 # In[8]:
 
 
-sns.set({'figure.figsize': (15, 6)})
+sns.set({'figure.figsize': (15, 12)})
 sns.set_style('whitegrid')
+fig, axarr = plt.subplots(2, 1)
+
 plot_df = (
     results_df[(results_df.signal == 'signal') &
                (results_df.cancer_type.isin(top_cancer_types.index[:10]))]
       .sort_values(by=['training_data', 'cancer_type'])
 )
 
-sns.boxplot(data=plot_df, x='cancer_type', y='aupr', hue='training_data')
-plt.title('Binarized tumor purity prediction performance, top 10 most sampled cancers')
-plt.legend(title='Data type')
-plt.xlabel('Test cancer type')
-plt.ylabel('AUPR')
+sns.boxplot(data=plot_df, x='cancer_type', y='aupr', hue='training_data', ax=axarr[0])
+axarr[0].set_title('Binarized tumor purity prediction performance, split by cancer type')
+axarr[0].set_xlabel('Test cancer type')
+axarr[0].set_ylabel('AUPR')
+axarr[0].legend(title='Data type')
+sns.boxplot(data=plot_df, x='cancer_type', y='auroc', hue='training_data', ax=axarr[1])
+axarr[1].set_title('Binarized tumor purity prediction performance, split by cancer type')
+axarr[1].set_xlabel('Test cancer type')
+axarr[1].set_ylabel('AUROC')
+axarr[1].legend(title='Data type')
 

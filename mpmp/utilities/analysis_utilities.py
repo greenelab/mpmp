@@ -169,13 +169,18 @@ def calculate_metrics_for_cancer_type(id_results_df,
                         get_threshold_metrics(samples_df.true_class,
                                               samples_df.positive_prob)
                     )['aupr']
+                    auroc = (
+                        get_threshold_metrics(samples_df.true_class,
+                                              samples_df.positive_prob)
+                    )['auroc']
             except ValueError: # only one class in y_true
                 aupr = np.nan
+                auroc = np.nan
             cancer_type_results.append((training_data, signal, seed,
-                                        fold, cancer_type, aupr))
+                                        fold, cancer_type, aupr, auroc))
     return pd.DataFrame(cancer_type_results,
                         columns=['training_data', 'signal', 'seed',
-                                 'fold_no', 'cancer_type', 'aupr'])
+                                 'fold_no', 'cancer_type', 'aupr', 'auroc'])
 
 
 def check_compressed_file(results_filename):
