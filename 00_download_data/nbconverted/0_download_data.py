@@ -4,6 +4,8 @@
 # ## Download multiple modalities of pan-cancer data from TCGA
 # 
 # The data is accessed directly from the [Genome Data Commons](https://gdc.cancer.gov/about-data/publications/pancanatlas).
+# 
+# NOTE: this download script uses the `md5sum` shell utility to verify file hashes. This script was developed and tested on a Linux machine, and `md5sum` commands may have to be changed to work on other platforms.
 
 # In[1]:
 
