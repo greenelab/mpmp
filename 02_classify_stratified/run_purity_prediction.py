@@ -16,7 +16,7 @@ from mpmp.exceptions import (
     NoTrainSamplesError,
     OneClassError,
 )
-from mpmp.prediction.classification import run_cv_stratified
+from mpmp.prediction.cross_validation import run_cv_stratified
 import mpmp.utilities.data_utilities as du
 import mpmp.utilities.file_utilities as fu
 from mpmp.utilities.tcga_utilities import get_overlap_data_types
@@ -119,7 +119,8 @@ if __name__ == '__main__':
 
     # save model options for this experiment
     # (hyperparameters, preprocessing info, etc)
-    fu.save_model_options(experiment_dir, model_options)
+    fu.save_model_options(experiment_dir, model_options,
+                          classify=model_options.classify)
 
     # create empty log file if it doesn't exist
     log_columns = [
@@ -155,7 +156,8 @@ if __name__ == '__main__':
             check_file = fu.check_output_file(output_dir,
                                               None,
                                               shuffle_labels,
-                                              model_options)
+                                              model_options,
+                                              model_options.classify)
         except ResultsFileExistsError:
             # this happens if cross-validation for this gene has already been
             # run (i.e. the results file already exists)
@@ -171,10 +173,6 @@ if __name__ == '__main__':
         tcga_data.process_purity_data(experiment_dir,
                                       classify=model_options.classify,
                                       shuffle_labels=shuffle_labels)
-        print(tcga_data.X_df.iloc[:5, -5:])
-        print(tcga_data.y_df.head())
-        print(tcga_data.y_df.status.isna().sum())
-        exit()
 
         try:
             # for now, don't standardize methylation data
@@ -186,6 +184,7 @@ if __name__ == '__main__':
                                         model_options.training_data,
                                         sample_info_df,
                                         model_options.num_folds,
+                                        model_options.classify,
                                         shuffle_labels,
                                         standardize_columns,
                                         io_args.output_preds)
@@ -196,7 +195,8 @@ if __name__ == '__main__':
                             'purity',
                             None,
                             shuffle_labels,
-                            model_options)
+                            model_options,
+                            classify=model_options.classify)
         except NoTrainSamplesError:
             if io_args.verbose:
                 print('Skipping due to no train samples', file=sys.stderr)

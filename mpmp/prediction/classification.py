@@ -4,8 +4,6 @@ Functions for training classifiers on TCGA data.
 Some of these functions are adapted from:
 https://github.com/greenelab/BioBombe/blob/master/9.tcga-classify/scripts/tcga_util.py
 """
-import warnings
-
 import numpy as np
 import pandas as pd
 from sklearn.pipeline import Pipeline
@@ -22,151 +20,82 @@ from sklearn.model_selection import (
 )
 
 import mpmp.config as cfg
-import mpmp.prediction.cross_validation as cv
-import mpmp.utilities.tcga_utilities as tu
-from mpmp.exceptions import (
-    NoTrainSamplesError,
-    NoTestSamplesError,
-    OneClassError,
-)
 
-def run_cv_stratified(data_model,
-                      exp_string,
-                      identifier,
-                      training_data,
-                      sample_info,
-                      num_folds,
-                      shuffle_labels=False,
-                      standardize_columns=False,
-                      output_preds=False):
+def train_classifier(X_train,
+                     X_test,
+                     y_train,
+                     alphas,
+                     l1_ratios,
+                     seed,
+                     n_folds=4,
+                     max_iter=1000):
     """
-    Run stratified cross-validation experiments for a given dataset, then write
-    the results to files in the results directory. If the relevant files already
-    exist, skip this experiment.
+    Build the logic and sklearn pipelines to train x matrix based on input y
 
     Arguments
     ---------
-    data_model (TCGADataModel): class containing preprocessed train/test data
-    exp_string (str): string describing the experiment being run
-    identifier (str): string describing the target value/environment
-    training_data (str): what type of data is being used to train model
-    sample_info (pd.DataFrame): df with TCGA sample information
-    num_folds (int): number of cross-validation folds to run
-    shuffle_labels (bool): whether or not to shuffle labels (negative control)
-    standardize_columns (bool): whether or not to standardize predictors
-    output_preds (bool): whether or not to write predictions to file
+    X_train: pandas DataFrame of feature matrix for training data
+    X_test: pandas DataFrame of feature matrix for testing data
+    y_train: pandas DataFrame of processed y matrix (output from align_matrices())
+    alphas: list of alphas to perform cross validation over
+    l1_ratios: list of l1 mixing parameters to perform cross validation over
+    n_folds: int of how many folds of cross validation to perform
+    max_iter: the maximum number of iterations to test until convergence
+
+    Returns
+    ------
+    The full pipeline sklearn object and y matrix predictions for training, testing,
+    and cross validation
     """
-    results = {
-        '{}_metrics'.format(exp_string): [],
-        '{}_auc'.format(exp_string): [],
-        '{}_aupr'.format(exp_string): [],
-        '{}_coef'.format(exp_string): [],
+    # Setup the classifier parameters
+    clf_parameters = {
+        "classify__loss": ["log"],
+        "classify__penalty": ["elasticnet"],
+        "classify__alpha": alphas,
+        "classify__l1_ratio": l1_ratios,
     }
-    signal = 'shuffled' if shuffle_labels else 'signal'
 
-    if output_preds:
-        results['{}_preds'.format(exp_string)] = []
-
-    for fold_no in range(num_folds):
-
-        try:
-            with warnings.catch_warnings():
-                # sklearn warns us if one of the stratification classes has fewer
-                # members than num_folds: in our case that will be the 'other'
-                # class, and it's fine to distribute those unevenly. so here we
-                # can ignore that warning.
-                warnings.filterwarnings('ignore',
-                                        message='The least populated class in y')
-                X_train_raw_df, X_test_raw_df, _ = cv.split_stratified(
-                   data_model.X_df, sample_info, num_folds=num_folds,
-                   fold_no=fold_no, seed=data_model.seed)
-        except ValueError:
-            if data_model.X_df.shape[0] == 0:
-                raise NoTrainSamplesError(
-                    'No train samples found for identifier: {}'.format(
-                        identifier)
-                )
-
-        y_train_df = data_model.y_df.reindex(X_train_raw_df.index)
-        y_test_df = data_model.y_df.reindex(X_test_raw_df.index)
-
-        X_train_df, X_test_df = tu.preprocess_data(X_train_raw_df,
-                                                   X_test_raw_df,
-                                                   data_model.gene_features,
-                                                   standardize_columns,
-                                                   data_model.subset_mad_genes)
-
-        if cfg.subsample_to_smallest:
-            sample_counts_df = pd.read_csv(cfg.sample_counts, sep='\t')
-            X_train_df, y_train_df = tu.subsample_to_smallest_cancer_type(
-                    X_train_df, y_train_df, sample_info, data_model.seed)
-            X_test_df, y_test_df = tu.subsample_to_smallest_cancer_type(
-                    X_test_df, y_test_df, sample_info, data_model.seed)
-
-        try:
-            model_results = train_model(
-                X_train=X_train_df,
-                X_test=X_test_df,
-                y_train=y_train_df,
-                alphas=cfg.alphas,
-                l1_ratios=cfg.l1_ratios,
-                seed=data_model.seed,
-                n_folds=cfg.folds,
-                max_iter=cfg.max_iter
+    estimator = Pipeline(
+        steps=[
+            (
+                "classify",
+                SGDClassifier(
+                    random_state=seed,
+                    class_weight="balanced",
+                    loss="log",
+                    max_iter=max_iter,
+                    tol=1e-3,
+                ),
             )
-        except ValueError as e:
-            if ('Only one class' in str(e)) or ('got 1 class' in str(e)):
-                raise OneClassError(
-                    'Only one class present in test set for identifier: '
-                    '{}'.format(identifier)
-                )
-            else:
-                # if not only one class error, just re-raise
-                raise e
+        ]
+    )
 
-        (cv_pipeline,
-         y_pred_train,
-         y_pred_test,
-         y_cv_df) = model_results
+    cv_pipeline = GridSearchCV(
+        estimator=estimator,
+        param_grid=clf_parameters,
+        n_jobs=-1,
+        cv=n_folds,
+        scoring="roc_auc",
+        return_train_score=True,
+    )
 
-        # get coefficients
-        coef_df = extract_coefficients(
-            cv_pipeline=cv_pipeline,
-            feature_names=X_train_df.columns,
-            signal=signal,
-            seed=data_model.seed
-        )
-        coef_df = coef_df.assign(identifier=identifier)
-        coef_df = coef_df.assign(training_data=training_data)
-        coef_df = coef_df.assign(fold=fold_no)
+    # Fit the model
+    cv_pipeline.fit(X=X_train, y=y_train.status)
 
-        try:
-            metric_df, auc_df, aupr_df = get_metrics(
-                y_train_df, y_test_df, y_cv_df, y_pred_train,
-                y_pred_test, identifier, training_data, signal,
-                data_model.seed, fold_no
-            )
-        except ValueError as e:
-            if 'Only one class' in str(e):
-                raise OneClassError(
-                    'Only one class present in test set for identifier: '
-                    '{}'.format(identifier)
-                )
-            else:
-                # if not only one class error, just re-raise
-                raise e
+    # Obtain cross validation results
+    y_cv = cross_val_predict(
+        cv_pipeline.best_estimator_,
+        X=X_train,
+        y=y_train.status,
+        cv=n_folds,
+        method="decision_function",
+    )
 
-        results['{}_metrics'.format(exp_string)].append(metric_df)
-        results['{}_auc'.format(exp_string)].append(auc_df)
-        results['{}_aupr'.format(exp_string)].append(aupr_df)
-        results['{}_coef'.format(exp_string)].append(coef_df)
+    # Get all performance results
+    y_predict_train = cv_pipeline.decision_function(X_train)
+    y_predict_test = cv_pipeline.decision_function(X_test)
 
-        if output_preds:
-            results['{}_preds'.format(exp_string)].append(
-                get_preds(X_test_df, y_test_df, cv_pipeline, fold_no)
-            )
-
-    return results
+    return cv_pipeline, y_predict_train, y_predict_test, y_cv
 
 
 def get_preds(X_test_df, y_test_df, cv_pipeline, fold_no):
@@ -262,112 +191,6 @@ def get_metrics(y_train_df, y_test_df, y_cv_df, y_pred_train, y_pred_test,
     aupr_df = pd.concat([train_pr_df, test_pr_df, cv_pr_df])
 
     return metric_df, auc_df, aupr_df
-
-
-def train_model(X_train,
-                X_test,
-                y_train,
-                alphas,
-                l1_ratios,
-                seed,
-                n_folds=4,
-                max_iter=1000):
-    """
-    Build the logic and sklearn pipelines to train x matrix based on input y
-
-    Arguments
-    ---------
-    X_train: pandas DataFrame of feature matrix for training data
-    X_test: pandas DataFrame of feature matrix for testing data
-    y_train: pandas DataFrame of processed y matrix (output from align_matrices())
-    alphas: list of alphas to perform cross validation over
-    l1_ratios: list of l1 mixing parameters to perform cross validation over
-    n_folds: int of how many folds of cross validation to perform
-    max_iter: the maximum number of iterations to test until convergence
-
-    Returns
-    ------
-    The full pipeline sklearn object and y matrix predictions for training, testing,
-    and cross validation
-    """
-    # Setup the classifier parameters
-    clf_parameters = {
-        "classify__loss": ["log"],
-        "classify__penalty": ["elasticnet"],
-        "classify__alpha": alphas,
-        "classify__l1_ratio": l1_ratios,
-    }
-
-    estimator = Pipeline(
-        steps=[
-            (
-                "classify",
-                SGDClassifier(
-                    random_state=seed,
-                    class_weight="balanced",
-                    loss="log",
-                    max_iter=max_iter,
-                    tol=1e-3,
-                ),
-            )
-        ]
-    )
-
-    cv_pipeline = GridSearchCV(
-        estimator=estimator,
-        param_grid=clf_parameters,
-        n_jobs=-1,
-        cv=n_folds,
-        scoring="roc_auc",
-        return_train_score=True,
-    )
-
-    # Fit the model
-    cv_pipeline.fit(X=X_train, y=y_train.status)
-
-    # Obtain cross validation results
-    y_cv = cross_val_predict(
-        cv_pipeline.best_estimator_,
-        X=X_train,
-        y=y_train.status,
-        cv=n_folds,
-        method="decision_function",
-    )
-
-    # Get all performance results
-    y_predict_train = cv_pipeline.decision_function(X_train)
-    y_predict_test = cv_pipeline.decision_function(X_test)
-
-    return cv_pipeline, y_predict_train, y_predict_test, y_cv
-
-
-def extract_coefficients(cv_pipeline, feature_names, signal, seed):
-    """
-    Pull out the coefficients from the trained classifiers
-
-    Arguments
-    ---------
-    cv_pipeline: the trained sklearn cross validation pipeline
-    feature_names: the column names of the x matrix used to train model (features)
-    results: a results object output from `get_threshold_metrics`
-    signal: the signal of interest
-    seed: the seed used to compress the data
-    """
-    final_pipeline = cv_pipeline.best_estimator_
-    final_classifier = final_pipeline.named_steps["classify"]
-
-    coef_df = pd.DataFrame.from_dict(
-        {"feature": feature_names, "weight": final_classifier.coef_[0]}
-    )
-
-    coef_df = (
-        coef_df.assign(abs=coef_df["weight"].abs())
-        .sort_values("abs", ascending=False)
-        .reset_index(drop=True)
-        .assign(signal=signal, seed=seed)
-    )
-
-    return coef_df
 
 
 def summarize_results(results,
