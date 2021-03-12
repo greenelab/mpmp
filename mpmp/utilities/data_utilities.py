@@ -246,15 +246,21 @@ def load_purity(mut_burden_df,
 
     if verbose:
         print('Loading tumor purity info...', file=sys.stderr)
-    purity_df = pd.read_csv(cfg.tumor_purity_data,
-                            sep='\t', index_col='array')
+
+    # some samples don't have purity calls, we can just drop them
+    purity_df = (
+        pd.read_csv(cfg.tumor_purity_data,sep='\t', index_col='array')
+          .dropna(subset=['purity'])
+    )
     purity_df.index.rename('sample_id', inplace=True)
+
     # for classification, we want to binarize purity values into above/below
     # the median (1 = above, 0 = below; this is arbitrary)
     if classify:
         purity_df['purity'] = (
             purity_df.purity > purity_df.purity.median()
         ).astype('int')
+
     # join mutation burden information and cancer type information
     # these are necessary to generate non-gene covariates later on
     purity_df = (purity_df
