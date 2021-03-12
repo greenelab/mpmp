@@ -180,6 +180,14 @@ if __name__ == '__main__':
                                         shuffle_labels,
                                         standardize_columns,
                                         io_args.output_preds)
+            # only save results if no exceptions
+            fu.save_results(output_dir,
+                            check_file,
+                            results,
+                            'purity',
+                            None,
+                            shuffle_labels,
+                            model_options)
         except NoTrainSamplesError:
             if io_args.verbose:
                 print('Skipping due to no train samples', file=sys.stderr)
@@ -194,15 +202,6 @@ if __name__ == '__main__':
                 log_columns,
                 [model_options.training_data, shuffle_labels, 'one_class']
             )
-        else:
-            # only save results if no exceptions
-            fu.save_results(output_dir,
-                            check_file,
-                            results,
-                            'purity',
-                            None,
-                            shuffle_labels,
-                            model_options)
 
         if purity_log_df is not None:
             fu.write_log_file(purity_log_df, io_args.log_file)
