@@ -1,5 +1,6 @@
 import os
 import sys
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -70,6 +71,117 @@ def load_compressed_prediction_results(results_dir, experiment_descriptor):
             id_results_df['experiment'] = experiment_descriptor
             results_df = pd.concat((results_df, id_results_df))
     return results_df
+
+
+def load_purity_binarized_results(results_dir):
+    """Load results of tumor purity prediction experiments.
+
+    Labels are binarized into above/below median.
+
+    Arguments
+    ---------
+    results_dir (str): directory containing results files
+
+    Returns
+    -------
+    results_df (pd.DataFrame): results of classification experiments
+    """
+    results_df = pd.DataFrame()
+    results_dir = Path(results_dir)
+    for results_file in results_dir.iterdir():
+        if not results_file.is_file(): continue
+        results_filename = str(results_file.stem)
+        if 'classify' not in results_filename: continue
+        if results_filename[0] == '.': continue
+        id_results_df = pd.read_csv(results_file, sep='\t')
+        if check_compressed_file(results_filename):
+            id_results_df.training_data += '_compressed'
+        results_df = pd.concat((results_df, id_results_df))
+    return results_df
+
+
+def load_purity_by_cancer_type(results_dir, sample_info_df):
+    """Load results of tumor purity prediction, grouped by cancer type.
+
+    Assumes labels are binarized into above/below median.
+
+    Arguments
+    ---------
+    results_dir (str): directory containing results files
+    sample_info_df (pd.DataFrame): contains cancer type info for samples
+
+    Returns
+    -------
+    results_df (pd.DataFrame): results of classification experiments
+    """
+    results_df = pd.DataFrame()
+    results_dir = Path(results_dir)
+    for results_file in results_dir.iterdir():
+        if not results_file.is_file(): continue
+        results_filename = str(results_file.stem)
+        if 'preds' not in results_filename: continue
+        if results_filename[0] == '.': continue
+        if check_compressed_file(results_filename):
+            training_data = '_'.join(results_filename.split('_')[:-4])
+            training_data += '_compressed'
+            signal = results_filename.split('_')[-4]
+            seed = int(results_filename.split('_')[-3].replace('s', ''))
+        else:
+            training_data = '_'.join(results_filename.split('_')[:-3])
+            signal = results_filename.split('_')[-3]
+            seed = int(results_filename.split('_')[-2].replace('s', ''))
+        id_results_df = pd.read_csv(results_file, sep='\t', index_col=0)
+        cancer_type_results_df = calculate_metrics_for_cancer_type(id_results_df,
+                                                                   training_data,
+                                                                   signal,
+                                                                   seed,
+                                                                   sample_info_df)
+        results_df = pd.concat((results_df, cancer_type_results_df))
+    return results_df
+
+
+def calculate_metrics_for_cancer_type(id_results_df,
+                                      training_data,
+                                      signal,
+                                      seed,
+                                      sample_info_df):
+    """Calculate classification metrics by cancer type for a single result."""
+    from mpmp.utilities.classify_utilities import get_threshold_metrics
+    cancer_type_results = []
+    for fold in id_results_df.fold_no.unique():
+        fold_df = (id_results_df[id_results_df.fold_no == fold]
+            .merge(sample_info_df, left_index=True, right_index=True)
+            .drop(columns=['sample_type', 'id_for_stratification'])
+        )
+        for cancer_type in fold_df.cancer_type.unique():
+            samples_df = fold_df[fold_df.cancer_type == cancer_type]
+            try:
+                with warnings.catch_warnings():
+                    # get rid of ROC/PR sample imbalance warnings, we'll catch
+                    # that case below
+                    warnings.filterwarnings('ignore',
+                                            message='No negative samples')
+                    warnings.filterwarnings('ignore',
+                                            message='No positive samples')
+                    warnings.filterwarnings('ignore',
+                                            message='invalid value encountered')
+                    aupr = (
+                        get_threshold_metrics(samples_df.true_class,
+                                              samples_df.positive_prob)
+                    )['aupr']
+                    auroc = (
+                        get_threshold_metrics(samples_df.true_class,
+                                              samples_df.positive_prob)
+                    )['auroc']
+            except ValueError: # only one class in y_true
+                aupr = np.nan
+                auroc = np.nan
+            cancer_type_results.append((training_data, signal, seed,
+                                        fold, cancer_type, aupr, auroc))
+    return pd.DataFrame(cancer_type_results,
+                        columns=['training_data', 'signal', 'seed',
+                                 'fold_no', 'cancer_type', 'aupr', 'auroc'])
+
 
 def check_compressed_file(results_filename):
     """Check if results file is from compressed experiments."""

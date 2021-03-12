@@ -58,20 +58,16 @@ def process_args():
                                      'parameters for training/evaluating model, '
                                      'these will affect output and are saved as '
                                      'experiment metadata ')
-    opts.add_argument('--compressed_only', action='store_true',
-                      help='only use TCGA samples that we have compressed '
-                           'data for. the default is to use only TCGA samples '
-                           'that we have any data for, not just compressed')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
-    opts.add_argument('--n_dim', type=int, default=100,
-                      choices=[100, 1000, 5000], # TODO store this somewhere central
-                      help='number of compressed components/dimensions to use')
     opts.add_argument('--num_folds', type=int, default=4,
                       help='number of folds of cross-validation to run')
     opts.add_argument('--seed', type=int, default=cfg.default_seed)
+    opts.add_argument('--subset_mad_genes', type=int, default=cfg.num_features_raw,
+                      help='if included, subset gene features to this number of '
+                           'features having highest mean absolute deviation')
     opts.add_argument('--training_data', type=str, default='expression',
-                      choices=list(cfg.compressed_data_types.keys()),
+                      choices=list(cfg.data_types.keys()),
                       help='what data type to train model on')
 
     args = parser.parse_args()
@@ -101,10 +97,7 @@ def process_args():
 
     # add information about valid samples to model options
     model_options.sample_overlap_data_types = list(
-        get_overlap_data_types(
-            debug=model_options.debug,
-            compressed_data=True
-        ).keys()
+        get_overlap_data_types(debug=model_options.debug).keys()
     )
 
     return io_args, model_options
@@ -127,7 +120,7 @@ if __name__ == '__main__':
 
     # create empty log file if it doesn't exist
     log_columns = [
-        'gene',
+        'cancer_type',
         'training_data',
         'shuffle_labels',
         'skip_reason'
@@ -139,9 +132,8 @@ if __name__ == '__main__':
         log_df.to_csv(io_args.log_file, sep='\t')
 
     tcga_data = TCGADataModel(seed=model_options.seed,
+                              subset_mad_genes=model_options.subset_mad_genes,
                               training_data=model_options.training_data,
-                              load_compressed_data=True,
-                              n_dim=model_options.n_dim,
                               sample_info_df=sample_info_df,
                               verbose=io_args.verbose,
                               debug=model_options.debug)
@@ -161,7 +153,7 @@ if __name__ == '__main__':
                         file=sys.stdout)
 
         for gene_idx, gene_series in progress:
-            mutation_log_df = None
+            cancer_type_log_df = None
             gene = gene_series.gene
             classification = gene_series.classification
             progress.set_description('gene: {}'.format(gene))
@@ -182,27 +174,28 @@ if __name__ == '__main__':
                 if io_args.verbose:
                     print('Skipping because results file exists already: gene {}'.format(
                         gene), file=sys.stderr)
-                mutation_log_df = fu.generate_log_df(
+                cancer_type_log_df = fu.generate_log_df(
                     log_columns,
                     [gene, model_options.training_data, shuffle_labels, 'file_exists']
                 )
-                fu.write_log_file(mutation_log_df, io_args.log_file)
+                fu.write_log_file(cancer_type_log_df, io_args.log_file)
                 continue
             except KeyError:
                 # this might happen if the given gene isn't in the mutation data
                 # (or has a different alias, TODO we could check for this later)
                 print('Gene {} not found in mutation data, skipping'.format(gene),
                       file=sys.stderr)
-                mutation_log_df = fu.generate_log_df(
+                cancer_type_log_df = fu.generate_log_df(
                     log_columns,
                     [gene, model_options.training_data, shuffle_labels, 'gene_not_found']
                 )
-                fu.write_log_file(mutation_log_df, io_args.log_file)
+                fu.write_log_file(cancer_type_log_df, io_args.log_file)
                 continue
 
             try:
-                # columns should be standardized before compression
-                # so we don't want to standardize them again here
+                # for now, don't standardize methylation data
+                standardize_columns = (model_options.training_data in
+                                       cfg.standardize_data_types)
                 results = run_cv_stratified(tcga_data,
                                             'gene',
                                             gene,
@@ -210,24 +203,7 @@ if __name__ == '__main__':
                                             sample_info_df,
                                             model_options.num_folds,
                                             shuffle_labels,
-                                            standardize_columns=False)
-            except NoTrainSamplesError:
-                if io_args.verbose:
-                    print('Skipping due to no train samples: gene {}'.format(
-                        gene), file=sys.stderr)
-                mutation_log_df = fu.generate_log_df(
-                    log_columns,
-                    [gene, model_options.training_data, shuffle_labels, 'no_train_samples']
-                )
-            except OneClassError:
-                if io_args.verbose:
-                    print('Skipping due to one holdout class: gene {}'.format(
-                        gene), file=sys.stderr)
-                mutation_log_df = fu.generate_log_df(
-                    log_columns,
-                    [gene, model_options.training_data, shuffle_labels, 'one_class']
-                )
-            else:
+                                            standardize_columns)
                 # only save results if no exceptions
                 fu.save_results(gene_dir,
                                 check_file,
@@ -236,7 +212,23 @@ if __name__ == '__main__':
                                 gene,
                                 shuffle_labels,
                                 model_options)
+            except NoTrainSamplesError:
+                if io_args.verbose:
+                    print('Skipping due to no train samples: gene {}'.format(
+                        gene), file=sys.stderr)
+                cancer_type_log_df = fu.generate_log_df(
+                    log_columns,
+                    [gene, model_options.training_data, shuffle_labels, 'no_train_samples']
+                )
+            except OneClassError:
+                if io_args.verbose:
+                    print('Skipping due to one holdout class: gene {}'.format(
+                        gene), file=sys.stderr)
+                cancer_type_log_df = fu.generate_log_df(
+                    log_columns,
+                    [gene, model_options.training_data, shuffle_labels, 'one_class']
+                )
 
-            if mutation_log_df is not None:
-                fu.write_log_file(mutation_log_df, io_args.log_file)
+            if cancer_type_log_df is not None:
+                fu.write_log_file(cancer_type_log_df, io_args.log_file)
 

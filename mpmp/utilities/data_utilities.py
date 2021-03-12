@@ -55,7 +55,7 @@ def load_raw_data(train_data_type, verbose=False, load_subset=False):
     return data_df
 
 
-def load_compressed_data(data_type, n_dim, verbose=False, debug=False):
+def load_compressed_data(data_type, n_dim, verbose=False, load_subset=False):
     """Load compressed data for the given data type and compressed dimensions.
 
     Arguments
@@ -69,7 +69,7 @@ def load_compressed_data(data_type, n_dim, verbose=False, debug=False):
     -------
     data_df: samples x latent dimensions dataframe
     """
-    if debug:
+    if load_subset:
         raise NotImplementedError('no subsampled compressed data')
     try:
         data_df = pd.read_csv(
@@ -224,6 +224,28 @@ def load_sample_info(train_data_type, verbose=False):
         print('Loading sample info...', file=sys.stderr)
     return pd.read_csv(cfg.sample_infos[train_data_type],
                        sep='\t', index_col='sample_id')
+
+
+def load_purity(mut_burden_df, sample_info_df, verbose=False):
+    if verbose:
+        print('Loading tumor purity info...', file=sys.stderr)
+    purity_df = pd.read_csv(cfg.tumor_purity_data,
+                            sep='\t', index_col='array')
+    purity_df.index.rename('sample_id', inplace=True)
+    # for now, we want to binarize purity values into above/below the median
+    # eventually we'll set up regression/continuous prediction
+    purity_df['bin_purity'] = (
+        purity_df.purity > purity_df.purity.median()
+    ).astype('int')
+    # join mutation burden information and cancer type information
+    # these are necessary to generate non-gene covariates later on
+    purity_df = (purity_df
+        .merge(mut_burden_df, left_index=True, right_index=True)
+        .merge(sample_info_df, left_index=True, right_index=True)
+        .rename(columns={'cancer_type': 'DISEASE',
+                         'bin_purity': 'status'})
+    )
+    return purity_df.loc[:, ['status', 'DISEASE', 'log10_mut']]
 
 
 def split_argument_groups(args, parser):
