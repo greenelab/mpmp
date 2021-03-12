@@ -34,8 +34,7 @@ manifest_df.head()
 # In[3]:
 
 
-if not os.path.exists(cfg.raw_data_dir):
-    os.makedirs(cfg.raw_data_dir)
+os.makedirs(cfg.raw_data_dir, exist_ok=True)
     
 rnaseq_id, rnaseq_filename = manifest_df.loc['rna_seq'].id, manifest_df.loc['rna_seq'].filename
 url = 'http://api.gdc.cancer.gov/data/{}'.format(rnaseq_id)
