@@ -31,7 +31,8 @@ def load_stratified_prediction_results(results_dir, experiment_descriptor):
             if not results_file.is_file(): continue
             results_filename = str(results_file.stem)
             if check_compressed_file(results_filename): continue
-            if 'classify' not in results_filename: continue
+            if ('classify' not in results_filename or
+                'metrics' not in results_filename): continue
             if results_filename[0] == '.': continue
             id_results_df = pd.read_csv(results_file, sep='\t')
             id_results_df['experiment'] = experiment_descriptor
@@ -63,7 +64,8 @@ def load_compressed_prediction_results(results_dir, experiment_descriptor):
             if not results_file.is_file(): continue
             results_filename = str(results_file.stem)
             if not check_compressed_file(results_filename): continue
-            if 'classify' not in results_filename: continue
+            if ('classify' not in results_filename or
+                'metrics' not in results_filename): continue
             if results_filename[0] == '.': continue
             n_dims = int(results_filename.split('_')[-3].replace('n', ''))
             id_results_df = pd.read_csv(results_file, sep='\t')
@@ -91,7 +93,34 @@ def load_purity_binarized_results(results_dir):
     for results_file in results_dir.iterdir():
         if not results_file.is_file(): continue
         results_filename = str(results_file.stem)
-        if 'classify' not in results_filename: continue
+        if ('classify' not in results_filename or
+            'metrics' not in results_filename): continue
+        if results_filename[0] == '.': continue
+        id_results_df = pd.read_csv(results_file, sep='\t')
+        if check_compressed_file(results_filename):
+            id_results_df.training_data += '_compressed'
+        results_df = pd.concat((results_df, id_results_df))
+    return results_df
+
+
+def load_purity_results(results_dir):
+    """Load results of tumor purity regression experiments.
+
+    Arguments
+    ---------
+    results_dir (str): directory containing results files
+
+    Returns
+    -------
+    results_df (pd.DataFrame): results of prediction experiments
+    """
+    results_df = pd.DataFrame()
+    results_dir = Path(results_dir)
+    for results_file in results_dir.iterdir():
+        if not results_file.is_file(): continue
+        results_filename = str(results_file.stem)
+        if ('regress' not in results_filename or
+            'metrics' not in results_filename): continue
         if results_filename[0] == '.': continue
         id_results_df = pd.read_csv(results_file, sep='\t')
         if check_compressed_file(results_filename):
