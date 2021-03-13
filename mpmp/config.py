@@ -82,6 +82,11 @@ max_iter = 200
 alphas = [0.1, 0.13, 0.15, 0.2, 0.25, 0.3]
 l1_ratios = [0.15, 0.16, 0.2, 0.25, 0.3, 0.4]
 
+# hyperparameters for regression experiments
+reg_alphas = [0.001, 0.01, 0.1, 0.5, 1]
+reg_l1_ratios = [0.1, 0.5, 0.7, 0.9, 0.95, 0.99, 1.0]
+learning_rates = [0.01, 0.001, 0.005, 1e-4, 5e-4]
+
 # repo/commit information to retrieve precomputed cancer gene information
 # this is used in data_utilities.py
 top50_base_url = "https://github.com/greenelab/BioBombe/raw"

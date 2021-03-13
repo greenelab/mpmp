@@ -10,6 +10,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import (
     cross_val_predict,
     GridSearchCV,
+    RandomizedSearchCV,
 )
 
 def train_regressor(X_train,
@@ -39,11 +40,13 @@ def train_regressor(X_train,
     testing, and cross validation
     """
     # Setup the regression parameters
+    import mpmp.config as cfg
     reg_parameters = {
         "regress__loss": ["squared_loss"],
         "regress__penalty": ["elasticnet"],
         "regress__alpha": alphas,
         "regress__l1_ratio": l1_ratios,
+        "regress__eta0": cfg.learning_rates
     }
 
     estimator = Pipeline(
@@ -54,15 +57,25 @@ def train_regressor(X_train,
                     random_state=seed,
                     loss="squared_loss",
                     max_iter=max_iter,
+                    learning_rate='constant',
                     tol=1e-3,
                 ),
             )
         ]
     )
 
-    cv_pipeline = GridSearchCV(
+    # cv_pipeline = GridSearchCV(
+    #     estimator=estimator,
+    #     param_grid=reg_parameters,
+    #     n_jobs=-1,
+    #     cv=n_folds,
+    #     scoring="neg_mean_squared_error",
+    #     return_train_score=True,
+    # )
+    cv_pipeline = RandomizedSearchCV(
         estimator=estimator,
-        param_grid=reg_parameters,
+        param_distributions=reg_parameters,
+        n_iter=30,
         n_jobs=-1,
         cv=n_folds,
         scoring="neg_mean_squared_error",
