@@ -5,7 +5,7 @@ Functions for training regression models on TCGA data.
 import numpy as np
 import pandas as pd
 from sklearn.pipeline import Pipeline
-from sklearn.linear_model import SGDRegressor
+from sklearn.linear_model import ElasticNet
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import (
     cross_val_predict,
@@ -42,40 +42,24 @@ def train_regressor(X_train,
     # Setup the regression parameters
     import mpmp.config as cfg
     reg_parameters = {
-        "regress__loss": ["squared_loss"],
-        "regress__penalty": ["elasticnet"],
         "regress__alpha": alphas,
         "regress__l1_ratio": l1_ratios,
-        "regress__eta0": cfg.learning_rates
     }
 
     estimator = Pipeline(
         steps=[
             (
                 "regress",
-                SGDRegressor(
+                ElasticNet(
                     random_state=seed,
-                    loss="squared_loss",
-                    max_iter=max_iter,
-                    learning_rate='constant',
-                    tol=1e-3,
-                ),
+                )
             )
         ]
     )
 
-    # cv_pipeline = GridSearchCV(
-    #     estimator=estimator,
-    #     param_grid=reg_parameters,
-    #     n_jobs=-1,
-    #     cv=n_folds,
-    #     scoring="neg_mean_squared_error",
-    #     return_train_score=True,
-    # )
-    cv_pipeline = RandomizedSearchCV(
+    cv_pipeline = GridSearchCV(
         estimator=estimator,
-        param_distributions=reg_parameters,
-        n_iter=30,
+        param_grid=reg_parameters,
         n_jobs=-1,
         cv=n_folds,
         scoring="neg_mean_squared_error",
