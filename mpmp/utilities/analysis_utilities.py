@@ -129,7 +129,7 @@ def load_purity_results(results_dir):
     return results_df
 
 
-def load_purity_by_cancer_type(results_dir, sample_info_df):
+def load_purity_by_cancer_type(results_dir, sample_info_df, classify=True):
     """Load results of tumor purity prediction, grouped by cancer type.
 
     Assumes labels are binarized into above/below median.
@@ -148,23 +148,27 @@ def load_purity_by_cancer_type(results_dir, sample_info_df):
     for results_file in results_dir.iterdir():
         if not results_file.is_file(): continue
         results_filename = str(results_file.stem)
-        if 'preds' not in results_filename: continue
+        if classify and ('classify' not in results_filename
+                         or 'preds' not in results_filename): continue
+        if not classify and ('regress' not in results_filename
+                             or 'preds' not in results_filename): continue
         if results_filename[0] == '.': continue
         if check_compressed_file(results_filename):
-            training_data = '_'.join(results_filename.split('_')[:-4])
+            training_data = '_'.join(results_filename.split('_')[:-5])
             training_data += '_compressed'
-            signal = results_filename.split('_')[-4]
+            signal = results_filename.split('_')[-5]
             seed = int(results_filename.split('_')[-3].replace('s', ''))
         else:
-            training_data = '_'.join(results_filename.split('_')[:-3])
-            signal = results_filename.split('_')[-3]
+            training_data = '_'.join(results_filename.split('_')[:-4])
+            signal = results_filename.split('_')[-4]
             seed = int(results_filename.split('_')[-2].replace('s', ''))
         id_results_df = pd.read_csv(results_file, sep='\t', index_col=0)
         cancer_type_results_df = calculate_metrics_for_cancer_type(id_results_df,
                                                                    training_data,
                                                                    signal,
                                                                    seed,
-                                                                   sample_info_df)
+                                                                   sample_info_df,
+                                                                   classify=classify)
         results_df = pd.concat((results_df, cancer_type_results_df))
     return results_df
 
@@ -173,8 +177,8 @@ def calculate_metrics_for_cancer_type(id_results_df,
                                       training_data,
                                       signal,
                                       seed,
-                                      sample_info_df):
-    from mpmp.prediction.classification import get_threshold_metrics
+                                      sample_info_df,
+                                      classify=True):
     cancer_type_results = []
     for fold in id_results_df.fold_no.unique():
         fold_df = (id_results_df[id_results_df.fold_no == fold]
@@ -183,32 +187,46 @@ def calculate_metrics_for_cancer_type(id_results_df,
         )
         for cancer_type in fold_df.cancer_type.unique():
             samples_df = fold_df[fold_df.cancer_type == cancer_type]
-            try:
-                with warnings.catch_warnings():
-                    # get rid of ROC/PR sample imbalance warnings, we'll catch
-                    # that case below
-                    warnings.filterwarnings('ignore',
-                                            message='No negative samples')
-                    warnings.filterwarnings('ignore',
-                                            message='No positive samples')
-                    warnings.filterwarnings('ignore',
-                                            message='invalid value encountered')
-                    aupr = (
-                        get_threshold_metrics(samples_df.true_class,
-                                              samples_df.positive_prob)
-                    )['aupr']
-                    auroc = (
-                        get_threshold_metrics(samples_df.true_class,
-                                              samples_df.positive_prob)
-                    )['auroc']
-            except ValueError: # only one class in y_true
-                aupr = np.nan
-                auroc = np.nan
-            cancer_type_results.append((training_data, signal, seed,
-                                        fold, cancer_type, aupr, auroc))
+
+            if classify:
+                from mpmp.prediction.classification import get_threshold_metrics
+                try:
+                    with warnings.catch_warnings():
+                        # get rid of ROC/PR sample imbalance warnings, we'll catch
+                        # that case below
+                        warnings.filterwarnings('ignore',
+                                                message='No negative samples')
+                        warnings.filterwarnings('ignore',
+                                                message='No positive samples')
+                        warnings.filterwarnings('ignore',
+                                                message='invalid value encountered')
+                        aupr = (
+                            get_threshold_metrics(samples_df.true_class,
+                                                  samples_df.positive_prob)
+                        )['aupr']
+                        auroc = (
+                            get_threshold_metrics(samples_df.true_class,
+                                                  samples_df.positive_prob)
+                        )['auroc']
+                except ValueError: # only one class in y_true
+                    aupr = np.nan
+                    auroc = np.nan
+                metric_names = ['aupr', 'auroc']
+                cancer_type_results.append((training_data, signal, seed,
+                                            fold, cancer_type, aupr, auroc))
+
+            else:
+                from mpmp.prediction.regression import get_continuous_metrics
+                metrics = get_continuous_metrics(samples_df.true_label,
+                                                 samples_df.predicted_output)
+                rmse = metrics['rmse']
+                r2 = metrics['r2']
+                metric_names = ['rmse', 'r2']
+                cancer_type_results.append((training_data, signal, seed,
+                                            fold, cancer_type, rmse, r2))
     return pd.DataFrame(cancer_type_results,
                         columns=['training_data', 'signal', 'seed',
-                                 'fold_no', 'cancer_type', 'aupr', 'auroc'])
+                                 'fold_no', 'cancer_type'] + metric_names)
 
 
 def check_compressed_file(results_filename):
