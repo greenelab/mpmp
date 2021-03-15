@@ -112,7 +112,7 @@ def run_cv_stratified(data_model,
                 l1_ratios=(cfg.l1_ratios if classify else cfg.reg_l1_ratios),
                 seed=data_model.seed,
                 n_folds=cfg.folds,
-                max_iter=cfg.max_iter
+                max_iter=(cfg.max_iter if classify else cfg.reg_max_iter)
             )
         except ValueError as e:
             if ('Only one class' in str(e)) or ('got 1 class' in str(e)):

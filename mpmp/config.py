@@ -83,6 +83,7 @@ alphas = [0.1, 0.13, 0.15, 0.2, 0.25, 0.3]
 l1_ratios = [0.15, 0.16, 0.2, 0.25, 0.3, 0.4]
 
 # hyperparameters for regression experiments
+reg_max_iter = 500
 reg_alphas = [0.001, 0.01, 0.1, 0.5, 1]
 reg_l1_ratios = [0.1, 0.5, 0.7, 0.9, 0.95, 0.99, 1.0]
 

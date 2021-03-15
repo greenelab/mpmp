@@ -88,12 +88,12 @@ def train_regressor(X_train,
 def get_preds(X_test_df, y_test_df, cv_pipeline, fold_no):
 
     # get predictions
-    y_probs_test = cv_pipeline.predict(X_test_df)
+    y_preds_test = cv_pipeline.predict(X_test_df)
 
     return pd.DataFrame({
         'fold_no': fold_no,
         'true_label': y_test_df.status,
-        'predicted_output': y_probs_test[:, 1]
+        'predicted_output': y_preds_test
     }, index=y_test_df.index)
 
 

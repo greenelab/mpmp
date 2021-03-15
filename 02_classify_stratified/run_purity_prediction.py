@@ -92,8 +92,14 @@ def process_args():
 
     # add some additional hyperparameters/ranges from config file to model options
     # these shouldn't be changed by the user, so they aren't added as arguments
-    model_options.alphas = cfg.alphas
-    model_options.l1_ratios = cfg.l1_ratios
+    if classify:
+        model_options.max_iter = cfg.max_iter
+        model_options.alphas = cfg.alphas
+        model_options.l1_ratios = cfg.l1_ratios
+    else:
+        model_options.max_iter = cfg.reg_max_iter
+        model_options.alphas = cfg.reg_alphas
+        model_options.l1_ratios = cfg.reg_l1_ratios
     model_options.standardize_data_types = cfg.standardize_data_types
 
     # add information about valid samples to model options
