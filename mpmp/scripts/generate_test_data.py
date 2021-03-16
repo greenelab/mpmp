@@ -9,7 +9,7 @@ import pandas as pd
 
 import mpmp.test_config as tcfg
 from mpmp.data_models.tcga_data_model import TCGADataModel
-import mpmp.prediction.classification as cls
+from mpmp.prediction.cross_validation import run_cv_stratified
 import mpmp.utilities.data_utilities as du
 
 def generate_data_model(data_type, verbose=False):
@@ -32,14 +32,14 @@ def generate_stratified_test_data(tcga_data, data_type, sample_info_df, verbose=
                                         classification,
                                         gene_dir=None,
                                         shuffle_labels=False)
-        results = cls.run_cv_stratified(tcga_data,
-                                        'gene',
-                                        gene,
-                                        data_type,
-                                        sample_info_df,
-                                        num_folds=4,
-                                        standardize_columns=True,
-                                        shuffle_labels=False)
+        results = run_cv_stratified(tcga_data,
+                                    'gene',
+                                    gene,
+                                    data_type,
+                                    sample_info_df,
+                                    num_folds=4,
+                                    standardize_columns=True,
+                                    shuffle_labels=False)
         metrics_df = pd.concat(results['gene_metrics'])
         np.savetxt(output_file, metrics_df['auroc'].values)
 
