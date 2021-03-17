@@ -92,7 +92,7 @@ def process_args():
 
     # add some additional hyperparameters/ranges from config file to model options
     # these shouldn't be changed by the user, so they aren't added as arguments
-    if classify:
+    if model_options.classify:
         model_options.max_iter = cfg.max_iter
         model_options.alphas = cfg.alphas
         model_options.l1_ratios = cfg.l1_ratios
