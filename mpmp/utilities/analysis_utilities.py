@@ -138,10 +138,11 @@ def load_purity_by_cancer_type(results_dir, sample_info_df, classify=True):
     ---------
     results_dir (str): directory containing results files
     sample_info_df (pd.DataFrame): contains cancer type info for samples
+    classify (bool): look for classification results if true
 
     Returns
     -------
-    results_df (pd.DataFrame): results of classification experiments
+    results_df (pd.DataFrame): results of prediction experiments
     """
     results_df = pd.DataFrame()
     results_dir = Path(results_dir)

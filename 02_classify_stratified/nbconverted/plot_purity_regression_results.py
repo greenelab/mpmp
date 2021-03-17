@@ -38,8 +38,6 @@ results_df = (
     au.load_purity_results(results_dir)
       .drop(columns=['identifier'])
 )
-# all me_450k results are compressed
-results_df[results_df.training_data == 'me_450k'] = 'me_450k_compressed'
 print(results_df.shape)
 print(results_df.training_data.unique())
 results_df.head()
@@ -81,8 +79,6 @@ import mpmp.utilities.data_utilities as du
 sample_info_df = du.load_sample_info('expression')
 results_df = au.load_purity_by_cancer_type(results_dir, sample_info_df,
                                            classify=False)
-# all me_450k results are compressed
-results_df[results_df.training_data == 'me_450k'] = 'me_450k_compressed'
 print(results_df.shape)
 print(results_df.training_data.unique())
 results_df.head()

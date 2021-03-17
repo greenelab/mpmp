@@ -26,7 +26,7 @@ import mpmp.utilities.analysis_utilities as au
 
 # set results directory
 results_dir = Path(cfg.results_dir,
-                   'purity_binarized_results',
+                   'purity_binarized_new',
                    'purity').resolve()
 
 
@@ -37,8 +37,6 @@ results_df = (
     au.load_purity_binarized_results(results_dir)
       .drop(columns=['identifier'])
 )
-# all me_450k results are compressed
-results_df[results_df.training_data == 'me_450k'] = 'me_450k_compressed'
 print(results_df.shape)
 print(results_df.training_data.unique())
 results_df.head()
@@ -75,9 +73,7 @@ axarr[1].legend(title='Data type')
 import mpmp.utilities.data_utilities as du
 sample_info_df = du.load_sample_info('expression')
 results_df = au.load_purity_by_cancer_type(results_dir, sample_info_df)
-# all me_450k results are compressed
-# results_df[results_df.training_data == 'me_450k'] = 'me_450k_compressed'
-# print(results_df.shape)
+print(results_df.training_data.unique())
 results_df.head()
 
 
