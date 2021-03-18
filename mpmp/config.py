@@ -10,6 +10,7 @@ results_dir = repo_root / 'results'
 raw_data_dir = data_dir / 'raw'
 pancan_data = data_dir / 'pancancer_data.pkl'
 sample_counts = data_dir / 'tcga_sample_counts.tsv'
+methylation_manifest = data_dir / 'HumanMethylation450_15017482_v1-2.csv'
 
 # location of sample info
 sample_info_dir = data_dir / 'sample_info'
@@ -99,6 +100,13 @@ cancer_types_url = (
 sample_types_url = (
     'https://raw.githubusercontent.com/cognoma/cancer-data/{}/mapping/tcga_sampletype_codes.csv'.format(
         sample_commit)
+)
+
+# location of Illumina 450K methylation array manifest
+# this file contains info about probe type, chromosome, probe functional
+# classification, etc.
+manifest_url = (
+    'ftp://webdata2:webdata2@ussd-ftp.illumina.com/downloads/ProductFiles/HumanMethylation450/HumanMethylation450_15017482_v1-2.csv'
 )
 
 # data types to standardize columns for

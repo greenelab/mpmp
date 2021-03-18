@@ -6,6 +6,7 @@
 data/raw/*
 data/expression_confusion_matrix.tsv
 data/exp_compressed/*
+data/HumanMethylation450_15017482_v1-2.csv
 data/methylation_450k*.pkl
 data/me_compressed/*
 data/me_preprocessed/*
