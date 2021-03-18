@@ -10,7 +10,9 @@ results_dir = repo_root / 'results'
 raw_data_dir = data_dir / 'raw'
 pancan_data = data_dir / 'pancancer_data.pkl'
 sample_counts = data_dir / 'tcga_sample_counts.tsv'
+
 methylation_manifest = data_dir / 'HumanMethylation450_15017482_v1-2.csv'
+cross_reactive_probe_list = data_dir / 'cross_reactive_probes.txt'
 
 # location of sample info
 sample_info_dir = data_dir / 'sample_info'
