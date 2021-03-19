@@ -76,7 +76,7 @@ def load_compressed_prediction_results(results_dir, experiment_descriptor):
 
 
 def load_purity_results(results_dir, classify=True):
-    """Load results of tumor purity regression experiments.
+    """Load results of tumor purity experiments.
 
     Arguments
     ---------
