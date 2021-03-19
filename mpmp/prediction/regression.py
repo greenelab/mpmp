@@ -89,6 +89,11 @@ def train_regressor(X_train,
 
 
 def get_preds(X_test_df, y_test_df, cv_pipeline, fold_no):
+    """Get model-predicted output (label values) for test data.
+
+    Also returns true label (target variable), to enable quantitative
+    comparisons in analyses.
+    """
 
     # get predictions
     y_preds_test = cv_pipeline.predict(X_test_df)

@@ -99,6 +99,10 @@ def train_classifier(X_train,
 
 
 def get_preds(X_test_df, y_test_df, cv_pipeline, fold_no):
+    """Get model-predicted probability of positive class for test data.
+
+    Also returns true class, to enable quantitative comparisons in analyses.
+    """
 
     # get probability of belonging to positive class
     y_probs_test = cv_pipeline.predict_proba(X_test_df)
