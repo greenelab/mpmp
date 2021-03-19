@@ -3,10 +3,13 @@
 *.egg-info*
 
 # don't track large data files
+# these can all be generated de novo using scripts in 00_download_data
 data/raw/*
 data/expression_confusion_matrix.tsv
 data/exp_compressed/*
 data/HumanMethylation450_15017482_v1-2.csv
+data/methylation_27k*.tsv
+data/methylation_27k_filtered_probe_types.txt
 data/methylation_450k*.pkl
 data/me_compressed/*
 data/me_preprocessed/*
