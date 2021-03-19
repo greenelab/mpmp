@@ -21,6 +21,9 @@ colnames(beta_t) <- sample_names
 # TODO: remove or skip invalid cols
 # beta_skip <- beta_t[,c(1:1024,1026:9749,9751:11975)]
 # beta_pbc <- champ.norm(beta=beta_skip, method='PBC', cores=4)
+
+# note that write.table changes hyphens in TCGA sample identifiers to dots
+# the calling script (e.g. in Python) needs to change them back
 # write.table(beta_pbc, 'data/methylation_27k_pbc_normalized.tsv', sep='\t')
 
 # run BMIQ method on each sample (column)
@@ -38,5 +41,7 @@ BMIQ_skip_errors <- function(beta) {
 }
 
 beta_bmiq <- apply(beta_t, 2, BMIQ_skip_errors)
+
+# see write.table hyphen note above
 write.table(beta_bmiq, 'data/methylation_27k_bmiq_normalized.tsv', sep='\t')
 
