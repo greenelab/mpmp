@@ -1,4 +1,6 @@
 #!/bin/bash
+# Script to run binarized tumor purity classification experiments, across
+# different data types and compressed/uncompressed data sets.
 RESULTS_DIR=./results/purity_binarized_new
 ERRORS_DIR=./purity_binarized_errors
 N_DIM=5000

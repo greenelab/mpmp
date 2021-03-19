@@ -1,4 +1,6 @@
 #!/bin/bash
+# Script to run tumor purity regression experiments, across different data
+# types and compressed/uncompressed data sets.
 RESULTS_DIR=./results/purity_reg_results
 ERRORS_DIR=./purity_reg_errors
 N_DIM=5000
