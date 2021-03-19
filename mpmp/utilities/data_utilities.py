@@ -226,24 +226,48 @@ def load_sample_info(train_data_type, verbose=False):
                        sep='\t', index_col='sample_id')
 
 
-def load_purity(mut_burden_df, sample_info_df, verbose=False):
+def load_purity(mut_burden_df,
+                sample_info_df,
+                classify=False,
+                verbose=False):
+    """Load tumor purity data.
+
+    Arguments
+    ---------
+    mut_burden_df (pd.DataFrame): dataframe with sample mutation burden info
+    sample_info_df (pd.DataFrame): dataframe with sample cancer type info
+    classify (bool): if True, binarize tumor purity values above/below median
+    verbose (bool): if True, print verbose output
+
+    Returns
+    -------
+    purity_df (pd.DataFrame): dataframe where the "status" attribute is purity
+    """
+
     if verbose:
         print('Loading tumor purity info...', file=sys.stderr)
-    purity_df = pd.read_csv(cfg.tumor_purity_data,
-                            sep='\t', index_col='array')
+
+    # some samples don't have purity calls, we can just drop them
+    purity_df = (
+        pd.read_csv(cfg.tumor_purity_data,sep='\t', index_col='array')
+          .dropna(subset=['purity'])
+    )
     purity_df.index.rename('sample_id', inplace=True)
-    # for now, we want to binarize purity values into above/below the median
-    # eventually we'll set up regression/continuous prediction
-    purity_df['bin_purity'] = (
-        purity_df.purity > purity_df.purity.median()
-    ).astype('int')
+
+    # for classification, we want to binarize purity values into above/below
+    # the median (1 = above, 0 = below; this is arbitrary)
+    if classify:
+        purity_df['purity'] = (
+            purity_df.purity > purity_df.purity.median()
+        ).astype('int')
+
     # join mutation burden information and cancer type information
     # these are necessary to generate non-gene covariates later on
     purity_df = (purity_df
         .merge(mut_burden_df, left_index=True, right_index=True)
         .merge(sample_info_df, left_index=True, right_index=True)
         .rename(columns={'cancer_type': 'DISEASE',
-                         'bin_purity': 'status'})
+                         'purity': 'status'})
     )
     return purity_df.loc[:, ['status', 'DISEASE', 'log10_mut']]
 

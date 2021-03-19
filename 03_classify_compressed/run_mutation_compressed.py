@@ -17,7 +17,7 @@ from mpmp.exceptions import (
     NoTestSamplesError,
     OneClassError,
 )
-from mpmp.utilities.classify_utilities import run_cv_stratified
+from mpmp.prediction.cross_validation import run_cv_stratified
 import mpmp.utilities.data_utilities as du
 import mpmp.utilities.file_utilities as fu
 from mpmp.utilities.tcga_utilities import get_overlap_data_types

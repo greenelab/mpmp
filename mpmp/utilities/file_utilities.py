@@ -59,7 +59,7 @@ def construct_filename(output_dir,
                                         extension))
 
 
-def save_model_options(output_dir, model_options):
+def save_model_options(output_dir, model_options, classify=True):
     """Save model hyperparameters/metadata to output directory.
 
     model_options is an argparse Namespace, and is converted to a dictionary
@@ -69,6 +69,7 @@ def save_model_options(output_dir, model_options):
                                      'model_options',
                                      '.pkl',
                                      model_options.training_data,
+                                     ('classify' if classify else 'regression'),
                                      s=model_options.seed)
     with open(output_file, 'wb') as f:
         pkl.dump(vars(model_options), f)
@@ -77,7 +78,8 @@ def save_model_options(output_dir, model_options):
 def check_output_file(output_dir,
                       identifier,
                       shuffle_labels,
-                      model_options):
+                      model_options,
+                      classify=True):
     """Check if results already exist for a given experiment identifier.
 
     If the file does not exist, return the filename.
@@ -90,6 +92,7 @@ def check_output_file(output_dir,
                                     identifier,
                                     model_options.training_data,
                                     signal,
+                                    ('classify' if classify else 'regression'),
                                     s=model_options.seed,
                                     n=model_options.n_dim)
     if check_file.is_file():
@@ -106,15 +109,43 @@ def save_results(output_dir,
                  exp_string,
                  identifier,
                  shuffle_labels,
-                 model_options):
+                 model_options,
+                 classify=True):
     """Save results of a single experiment for a single identifier."""
 
-    auc_df = pd.concat(results[
-        '{}_auc'.format(exp_string)
-    ])
-    aupr_df = pd.concat(results[
-        '{}_aupr'.format(exp_string)
-    ])
+    signal = 'shuffled' if shuffle_labels else 'signal'
+
+    if classify:
+        auc_df = pd.concat(results[
+            '{}_auc'.format(exp_string)
+        ])
+        output_file = construct_filename(output_dir,
+                                         'auc_threshold_metrics',
+                                         '.tsv.gz',
+                                         identifier,
+                                         model_options.training_data,
+                                         signal,
+                                         s=model_options.seed,
+                                         n=model_options.n_dim)
+        auc_df.to_csv(
+            output_file, sep="\t", index=False, float_format="%.5g"
+        )
+
+        aupr_df = pd.concat(results[
+            '{}_aupr'.format(exp_string)
+        ])
+        output_file = construct_filename(output_dir,
+                                         'aupr_threshold_metrics',
+                                         '.tsv.gz',
+                                         identifier,
+                                         model_options.training_data,
+                                         signal,
+                                         s=model_options.seed,
+                                         n=model_options.n_dim)
+        aupr_df.to_csv(
+            output_file, sep="\t", index=False, float_format="%.5g"
+        )
+
     coef_df = pd.concat(results[
         '{}_coef'.format(exp_string)
     ])
@@ -133,38 +164,13 @@ def save_results(output_dir,
         check_file, sep="\t", index=False, float_format="%.5g"
     )
 
-    signal = 'shuffled' if shuffle_labels else 'signal'
-
     output_file = construct_filename(output_dir,
-                                     'auc_threshold_metrics',
+                                     'metrics',
                                      '.tsv.gz',
                                      identifier,
                                      model_options.training_data,
                                      signal,
-                                     s=model_options.seed,
-                                     n=model_options.n_dim)
-    auc_df.to_csv(
-        output_file, sep="\t", index=False, float_format="%.5g"
-    )
-
-    output_file = construct_filename(output_dir,
-                                     'aupr_threshold_metrics',
-                                     '.tsv.gz',
-                                     identifier,
-                                     model_options.training_data,
-                                     signal,
-                                     s=model_options.seed,
-                                     n=model_options.n_dim)
-    aupr_df.to_csv(
-        output_file, sep="\t", index=False, float_format="%.5g"
-    )
-
-    output_file = construct_filename(output_dir,
-                                     'classify_metrics',
-                                     '.tsv.gz',
-                                     identifier,
-                                     model_options.training_data,
-                                     signal,
+                                     ('classify' if classify else 'regression'),
                                      s=model_options.seed,
                                      n=model_options.n_dim)
     metrics_df.to_csv(
@@ -178,6 +184,7 @@ def save_results(output_dir,
                                          identifier,
                                          model_options.training_data,
                                          signal,
+                                         ('classify' if classify else 'regression'),
                                          s=model_options.seed,
                                          n=model_options.n_dim)
         preds_df.to_csv(

@@ -17,7 +17,7 @@ from mpmp.exceptions import (
     NoTestSamplesError,
     OneClassError,
 )
-from mpmp.utilities.classify_utilities import run_cv_stratified
+from mpmp.prediction.cross_validation import run_cv_stratified
 import mpmp.utilities.data_utilities as du
 import mpmp.utilities.file_utilities as fu
 from mpmp.utilities.tcga_utilities import get_overlap_data_types
@@ -91,13 +91,14 @@ def process_args():
 
     # add some additional hyperparameters/ranges from config file to model options
     # these shouldn't be changed by the user, so they aren't added as arguments
+    model_options.n_dim = None
     model_options.alphas = cfg.alphas
     model_options.l1_ratios = cfg.l1_ratios
     model_options.standardize_data_types = cfg.standardize_data_types
 
     # add information about valid samples to model options
     model_options.sample_overlap_data_types = list(
-        get_overlap_data_types(debug=model_options.debug).keys()
+        get_overlap_data_types(use_subsampled=model_options.debug).keys()
     )
 
     return io_args, model_options

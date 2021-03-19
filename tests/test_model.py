@@ -7,7 +7,7 @@ import pandas as pd
 
 import mpmp.test_config as tcfg
 from mpmp.data_models.tcga_data_model import TCGADataModel
-import mpmp.utilities.classify_utilities as cu
+from mpmp.prediction.cross_validation import run_cv_stratified
 import mpmp.utilities.data_utilities as du
 
 @pytest.fixture
@@ -36,14 +36,14 @@ def test_stratified_classification(data_model, data_type, gene_info):
                                     classification,
                                     gene_dir=None,
                                     shuffle_labels=False)
-    results = cu.run_cv_stratified(tcga_data,
-                                   'gene',
-                                   gene,
-                                   data_type,
-                                   sample_info_df,
-                                   num_folds=4,
-                                   standardize_columns=True,
-                                   shuffle_labels=False)
+    results = run_cv_stratified(tcga_data,
+                                'gene',
+                                gene,
+                                data_type,
+                                sample_info_df,
+                                num_folds=4,
+                                standardize_columns=True,
+                                shuffle_labels=False)
     metrics_df = pd.concat(results['gene_metrics'])
     results_file = tcfg.test_stratified_results.format(data_type, gene)
     old_results = np.loadtxt(results_file)
