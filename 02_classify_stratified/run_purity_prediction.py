@@ -16,7 +16,7 @@ from mpmp.exceptions import (
     NoTrainSamplesError,
     OneClassError,
 )
-from mpmp.utilities.classify_utilities import run_cv_stratified
+from mpmp.prediction.cross_validation import run_cv_stratified
 import mpmp.utilities.data_utilities as du
 import mpmp.utilities.file_utilities as fu
 from mpmp.utilities.tcga_utilities import get_overlap_data_types
@@ -50,6 +50,10 @@ def process_args():
                                      'parameters for training/evaluating model, '
                                      'these will affect output and are saved as '
                                      'experiment metadata ')
+    opts.add_argument('--classify', action='store_true',
+                      help='if included, binarize tumor purity values into '
+                           'above and below median, otherwise predict '
+                           'continuous purity values using regression')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
     opts.add_argument('--num_folds', type=int, default=4,
@@ -88,8 +92,14 @@ def process_args():
 
     # add some additional hyperparameters/ranges from config file to model options
     # these shouldn't be changed by the user, so they aren't added as arguments
-    model_options.alphas = cfg.alphas
-    model_options.l1_ratios = cfg.l1_ratios
+    if model_options.classify:
+        model_options.max_iter = cfg.max_iter
+        model_options.alphas = cfg.alphas
+        model_options.l1_ratios = cfg.l1_ratios
+    else:
+        model_options.max_iter = cfg.reg_max_iter
+        model_options.alphas = cfg.reg_alphas
+        model_options.l1_ratios = cfg.reg_l1_ratios
     model_options.standardize_data_types = cfg.standardize_data_types
 
     # add information about valid samples to model options
@@ -115,7 +125,8 @@ if __name__ == '__main__':
 
     # save model options for this experiment
     # (hyperparameters, preprocessing info, etc)
-    fu.save_model_options(experiment_dir, model_options)
+    fu.save_model_options(experiment_dir, model_options,
+                          classify=model_options.classify)
 
     # create empty log file if it doesn't exist
     log_columns = [
@@ -151,7 +162,8 @@ if __name__ == '__main__':
             check_file = fu.check_output_file(output_dir,
                                               None,
                                               shuffle_labels,
-                                              model_options)
+                                              model_options,
+                                              model_options.classify)
         except ResultsFileExistsError:
             # this happens if cross-validation for this gene has already been
             # run (i.e. the results file already exists)
@@ -165,6 +177,7 @@ if __name__ == '__main__':
             continue
 
         tcga_data.process_purity_data(experiment_dir,
+                                      classify=model_options.classify,
                                       shuffle_labels=shuffle_labels)
 
         try:
@@ -177,6 +190,7 @@ if __name__ == '__main__':
                                         model_options.training_data,
                                         sample_info_df,
                                         model_options.num_folds,
+                                        model_options.classify,
                                         shuffle_labels,
                                         standardize_columns,
                                         io_args.output_preds)
@@ -187,7 +201,8 @@ if __name__ == '__main__':
                             'purity',
                             None,
                             shuffle_labels,
-                            model_options)
+                            model_options,
+                            classify=model_options.classify)
         except NoTrainSamplesError:
             if io_args.verbose:
                 print('Skipping due to no train samples', file=sys.stderr)
