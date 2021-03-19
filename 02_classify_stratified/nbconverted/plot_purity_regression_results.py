@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# ## Plot tumor purity prediction results
+# ## Plot tumor purity regression results
 # 
 # Here, we'll visualize the results of our tumor purity prediction. We're predicting real-valued purity labels here (e.g. elastic net regression).
 # 
@@ -20,7 +20,10 @@ import seaborn as sns
 
 import mpmp.config as cfg
 import mpmp.utilities.analysis_utilities as au
+import mpmp.utilities.data_utilities as du
 
+
+# ### Load results
 
 # In[2]:
 
@@ -35,13 +38,15 @@ results_dir = Path(cfg.results_dir,
 
 
 results_df = (
-    au.load_purity_results(results_dir)
+    au.load_purity_results(results_dir, classify=False)
       .drop(columns=['identifier'])
 )
 print(results_df.shape)
 print(results_df.training_data.unique())
 results_df.head()
 
+
+# ### Plot results averaged across cancer types
 
 # In[4]:
 
@@ -71,11 +76,11 @@ axarr[1].set_ylabel(r'$R^2$')
 axarr[1].legend(title='Data type')
 
 
+# ### Plot results faceted by cancer type
+
 # In[5]:
 
 
-# now facet by cancer type
-import mpmp.utilities.data_utilities as du
 sample_info_df = du.load_sample_info('expression')
 results_df = au.load_purity_by_cancer_type(results_dir, sample_info_df,
                                            classify=False)
