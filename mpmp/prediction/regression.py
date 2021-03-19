@@ -46,6 +46,9 @@ def train_regressor(X_train,
         "regress__l1_ratio": l1_ratios,
     }
 
+
+    # ElasticNet seems to be less sensitive to initialization/parameter choice
+    # than SGDRegressor, but could scale poorly to really large datasets
     estimator = Pipeline(
         steps=[
             (
