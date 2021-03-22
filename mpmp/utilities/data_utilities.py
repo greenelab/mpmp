@@ -225,6 +225,20 @@ def load_sample_info(train_data_type, verbose=False):
     return pd.read_csv(cfg.sample_infos[train_data_type],
                        sep='\t', index_col='sample_id')
 
+def load_sample_info_multi(train_data_types, verbose=False):
+    if verbose:
+        print('Loading sample info for multiple data types...',
+              file=sys.stderr)
+    sample_info_df = load_sample_info(train_data_types[0])
+    print(sample_info_df.shape)
+    for training_data in train_data_types[1:]:
+        # add the rows that are not in current sample info
+        add_df = load_sample_info(training_data)
+        add_df = add_df[~add_df.index.isin(sample_info_df.index)]
+        sample_info_df = pd.concat((sample_info_df, add_df))
+        print(sample_info_df.shape)
+    return sample_info_df
+
 
 def load_purity(mut_burden_df,
                 sample_info_df,

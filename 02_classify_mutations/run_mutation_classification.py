@@ -121,7 +121,7 @@ if __name__ == '__main__':
 
     # create empty log file if it doesn't exist
     log_columns = [
-        'cancer_type',
+        'gene',
         'training_data',
         'shuffle_labels',
         'skip_reason'
@@ -154,7 +154,7 @@ if __name__ == '__main__':
                         file=sys.stdout)
 
         for gene_idx, gene_series in progress:
-            cancer_type_log_df = None
+            log_df = None
             gene = gene_series.gene
             classification = gene_series.classification
             progress.set_description('gene: {}'.format(gene))
@@ -175,22 +175,22 @@ if __name__ == '__main__':
                 if io_args.verbose:
                     print('Skipping because results file exists already: gene {}'.format(
                         gene), file=sys.stderr)
-                cancer_type_log_df = fu.generate_log_df(
+                log_df = fu.generate_log_df(
                     log_columns,
                     [gene, model_options.training_data, shuffle_labels, 'file_exists']
                 )
-                fu.write_log_file(cancer_type_log_df, io_args.log_file)
+                fu.write_log_file(log_df, io_args.log_file)
                 continue
             except KeyError:
                 # this might happen if the given gene isn't in the mutation data
                 # (or has a different alias, TODO we could check for this later)
                 print('Gene {} not found in mutation data, skipping'.format(gene),
                       file=sys.stderr)
-                cancer_type_log_df = fu.generate_log_df(
+                log_df = fu.generate_log_df(
                     log_columns,
                     [gene, model_options.training_data, shuffle_labels, 'gene_not_found']
                 )
-                fu.write_log_file(cancer_type_log_df, io_args.log_file)
+                fu.write_log_file(log_df, io_args.log_file)
                 continue
 
             try:
@@ -218,7 +218,7 @@ if __name__ == '__main__':
                 if io_args.verbose:
                     print('Skipping due to no train samples: gene {}'.format(
                         gene), file=sys.stderr)
-                cancer_type_log_df = fu.generate_log_df(
+                log_df = fu.generate_log_df(
                     log_columns,
                     [gene, model_options.training_data, shuffle_labels, 'no_train_samples']
                 )
@@ -226,11 +226,11 @@ if __name__ == '__main__':
                 if io_args.verbose:
                     print('Skipping due to one holdout class: gene {}'.format(
                         gene), file=sys.stderr)
-                cancer_type_log_df = fu.generate_log_df(
+                log_df = fu.generate_log_df(
                     log_columns,
                     [gene, model_options.training_data, shuffle_labels, 'one_class']
                 )
 
-            if cancer_type_log_df is not None:
-                fu.write_log_file(cancer_type_log_df, io_args.log_file)
+            if log_df is not None:
+                fu.write_log_file(log_df, io_args.log_file)
 

@@ -65,12 +65,18 @@ def save_model_options(output_dir, model_options, classify=True):
     model_options is an argparse Namespace, and is converted to a dictionary
     and pickled.
     """
+    if not isinstance(model_options.training_data, str):
+        training_data = '.'.join(model_options.training_data)
+    else:
+        training_data = model_options.training_data
+
     output_file = construct_filename(output_dir,
                                      'model_options',
                                      '.pkl',
-                                     model_options.training_data,
+                                     training_data,
                                      ('classify' if classify else 'regression'),
                                      s=model_options.seed)
+
     with open(output_file, 'wb') as f:
         pkl.dump(vars(model_options), f)
 
@@ -86,11 +92,17 @@ def check_output_file(output_dir,
     """
 
     signal = 'shuffled' if shuffle_labels else 'signal'
+
+    if not isinstance(model_options.training_data, str):
+        training_data = '.'.join(model_options.training_data)
+    else:
+        training_data = model_options.training_data
+
     check_file = construct_filename(output_dir,
                                     'coefficients',
                                     '.tsv.gz',
                                     identifier,
-                                    model_options.training_data,
+                                    training_data,
                                     signal,
                                     ('classify' if classify else 'regression'),
                                     s=model_options.seed,
@@ -115,6 +127,11 @@ def save_results(output_dir,
 
     signal = 'shuffled' if shuffle_labels else 'signal'
 
+    if not isinstance(model_options.training_data, str):
+        training_data = '.'.join(model_options.training_data)
+    else:
+        training_data = model_options.training_data
+
     if classify:
         auc_df = pd.concat(results[
             '{}_auc'.format(exp_string)
@@ -123,7 +140,7 @@ def save_results(output_dir,
                                          'auc_threshold_metrics',
                                          '.tsv.gz',
                                          identifier,
-                                         model_options.training_data,
+                                         training_data,
                                          signal,
                                          s=model_options.seed,
                                          n=model_options.n_dim)
@@ -138,7 +155,7 @@ def save_results(output_dir,
                                          'aupr_threshold_metrics',
                                          '.tsv.gz',
                                          identifier,
-                                         model_options.training_data,
+                                         training_data,
                                          signal,
                                          s=model_options.seed,
                                          n=model_options.n_dim)
@@ -168,7 +185,7 @@ def save_results(output_dir,
                                      'metrics',
                                      '.tsv.gz',
                                      identifier,
-                                     model_options.training_data,
+                                     training_data,
                                      signal,
                                      ('classify' if classify else 'regression'),
                                      s=model_options.seed,
@@ -182,7 +199,7 @@ def save_results(output_dir,
                                          'preds',
                                          '.tsv.gz',
                                          identifier,
-                                         model_options.training_data,
+                                         training_data,
                                          signal,
                                          ('classify' if classify else 'regression'),
                                          s=model_options.seed,

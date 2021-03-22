@@ -45,7 +45,7 @@ def process_args():
                          'any gene or set of genes in TCGA, specified in --custom_genes')
     io.add_argument('--log_file', default=None,
                     help='name of file to log skipped genes to')
-    io.add_argument('--results_dir', default=cfg.results_dirs['mutation'],
+    io.add_argument('--results_dir', default=cfg.results_dirs['multimodal'],
                     help='where to write results to')
     io.add_argument('--verbose', action='store_true')
 
@@ -112,4 +112,15 @@ if __name__ == '__main__':
 
     # process command line arguments
     io_args, model_options = process_args()
-    print(model_options)
+
+    # TODO: how to do this for all training datatypes?
+    sample_info_df = du.load_sample_info_multi(model_options.training_data,
+                                               verbose=io_args.verbose)
+
+    # create results dir and subdir for experiment if they don't exist
+    experiment_dir = Path(io_args.results_dir, 'gene').resolve()
+    experiment_dir.mkdir(parents=True, exist_ok=True)
+
+    # save model options for this experiment
+    # (hyperparameters, preprocessing info, etc)
+    fu.save_model_options(experiment_dir, model_options)
