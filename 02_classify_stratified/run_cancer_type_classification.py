@@ -188,6 +188,7 @@ if __name__ == '__main__':
                                             model_options.training_data,
                                             sample_info_df,
                                             model_options.num_folds,
+                                            True,
                                             shuffle_labels,
                                             standardize_columns,
                                             io_args.output_preds)

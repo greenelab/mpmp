@@ -31,7 +31,8 @@ sample_infos = {
 
 # locations of processed multimodal data files
 expression_data = data_dir / 'tcga_expression_matrix_processed.tsv.gz'
-methylation_27k_data = data_dir / 'me_preprocessed' / 'methylation_processed_n10_i5.tsv.gz'
+# methylation_27k_data = data_dir / 'me_preprocessed' / 'methylation_processed_n10_i5.tsv.gz'
+methylation_27k_data = data_dir / 'methylation_27k_bmiq_normalized_nona.tsv'
 methylation_450k_data = data_dir / 'methylation_450k_f10_i5_mad100000.pkl'
 rppa_data = data_dir / 'tcga_rppa_matrix_processed.tsv'
 mut_sigs_data = data_dir / 'tcga_wes_sbs_mutational_signatures.tsv'
@@ -51,7 +52,8 @@ exp_compressed_dir = data_dir / 'exp_compressed'
 me_compressed_dir = data_dir / 'me_compressed'
 compressed_data_types = {
     'expression': exp_compressed_dir / 'exp_std_pc{}.tsv.gz',
-    'me_27k': me_compressed_dir / 'me_27k_f10_i5_pc{}.tsv.gz',
+    # 'me_27k': me_compressed_dir / 'me_27k_f10_i5_pc{}.tsv.gz',
+    'me_27k': me_compressed_dir / 'me_27k_bmiq_pc{}.tsv.gz',
     'me_450k': me_compressed_dir / 'me_450k_f10_i5_pc{}.tsv.gz',
 }
 
