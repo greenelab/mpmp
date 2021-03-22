@@ -4,7 +4,11 @@ repo_root = pathlib.Path(__file__).resolve().parent.parent
 
 # important subdirectories
 data_dir = repo_root / 'data'
-results_dir = repo_root / 'results'
+results_dirs = {
+    'mutation': repo_root / '02_classify_mutation' / 'results',
+    'cancer_type': repo_root / '03_classify_cancer_type' / 'results',
+    'purity': repo_root / '04_predict_purity' / 'results',
+}
 
 # locations of saved data files
 raw_data_dir = data_dir / 'raw'
