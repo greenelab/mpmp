@@ -108,7 +108,9 @@ def process_args():
     # these shouldn't be changed by the user, so they aren't added as arguments
     model_options.alphas = cfg.alphas
     model_options.l1_ratios = cfg.l1_ratios
-    model_options.standardize_data_types = cfg.standardize_data_types
+
+    # for these experiments, we need to standardize all data types
+    model_options.standardize_data_types = model_options.training_data
 
     # add information about valid samples to model options
     model_options.sample_overlap_data_types = list(
@@ -157,6 +159,94 @@ if __name__ == '__main__':
                               debug=model_options.debug)
     genes_df = tcga_data.load_gene_set(io_args.gene_set)
 
-    print(tcga_data.data_df.shape)
-    exit()
+    # we want to run mutation prediction experiments:
+    # - for true labels and shuffled labels
+    #   (shuffled labels acts as our lower baseline)
+    # - for all genes in the given gene set
+    for shuffle_labels in (False, True):
+
+        print('shuffle_labels: {}'.format(shuffle_labels))
+
+        progress = tqdm(genes_df.iterrows(),
+                        total=genes_df.shape[0],
+                        ncols=100,
+                        file=sys.stdout)
+
+        for gene_idx, gene_series in progress:
+            log_df = None
+            gene = gene_series.gene
+            classification = gene_series.classification
+            progress.set_description('gene: {}'.format(gene))
+
+            try:
+                gene_dir = fu.make_output_dir(experiment_dir, gene)
+                check_file = fu.check_output_file(gene_dir,
+                                                  gene,
+                                                  shuffle_labels,
+                                                  model_options)
+                tcga_data.process_data_for_gene(gene,
+                                                classification,
+                                                gene_dir,
+                                                shuffle_labels=shuffle_labels)
+            except ResultsFileExistsError:
+                # this happens if cross-validation for this gene has already been
+                # run (i.e. the results file already exists)
+                if io_args.verbose:
+                    print('Skipping because results file exists already: gene {}'.format(
+                        gene), file=sys.stderr)
+                log_df = fu.generate_log_df(
+                    log_columns,
+                    [gene, '.'.join(model_options.training_data), shuffle_labels, 'file_exists']
+                )
+                fu.write_log_file(log_df, io_args.log_file)
+                continue
+            except KeyError:
+                # this might happen if the given gene isn't in the mutation data
+                # (or has a different alias, TODO we could check for this later)
+                print('Gene {} not found in mutation data, skipping'.format(gene),
+                      file=sys.stderr)
+                log_df = fu.generate_log_df(
+                    log_columns,
+                    [gene, '.'.join(model_options.training_data), shuffle_labels, 'gene_not_found']
+                )
+                fu.write_log_file(log_df, io_args.log_file)
+                continue
+
+            try:
+                results = run_cv_stratified(tcga_data,
+                                            'gene',
+                                            gene,
+                                            model_options.training_data,
+                                            sample_info_df,
+                                            model_options.num_folds,
+                                            classify=True,
+                                            shuffle_labels=shuffle_labels,
+                                            standardize_columns=True)
+                # only save results if no exceptions
+                fu.save_results(gene_dir,
+                                check_file,
+                                results,
+                                'gene',
+                                gene,
+                                shuffle_labels,
+                                model_options)
+            except NoTrainSamplesError:
+                if io_args.verbose:
+                    print('Skipping due to no train samples: gene {}'.format(
+                        gene), file=sys.stderr)
+                log_df = fu.generate_log_df(
+                    log_columns,
+                    [gene, '.'.join(model_options.training_data), shuffle_labels, 'no_train_samples']
+                )
+            except OneClassError:
+                if io_args.verbose:
+                    print('Skipping due to one holdout class: gene {}'.format(
+                        gene), file=sys.stderr)
+                log_df = fu.generate_log_df(
+                    log_columns,
+                    [gene, '.'.join(model_options.training_data), shuffle_labels, 'one_class']
+                )
+
+            if log_df is not None:
+                fu.write_log_file(log_df, io_args.log_file)
 

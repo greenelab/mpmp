@@ -98,6 +98,11 @@ def check_output_file(output_dir,
     else:
         training_data = model_options.training_data
 
+    if not isinstance(model_options.n_dim, str):
+        n_dim = '.'.join(map(str, model_options.n_dim))
+    else:
+        n_dim = model_options.n_dim
+
     check_file = construct_filename(output_dir,
                                     'coefficients',
                                     '.tsv.gz',
@@ -106,7 +111,7 @@ def check_output_file(output_dir,
                                     signal,
                                     ('classify' if classify else 'regression'),
                                     s=model_options.seed,
-                                    n=model_options.n_dim)
+                                    n=n_dim)
     if check_file.is_file():
         raise ResultsFileExistsError(
             'Results file already exists for identifier: {}\n'.format(
@@ -132,6 +137,11 @@ def save_results(output_dir,
     else:
         training_data = model_options.training_data
 
+    if not isinstance(model_options.n_dim, str):
+        n_dim = '.'.join(map(str, model_options.n_dim))
+    else:
+        n_dim = model_options.n_dim
+
     if classify:
         auc_df = pd.concat(results[
             '{}_auc'.format(exp_string)
@@ -143,7 +153,7 @@ def save_results(output_dir,
                                          training_data,
                                          signal,
                                          s=model_options.seed,
-                                         n=model_options.n_dim)
+                                         n=n_dim)
         auc_df.to_csv(
             output_file, sep="\t", index=False, float_format="%.5g"
         )
@@ -158,7 +168,7 @@ def save_results(output_dir,
                                          training_data,
                                          signal,
                                          s=model_options.seed,
-                                         n=model_options.n_dim)
+                                         n=n_dim)
         aupr_df.to_csv(
             output_file, sep="\t", index=False, float_format="%.5g"
         )
@@ -189,7 +199,8 @@ def save_results(output_dir,
                                      signal,
                                      ('classify' if classify else 'regression'),
                                      s=model_options.seed,
-                                     n=model_options.n_dim)
+
+                                     n=n_dim)
     metrics_df.to_csv(
         output_file, sep="\t", index=False, float_format="%.5g"
     )
@@ -203,7 +214,7 @@ def save_results(output_dir,
                                          signal,
                                          ('classify' if classify else 'regression'),
                                          s=model_options.seed,
-                                         n=model_options.n_dim)
+                                         n=n_dim)
         preds_df.to_csv(
             output_file, sep="\t", float_format="%.5g"
         )

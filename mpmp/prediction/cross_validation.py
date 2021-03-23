@@ -139,7 +139,10 @@ def run_cv_stratified(data_model,
 
         )
         coef_df = coef_df.assign(identifier=identifier)
-        coef_df = coef_df.assign(training_data=training_data)
+        if isinstance(training_data, str):
+            coef_df = coef_df.assign(training_data=training_data)
+        else:
+            coef_df = coef_df.assign(training_data='.'.join(training_data))
         coef_df = coef_df.assign(fold=fold_no)
         results['{}_coef'.format(exp_string)].append(coef_df)
 
