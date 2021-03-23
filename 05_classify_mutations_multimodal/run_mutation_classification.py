@@ -60,6 +60,9 @@ def process_args():
                                      'experiment metadata ')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
+    opts.add_argument('--n_dim', nargs='*', default=None,
+                      help='list of compressed dimensions to use, defaults to '
+                           'uncompressed data for all data types')
     opts.add_argument('--num_folds', type=int, default=4,
                       help='number of folds of cross-validation to run')
     opts.add_argument('--seed', type=int, default=cfg.default_seed)
@@ -84,7 +87,6 @@ def process_args():
     elif (args.gene_set != 'custom' and args.custom_genes is not None):
         parser.error('must use option --gene_set=\'custom\' if custom genes are included')
 
-
     if (len(set(args.training_data).intersection(set(cfg.data_types.keys()))) !=
             len(set(args.training_data))):
         parser.error('training_data data types must be in config.data_types')
@@ -93,9 +95,17 @@ def process_args():
     arg_groups = du.split_argument_groups(args, parser)
     io_args, model_options = arg_groups['io'], arg_groups['model_options']
 
+    # if no n_dim argument provided, set all to None
+    if model_options.n_dim is None:
+        model_options.n_dim = [None] * len(model_options.training_data)
+    else:
+        # convert None strings from argparse to python Nones
+        model_options.n_dim = (
+            [None if n == 'None' else n for n in model_options.n_dim]
+        )
+
     # add some additional hyperparameters/ranges from config file to model options
     # these shouldn't be changed by the user, so they aren't added as arguments
-    model_options.n_dim = None
     model_options.alphas = cfg.alphas
     model_options.l1_ratios = cfg.l1_ratios
     model_options.standardize_data_types = cfg.standardize_data_types
@@ -124,3 +134,29 @@ if __name__ == '__main__':
     # save model options for this experiment
     # (hyperparameters, preprocessing info, etc)
     fu.save_model_options(experiment_dir, model_options)
+
+    # create empty log file if it doesn't exist
+    log_columns = [
+        'gene',
+        'training_data',
+        'shuffle_labels',
+        'skip_reason'
+    ]
+    if io_args.log_file.exists() and io_args.log_file.is_file():
+        log_df = pd.read_csv(io_args.log_file, sep='\t')
+    else:
+        log_df = pd.DataFrame(columns=log_columns)
+        log_df.to_csv(io_args.log_file, sep='\t')
+
+    tcga_data = TCGADataModel(seed=model_options.seed,
+                              subset_mad_genes=model_options.subset_mad_genes,
+                              training_data=model_options.training_data,
+                              n_dim=model_options.n_dim,
+                              sample_info_df=sample_info_df,
+                              verbose=io_args.verbose,
+                              debug=model_options.debug)
+    genes_df = tcga_data.load_gene_set(io_args.gene_set)
+
+    print(tcga_data.data_df.shape)
+    exit()
+

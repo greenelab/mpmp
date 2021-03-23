@@ -271,7 +271,14 @@ class TCGADataModel():
         test (bool): whether or not to subset columns in mutation data, for testing
         """
         # load training data
-        if compressed_data:
+        if not isinstance(train_data_type, str):
+            # if a list of train data types is provided, we have to load each
+            # of them and concatenate columns
+            # n_dim should be a list here
+            self.data_df = du.load_multiple_data_types(train_data_type,
+                                                       n_dims=n_dim,
+                                                       verbose=self.verbose)
+        elif compressed_data:
             self.data_df = du.load_compressed_data(train_data_type,
                                                    n_dim=n_dim,
                                                    verbose=self.verbose,
