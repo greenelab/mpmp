@@ -376,6 +376,55 @@ def compare_control(results_df,
 
     return pd.DataFrame(results, columns=['identifier', 'delta_mean', 'p_value'])
 
+def compare_control_ind(results_df,
+                        identifier='gene',
+                        metric='auroc',
+                        verbose=False):
+
+    results = []
+    unique_identifiers = np.unique(results_df[identifier].values)
+
+    for id_str in unique_identifiers:
+
+        conditions = ((results_df[identifier] == id_str) &
+                      (results_df.data_type == 'test') &
+                      (results_df.signal == 'signal'))
+        signal_results = results_df[conditions].copy()
+
+        conditions = ((results_df[identifier] == id_str) &
+                      (results_df.data_type == 'test') &
+                     (results_df.signal == 'shuffled'))
+        shuffled_results = results_df[conditions].copy()
+
+        if signal_results.shape != shuffled_results.shape:
+            if verbose:
+                print('shapes unequal for {}, skipping'.format(id_str),
+                      file=sys.stderr)
+            continue
+
+        if (signal_results.size == 0) or (shuffled_results.size == 0):
+            if verbose:
+                print('size 0 results array for {}, skipping'.format(id_str),
+                      file=sys.stderr)
+            continue
+
+        for seed in results_df.seed.unique():
+            for fold in results_df.fold.unique():
+                try:
+                    signal_value = signal_results[(signal_results.seed == seed) &
+                                                 (signal_results.fold == fold)][metric].values[0]
+                    shuffled_value = shuffled_results[(shuffled_results.seed == seed) &
+                                                      (shuffled_results.fold == fold)][metric].values[0]
+                    delta = signal_value - shuffled_value
+                    results.append([id_str, seed, fold, delta])
+                except IndexError:
+                    # this seed/fold combo doesn't exist, just skip it
+                    continue
+
+    return pd.DataFrame(results,
+                        columns=['identifier', 'seed', 'fold',
+                                'delta_{}'.format(metric)])
+
 
 def compare_experiment(single_cancer_df,
                        pancancer_df,
