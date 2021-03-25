@@ -213,22 +213,147 @@ def preprocess_data(X_train_raw_df,
         X_test_df = X_test_raw_df
     return X_train_df, X_test_df
 
+def preprocess_multi_data(X_train_raw_df,
+                          X_test_raw_df,
+                          gene_features,
+                          data_types,
+                          standardize_columns=True,
+                          subset_mad_genes=-1):
+    """
+    Data processing for multi-omics experiments.
 
-def standardize_gene_features(x_df, gene_features):
+    TODO document parameters
+    TODO write some tests, this logic is pretty complex
+    """
+    # standardize_columns should be a list having the same length as
+    # the number of data types, in the same order
+    # default to standardizing all data types
+    if not isinstance(standardize_columns, list):
+        standardize_columns = [True] * (np.unique(data_types).shape[0] - 1)
+
+    # first deal with subsetting gene features by MAD
+    if subset_mad_genes > 0:
+        train_datasets, test_datasets = [], []
+        gene_features_filtered = []
+        data_types_filtered = []
+
+        # for each gene feature dataset, separately take top n mad genes
+        for data_type in np.unique(data_types):
+
+            # skip non-gene features, we don't want to subset those
+            # we can add them back untransformed at the end
+            if data_type == -1: continue
+
+            # subset to the features for the given data type, and filter
+            data_ixs = (data_types == data_type)
+            X_train_data_df = X_train_raw_df.loc[:, data_ixs]
+            X_test_data_df = X_test_raw_df.loc[:, data_ixs]
+            X_train_data_df, X_test_data_df, _ = subset_by_mad(
+                X_train_data_df,
+                X_test_data_df,
+                np.ones((X_train_data_df.shape[1],), dtype=bool),
+                subset_mad_genes
+            )
+
+            # append info for current data type
+            train_datasets.append(X_train_data_df)
+            test_datasets.append(X_test_data_df)
+            gene_features_filtered += [True] * X_train_data_df.shape[1]
+            data_types_filtered += [True] * X_train_data_df.shape[1]
+
+        # then add non-gene features, this preserves the order from before
+        X_train_non_gene_df = X_train_raw_df.loc[:, ~gene_features]
+        X_test_non_gene_df = X_test_raw_df.loc[:, ~gene_features]
+        train_datasets.append(X_train_non_gene_df)
+        test_datasets.append(X_test_non_gene_df)
+        gene_features_filtered += [False] * X_train_non_gene_df.shape[1]
+        data_types_filtered += [-1] * X_train_non_gene_df.shape[1]
+
+        # then concatenate all datasets together to get the final df
+        X_train_raw_df = pd.concat(train_datasets, axis=1)
+        X_test_raw_df = pd.concat(test_datasets, axis=1)
+        gene_features_filtered = np.array(gene_features_filtered)
+        data_types_filtered = np.array(data_types_filtered)
+
+        assert X_train_raw_df.shape[1] == X_test_raw_df.shape[1]
+        assert X_train_raw_df.shape[1] == gene_features_filtered.shape[0]
+        assert X_train_raw_df.shape[1] == data_types_filtered.shape[0]
+
+        # next, standardize columns using the new gene features
+        X_train_df = standardize_multi_gene_features(
+            X_train_raw_df,
+            standardize_columns,
+            gene_features_filtered,
+            data_types_filtered
+        )
+        X_test_df = standardize_multi_gene_features(
+            X_test_raw_df,
+            standardize_columns,
+            gene_features_filtered,
+            data_types_filtered
+        )
+
+    else:
+        # if no filtering by MAD, just standardize using original gene features
+        X_train_df = standardize_multi_gene_features(
+            X_train_raw_df,
+            standardize_columns,
+            gene_features,
+            data_types
+        )
+        X_test_df = standardize_multi_gene_features(
+            X_test_raw_df,
+            standardize_columns,
+            gene_features,
+            data_types
+        )
+
+    return X_train_df, X_test_df
+
+
+def standardize_multi_gene_features(X_df, standardize_columns, gene_features, data_types):
+    # for each gene feature dataset, take top n mad genes (separately)
+    datasets = []
+    for ix, data_type in enumerate(np.unique(data_types)):
+
+        # skip non-gene features, these shouldn't be transformed
+        if data_type == -1: continue
+
+        # get relevant columns of X_data_df
+        data_ixs = (data_types == data_type)
+        X_data_df = X_df.loc[:, data_ixs]
+
+        # if we don't want to standardize the current data type, just add it
+        # to the list untransformed, otherwise standardize it
+        if standardize_columns[ix]:
+            X_data_df = standardize_gene_features(
+                X_data_df, np.ones((X_data_df.shape[1],), dtype=bool)
+            )
+        datasets.append(X_data_df)
+
+    # then add non-gene features, we don't standardize these
+    X_non_gene_df = X_df.loc[:, ~gene_features]
+    datasets.append(X_non_gene_df)
+
+    # concatenate datasets back together and return
+    return pd.concat(datasets, axis=1)
+
+
+def standardize_gene_features(X_df, gene_features):
     """Standardize (take z-scores of) real-valued gene expression features.
 
     Note this should be done for train and test sets independently. Also note
     this doesn't necessarily preserve the order of features (this shouldn't
     matter in most cases).
     """
-    x_df_gene = x_df.loc[:, gene_features]
-    x_df_other = x_df.loc[:, ~gene_features]
-    x_df_scaled = pd.DataFrame(
-        StandardScaler().fit_transform(x_df_gene),
-        index=x_df_gene.index.copy(),
-        columns=x_df_gene.columns.copy()
+    X_df_gene = X_df.loc[:, gene_features]
+    X_df_other = X_df.loc[:, ~gene_features]
+    X_df_scaled = pd.DataFrame(
+        StandardScaler().fit_transform(X_df_gene),
+        index=X_df_gene.index.copy(),
+        columns=X_df_gene.columns.copy()
     )
-    return pd.concat((x_df_scaled, x_df_other), axis=1)
+    return pd.concat((X_df_scaled, X_df_other), axis=1)
 
 
 def subset_by_mad(X_train_df, X_test_df, gene_features, subset_mad_genes, verbose=False):
@@ -241,7 +366,8 @@ def subset_by_mad(X_train_df, X_test_df, gene_features, subset_mad_genes, verbos
     ---------
     X_train_df: training data, samples x genes
     X_test_df: test data, samples x genes
-    gene_features: numpy bool array, indicating which features are genes (and should be subsetted/standardized)
+    gene_features: numpy bool array, indicating which features are genes
+                   (and should be subsetted/standardized)
     subset_mad_genes (int): number of genes to take
 
     Returns
@@ -455,4 +581,31 @@ def get_and_save_sample_info(tcga_df,
     tcga_id.to_csv(fname, sep='\t', index=False)
 
     return tcga_id
+
+
+if __name__ == '__main__':
+    import string
+    cols = list(string.ascii_lowercase)[:8]
+    X_train_df = pd.DataFrame(np.random.uniform(size=(5, 8)), columns=cols)
+    X_test_df = pd.DataFrame(np.random.uniform(size=(3, 8)), columns=cols)
+    data_types = np.array([0, 0, 0, 1, 1, 1, -1, -1])
+    gene_features = np.array([True] * 6 + [False] * 2)
+    standardize_columns = [False, False]
+    subset_mad_genes = 1
+    print('Before preprocessing:')
+    print(X_train_df.shape)
+    print(X_test_df.shape)
+    print(X_train_df)
+    print(X_test_df)
+    X_train_df, X_test_df = preprocess_multi_data(X_train_df,
+                                                  X_test_df,
+                                                  gene_features,
+                                                  data_types,
+                                                  standardize_columns,
+                                                  subset_mad_genes)
+    print('After preprocessing:')
+    print(X_train_df.shape)
+    print(X_test_df.shape)
+    print(X_train_df)
+    print(X_test_df)
 
