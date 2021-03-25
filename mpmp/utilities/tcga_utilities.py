@@ -259,7 +259,7 @@ def preprocess_multi_data(X_train_raw_df,
             train_datasets.append(X_train_data_df)
             test_datasets.append(X_test_data_df)
             gene_features_filtered += [True] * X_train_data_df.shape[1]
-            data_types_filtered += [True] * X_train_data_df.shape[1]
+            data_types_filtered += [data_type] * X_train_data_df.shape[1]
 
         # then add non-gene features, this preserves the order from before
         X_train_non_gene_df = X_train_raw_df.loc[:, ~gene_features]
@@ -314,7 +314,7 @@ def preprocess_multi_data(X_train_raw_df,
 def standardize_multi_gene_features(X_df, standardize_columns, gene_features, data_types):
     # for each gene feature dataset, take top n mad genes (separately)
     datasets = []
-    for ix, data_type in enumerate(np.unique(data_types)):
+    for data_type in np.unique(data_types):
 
         # skip non-gene features, these shouldn't be transformed
         if data_type == -1: continue
@@ -325,7 +325,7 @@ def standardize_multi_gene_features(X_df, standardize_columns, gene_features, da
 
         # if we don't want to standardize the current data type, just add it
         # to the list untransformed, otherwise standardize it
-        if standardize_columns[ix]:
+        if standardize_columns[data_type]:
             X_data_df = standardize_gene_features(
                 X_data_df, np.ones((X_data_df.shape[1],), dtype=bool)
             )
@@ -585,13 +585,16 @@ def get_and_save_sample_info(tcga_df,
 
 if __name__ == '__main__':
     import string
+
     cols = list(string.ascii_lowercase)[:8]
     X_train_df = pd.DataFrame(np.random.uniform(size=(5, 8)), columns=cols)
     X_test_df = pd.DataFrame(np.random.uniform(size=(3, 8)), columns=cols)
     data_types = np.array([0, 0, 0, 1, 1, 1, -1, -1])
     gene_features = np.array([True] * 6 + [False] * 2)
-    standardize_columns = [False, False]
+
+    standardize_columns = [True, False]
     subset_mad_genes = 1
+
     print('Before preprocessing:')
     print(X_train_df.shape)
     print(X_test_df.shape)
@@ -603,6 +606,7 @@ if __name__ == '__main__':
                                                   data_types,
                                                   standardize_columns,
                                                   subset_mad_genes)
+
     print('After preprocessing:')
     print(X_train_df.shape)
     print(X_test_df.shape)
