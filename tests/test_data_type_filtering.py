@@ -1,5 +1,5 @@
 """
-Test cases for cross-validation code in data_utilities.py
+Test cases for data type filtering in tcga_utilities.py
 """
 import pytest
 import numpy as np
