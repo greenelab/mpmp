@@ -213,6 +213,67 @@ def preprocess_data(X_train_raw_df,
         X_test_df = X_test_raw_df
     return X_train_df, X_test_df
 
+
+
+def standardize_gene_features(X_df, gene_features):
+    """Standardize (take z-scores of) real-valued gene expression features.
+
+    Note this should be done for train and test sets independently. Also note
+    this doesn't necessarily preserve the order of features (this shouldn't
+    matter in most cases).
+    """
+    X_df_gene = X_df.loc[:, gene_features]
+    X_df_other = X_df.loc[:, ~gene_features]
+    X_df_scaled = pd.DataFrame(
+        StandardScaler().fit_transform(X_df_gene),
+        index=X_df_gene.index.copy(),
+        columns=X_df_gene.columns.copy()
+    )
+    return pd.concat((X_df_scaled, X_df_other), axis=1)
+
+
+def subset_by_mad(X_train_df, X_test_df, gene_features, subset_mad_genes, verbose=False):
+    """Subset features by mean absolute deviation.
+
+    Takes the top subset_mad_genes genes (sorted in descending order),
+    calculated on the training set.
+
+    Arguments
+    ---------
+    X_train_df: training data, samples x genes
+    X_test_df: test data, samples x genes
+    gene_features: numpy bool array, indicating which features are genes
+                   (and should be subsetted/standardized)
+    subset_mad_genes (int): number of genes to take
+
+    Returns
+    -------
+    (train_df, test_df, gene_features) datasets with filtered features
+    """
+    if verbose:
+        print('Taking subset of gene features', file=sys.stderr)
+
+    mad_genes_df = (
+        X_train_df.loc[:, gene_features]
+                  .mad(axis=0)
+                  .sort_values(ascending=False)
+                  .reset_index()
+    )
+    mad_genes_df.columns = ['gene_id', 'mean_absolute_deviation']
+    mad_genes = mad_genes_df.iloc[:subset_mad_genes, :].gene_id.astype(str).values
+
+    non_gene_features = X_train_df.columns.values[~gene_features]
+    valid_features = np.concatenate((mad_genes, non_gene_features))
+
+    gene_features = np.concatenate((
+        np.ones(mad_genes.shape[0]).astype('bool'),
+        np.zeros(non_gene_features.shape[0]).astype('bool')
+    ))
+    train_df = X_train_df.reindex(valid_features, axis='columns')
+    test_df = X_test_df.reindex(valid_features, axis='columns')
+    return train_df, test_df, gene_features
+
+
 def preprocess_multi_data(X_train_raw_df,
                           X_test_raw_df,
                           gene_features,
@@ -222,7 +283,26 @@ def preprocess_multi_data(X_train_raw_df,
     """
     Data processing for multi-omics experiments.
 
-    TODO document parameters
+    Arguments
+    ---------
+    X_train_raw_df (pd.DataFrame): training dataset
+    X_test_raw_df (pd.DataFrame): test dataset
+    gene_features (np.array): 1D boolean array, indicating which features
+                              correspond to genes and should be preprocessed
+    data_types (np.array): 1D int array, indicating which data type each
+                           feature corresponds to. Non-gene features should
+                           have a data type of -1, and other features should
+                           be indexed from 0.
+    standardize_columns (list): list of whether or not to standardize each
+                                data type, in the same order as indexing in
+                                data_types. Defaults to True for all data
+                                types.
+
+    Returns
+    -------
+    X_train_df (pd.DataFrame): preprocessed training data
+    X_test_df (pd.DataFrame): preprocessed test data
+
     TODO write some tests, this logic is pretty complex
     """
     # standardize_columns should be a list having the same length as
@@ -312,6 +392,11 @@ def preprocess_multi_data(X_train_raw_df,
 
 
 def standardize_multi_gene_features(X_df, standardize_columns, gene_features, data_types):
+    """Standardize features for multiple data types.
+
+    Functions similarly to standardize_gene_features, but applied to each data
+    type in data_types separately.
+    """
     # for each gene feature dataset, take top n mad genes (separately)
     datasets = []
     for data_type in np.unique(data_types):
@@ -337,65 +422,6 @@ def standardize_multi_gene_features(X_df, standardize_columns, gene_features, da
 
     # concatenate datasets back together and return
     return pd.concat(datasets, axis=1)
-
-
-def standardize_gene_features(X_df, gene_features):
-    """Standardize (take z-scores of) real-valued gene expression features.
-
-    Note this should be done for train and test sets independently. Also note
-    this doesn't necessarily preserve the order of features (this shouldn't
-    matter in most cases).
-    """
-    X_df_gene = X_df.loc[:, gene_features]
-    X_df_other = X_df.loc[:, ~gene_features]
-    X_df_scaled = pd.DataFrame(
-        StandardScaler().fit_transform(X_df_gene),
-        index=X_df_gene.index.copy(),
-        columns=X_df_gene.columns.copy()
-    )
-    return pd.concat((X_df_scaled, X_df_other), axis=1)
-
-
-def subset_by_mad(X_train_df, X_test_df, gene_features, subset_mad_genes, verbose=False):
-    """Subset features by mean absolute deviation.
-
-    Takes the top subset_mad_genes genes (sorted in descending order),
-    calculated on the training set.
-
-    Arguments
-    ---------
-    X_train_df: training data, samples x genes
-    X_test_df: test data, samples x genes
-    gene_features: numpy bool array, indicating which features are genes
-                   (and should be subsetted/standardized)
-    subset_mad_genes (int): number of genes to take
-
-    Returns
-    -------
-    (train_df, test_df, gene_features) datasets with filtered features
-    """
-    if verbose:
-        print('Taking subset of gene features', file=sys.stderr)
-
-    mad_genes_df = (
-        X_train_df.loc[:, gene_features]
-                  .mad(axis=0)
-                  .sort_values(ascending=False)
-                  .reset_index()
-    )
-    mad_genes_df.columns = ['gene_id', 'mean_absolute_deviation']
-    mad_genes = mad_genes_df.iloc[:subset_mad_genes, :].gene_id.astype(str).values
-
-    non_gene_features = X_train_df.columns.values[~gene_features]
-    valid_features = np.concatenate((mad_genes, non_gene_features))
-
-    gene_features = np.concatenate((
-        np.ones(mad_genes.shape[0]).astype('bool'),
-        np.zeros(non_gene_features.shape[0]).astype('bool')
-    ))
-    train_df = X_train_df.reindex(valid_features, axis='columns')
-    test_df = X_test_df.reindex(valid_features, axis='columns')
-    return train_df, test_df, gene_features
 
 
 def subsample_to_smallest_cancer_type(X_df,
