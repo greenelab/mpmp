@@ -109,8 +109,12 @@ def process_args():
     model_options.alphas = cfg.alphas
     model_options.l1_ratios = cfg.l1_ratios
 
-    # for these experiments, we need to standardize all data types
-    model_options.standardize_data_types = model_options.training_data
+    # for these experiments, we need to standardize all data types that are not
+    # already PCA compressed
+    model_options.standardize_data_types = (
+        [t for ix, t in enumerate(model_options.training_data)
+           if model_options.n_dim[ix] == None]
+    )
 
     # add information about valid samples to model options
     model_options.sample_overlap_data_types = list(
@@ -213,6 +217,8 @@ if __name__ == '__main__':
                 continue
 
             try:
+                standardize_columns = [(t in model_options.standardize_data_types)
+                                          for t in model_options.training_data]
                 results = run_cv_stratified(tcga_data,
                                             'gene',
                                             gene,
@@ -221,7 +227,7 @@ if __name__ == '__main__':
                                             model_options.num_folds,
                                             classify=True,
                                             shuffle_labels=shuffle_labels,
-                                            standardize_columns=True)
+                                            standardize_columns=standardize_columns)
                 # only save results if no exceptions
                 fu.save_results(gene_dir,
                                 check_file,

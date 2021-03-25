@@ -97,8 +97,10 @@ def load_multiple_data_types(data_types, n_dims, verbose=False):
     Returns
     -------
     data_df: samples x latent dimensions dataframe
+    data_ixs: 1D numpy array containing data type index for each column
     """
     data_df = pd.DataFrame()
+    data_ixs = []
     if verbose:
         print('Loading data for data types {}...'.format(', '.join(data_types)),
               file=sys.stderr)
@@ -112,10 +114,11 @@ def load_multiple_data_types(data_types, n_dims, verbose=False):
                                   '{}_pc'.format(data_type))
         else:
             partial_data_df = load_raw_data(data_type)
+        data_ixs += [ix] * partial_data_df.shape[1]
         # only keep samples that are in all data types (inner join)
         data_df = pd.concat((data_df, partial_data_df), axis=1,
                             join=('outer' if ix == 0 else 'inner'))
-    return data_df
+    return data_df, np.array(data_ixs)
 
 
 def load_pancancer_data(verbose=False, test=False, subset_columns=None):
