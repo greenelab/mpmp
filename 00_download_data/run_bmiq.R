@@ -19,18 +19,7 @@ transpose_df <- function(df) {
     colnames(df_t) <- sample_names
     df_t
 }
-print(typeof(beta))
 beta_t <- transpose_df(beta)
-print(typeof(beta_t))
-
-# run PBC method on all samples in parallel
-# TODO: remove or skip invalid cols
-# beta_skip <- beta_t[,c(1:1024,1026:9749,9751:11975)]
-# beta_t_pbc <- champ.norm(beta=beta_skip, method='PBC', cores=4)
-
-# transpose back to samples X probes and write to file
-# beta_pbc <- transpose_df(beta_t_pbc)
-# write.table(beta_pbc, 'data/methylation_27k_pbc_normalized.tsv', sep='\t')
 
 # run BMIQ method on each sample (column)
 # BMIQ throws errors if beta mixture classes are too imbalanced,
@@ -46,13 +35,10 @@ BMIQ_skip_errors <- function(beta) {
     ret
 }
 beta_t_bmiq <- apply(beta_t, 2, BMIQ_skip_errors)
-write.table(beta_t_bmiq, 'data/methylation_27k_bmiq_normalized_t.tsv', sep='\t')
 
-print(typeof(beta_t_bmiq))
-# transpose back to samples X probes and write to file
-beta_bmiq <- transpose_df(beta_t_bmiq)
-# remove NA columns
-beta_bmiq <- na.omit(beta_bmiq)
-print(typeof(beta_bmiq))
-write.table(beta_bmiq, 'data/methylation_27k_bmiq_normalized.tsv', sep='\t')
+# this writes the results as a probes X samples tsv file
+# also note that R replaces dashes/hyphens in column names with dots,
+# so these need to be converted back in the script that loads this data
+# (currently the methylation_beta.ipynb notebook)
+write.table(beta_t_bmiq, 'data/methylation_27k_bmiq_normalized.tsv', sep='\t')
 
