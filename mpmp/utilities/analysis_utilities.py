@@ -69,7 +69,6 @@ def load_compressed_prediction_results(results_dir, experiment_descriptor):
             if ('classify' not in results_filename or
                 'metrics' not in results_filename): continue
             if results_filename[0] == '.': continue
-            print(results_filename)
             n_dims = int(results_filename.split('_')[-2].replace('n', ''))
             id_results_df = pd.read_csv(results_file, sep='\t')
             id_results_df['n_dims'] = n_dims

@@ -24,6 +24,7 @@ mut_sigs_sample_info = sample_info_dir / 'tcga_mut_sigs_sample_identifiers.tsv'
 sample_infos = {
     'expression': expression_sample_info,
     'me_27k': me_27k_sample_info,
+    'me_27k_bmiq': me_27k_sample_info,
     'me_450k': me_450k_sample_info,
     # 'rppa': rppa_sample_info,
     # 'mut_sigs': mut_sigs_sample_info,
@@ -32,14 +33,14 @@ sample_infos = {
 # locations of processed multimodal data files
 expression_data = data_dir / 'tcga_expression_matrix_processed.tsv.gz'
 methylation_27k_data = data_dir / 'me_preprocessed' / 'methylation_processed_n10_i5.tsv.gz'
-# TODO: add this as an option in script
-# methylation_27k_data = data_dir / 'methylation_27k_bmiq_normalized_nona.tsv'
+methylation_27k_bmiq_data = data_dir / 'methylation_27k_bmiq_normalized_nona.tsv'
 methylation_450k_data = data_dir / 'methylation_450k_f10_i5_mad100000.pkl'
 rppa_data = data_dir / 'tcga_rppa_matrix_processed.tsv'
 mut_sigs_data = data_dir / 'tcga_wes_sbs_mutational_signatures.tsv'
 data_types = {
     'expression': expression_data,
     'me_27k': methylation_27k_data,
+    'me_27k_bmiq': methylation_27k_bmiq_data,
     'me_450k': methylation_450k_data,
     # 'rppa': rppa_data,
     # 'mut_sigs': mut_sigs_data,
@@ -53,8 +54,8 @@ exp_compressed_dir = data_dir / 'exp_compressed'
 me_compressed_dir = data_dir / 'me_compressed'
 compressed_data_types = {
     'expression': exp_compressed_dir / 'exp_std_pc{}.tsv.gz',
-    # 'me_27k': me_compressed_dir / 'me_27k_f10_i5_pc{}.tsv.gz',
-    'me_27k': me_compressed_dir / 'me_27k_bmiq_pc{}.tsv.gz',
+    'me_27k': me_compressed_dir / 'me_27k_f10_i5_pc{}.tsv.gz',
+    'me_27k_bmiq': me_compressed_dir / 'me_27k_bmiq_pc{}.tsv.gz',
     'me_450k': me_compressed_dir / 'me_450k_f10_i5_pc{}.tsv.gz',
 }
 
