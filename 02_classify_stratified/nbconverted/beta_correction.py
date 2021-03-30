@@ -224,6 +224,8 @@ for ix, (train_1, train_2) in enumerate(it.combinations(
                              compare_results_df.shape[0]))
 
 
+# Looking at the far right plot, we can see that most points are clustered near the origin (small difference in means, very small p-values). This suggests that the predictive performance is essentially the same before and after correction, for all of the genes in our gene set.
+
 # In[7]:
 
 
@@ -266,3 +268,5 @@ ax.set_xlabel('Data type')
 ax.set_ylabel('AUPR(signal) - AUPR(shuffled)')
 ax.set_ylim(-0.2, max(all_results_df.delta_mean + 0.05))
 
+
+# Looking at the aggregate results across all genes, we come to a similar conclusion as for the volcano plots: results distributions are essentially the same with or without correction.

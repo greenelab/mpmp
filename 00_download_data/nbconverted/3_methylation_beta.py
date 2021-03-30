@@ -224,19 +224,34 @@ tcga_processed_df = (tcga_norm_df
   .transpose()
 )
 
-if SAVE_RESULTS:
-    n_pcs_list = [100, 1000, 5000]
-    var_exp_list = []
+n_pcs_list = [100, 1000, 5000]
+var_exp_list = []
+pca_file_string = 'me_27k_bmiq_pc{}.tsv.gz'
+ve_file_string = 'me_27k_bmiq_pc{}_ve.tsv'
+
+# if SAVE_RESULTS:
+if True:
     for n_pcs in n_pcs_list:
         pca = PCA(n_components=n_pcs, random_state=cfg.default_seed)
         me_pca = pca.fit_transform(tcga_processed_df)
         print(me_pca.shape)
         var_exp_list.append(pca.explained_variance_ratio_)
         me_pca = pd.DataFrame(me_pca, index=tcga_processed_df.index)
-        me_pca.to_csv(os.path.join(pca_dir,
-                                   'me_27k_bmiq_pc{}.tsv.gz'.format(n_pcs)),
+        me_pca.to_csv(os.path.join(pca_dir, pca_file_string.format(n_pcs)),
                       sep='\t',
                       float_format='%.3g')
+        # save explained variance array to load when SAVE_RESULTS=False
+        np.savetxt(os.path.join(pca_dir, ve_file_string.format(n_pcs)),
+                   pca.explained_variance_ratio_,
+                   fmt='%.4f',
+                   delimiter='\t')
+else:
+    for n_pcs in n_pcs_list:
+        # load explained variance array from file, to plot it
+        var_exp_list.append(
+            np.loadtxt(os.path.join(pca_dir, ve_file_string.format(n_pcs)),
+                       delimiter='\t')
+        )
 
 
 # In[15]:
@@ -244,19 +259,18 @@ if SAVE_RESULTS:
 
 # plot PCA variance explained
 # we can only do this if we've calcluated and saved PCA-transformed data
-if SAVE_RESULTS:
-    sns.set({'figure.figsize': (15, 4)})
-    fig, axarr = plt.subplots(1, 3)
+sns.set({'figure.figsize': (15, 4)})
+fig, axarr = plt.subplots(1, 3)
 
-    for ix, ve in enumerate(var_exp_list):
-        sns.lineplot(x=range(len(ve)), y=np.cumsum(ve), ax=axarr[ix])
-        axarr[ix].set_title('{} PCs, variance explained: {:.4f}'.format(
-            n_pcs_list[ix], sum(ve, 0)))
-        axarr[ix].set_xlabel('# of PCs')
-        if ix == 0:
-            axarr[ix].set_ylabel('Cumulative variance explained')
-    plt.suptitle('BMIQ normalized 27k methylation data, # PCs vs. variance explained')
-    plt.subplots_adjust(top=0.85)
+for ix, ve in enumerate(var_exp_list):
+    sns.lineplot(x=range(len(ve)), y=np.cumsum(ve), ax=axarr[ix])
+    axarr[ix].set_title('{} PCs, variance explained: {:.4f}'.format(
+        n_pcs_list[ix], sum(ve, 0)))
+    axarr[ix].set_xlabel('# of PCs')
+    if ix == 0:
+        axarr[ix].set_ylabel('Cumulative variance explained')
+plt.suptitle('BMIQ normalized 27k methylation data, # PCs vs. variance explained')
+plt.subplots_adjust(top=0.85)
 
 
 # ### Plot probe intensity distributions
