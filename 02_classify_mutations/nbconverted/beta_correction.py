@@ -28,9 +28,9 @@ import mpmp.utilities.analysis_utilities as au
 
 # set results directory
 # this is a mess, TODO move results into same location
-results_dir1 = Path(cfg.repo_root, '02_classify_mutations', 'results', 'bmiq_results', 'gene').resolve()
-results_dir2 = Path(cfg.repo_root, '02_classify_mutations', 'results', 'bmiq_results_2', 'gene').resolve()
-results_dir3 = Path(cfg.repo_root, '02_classify_mutations', 'results', 'bmiq_results_me_control', 'gene').resolve()
+results_dir1 = Path(cfg.results_dirs['mutation'], 'bmiq_results', 'gene').resolve()
+results_dir2 = Path(cfg.results_dirs['mutation'], 'bmiq_results_2', 'gene').resolve()
+results_dir3 = Path(cfg.results_dirs['mutation'], 'bmiq_results_me_control', 'gene').resolve()
 
 # set significance cutoff after FDR correction
 SIG_ALPHA = 0.001

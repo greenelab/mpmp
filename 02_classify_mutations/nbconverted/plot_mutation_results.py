@@ -27,7 +27,8 @@ import mpmp.utilities.analysis_utilities as au
 
 
 # set results directory
-results_dir = Path(cfg.results_dir, 'mut_sigs_results', 'gene').resolve()
+results_dir = Path(cfg.results_dirs['mutation'],
+                   'mut_sigs_results', 'gene').resolve()
 # set significance cutoff after FDR correction
 SIG_ALPHA = 0.001
 
@@ -56,14 +57,16 @@ results_df.head()
 
 
 # load compressed data for me_27k and me_450k
-compressed_results_df = au.load_compressed_prediction_results(results_dir, 'gene')
+compressed_results_df = au.load_compressed_prediction_results(results_dir,
+                                                              'gene',
+                                                              old_filenames=True)
 
 # make sure that we're correctly pointing to compressed methylation data
 # and that we have data for one dimension and two replicates (two random seeds)
+print(compressed_results_df.shape)
 print(compressed_results_df.seed.unique())
 print(compressed_results_df.training_data.unique())
 print(compressed_results_df.n_dims.unique())
-print(compressed_results_df.shape)
 compressed_results_df.head()
 
 

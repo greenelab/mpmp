@@ -20,7 +20,7 @@ import mpmp.utilities.analysis_utilities as au
 # In[2]:
 
 
-results_dir = os.path.join(cfg.results_dir, 'gene')
+results_dir = os.path.join(cfg.results_dirs['mutation'], 'gene')
 
 
 # In[3]:
