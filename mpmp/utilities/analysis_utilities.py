@@ -30,6 +30,8 @@ def load_stratified_prediction_results(results_dir, experiment_descriptor):
         for results_file in identifier_dir.iterdir():
             if not results_file.is_file(): continue
             results_filename = str(results_file.stem)
+            # skip compressed files here, use load_compressed* functions
+            # to load that data separately
             if check_compressed_file(results_filename): continue
             if ('classify' not in results_filename or
                 'metrics' not in results_filename): continue
@@ -67,7 +69,7 @@ def load_compressed_prediction_results(results_dir, experiment_descriptor):
             if ('classify' not in results_filename or
                 'metrics' not in results_filename): continue
             if results_filename[0] == '.': continue
-            n_dims = int(results_filename.split('_')[-3].replace('n', ''))
+            n_dims = int(results_filename.split('_')[-2].replace('n', ''))
             id_results_df = pd.read_csv(results_file, sep='\t')
             id_results_df['n_dims'] = n_dims
             id_results_df['experiment'] = experiment_descriptor
