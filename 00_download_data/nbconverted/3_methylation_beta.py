@@ -229,8 +229,7 @@ var_exp_list = []
 pca_file_string = 'me_27k_bmiq_pc{}.tsv.gz'
 ve_file_string = 'me_27k_bmiq_pc{}_ve.tsv'
 
-# if SAVE_RESULTS:
-if True:
+if SAVE_RESULTS:
     for n_pcs in n_pcs_list:
         pca = PCA(n_components=n_pcs, random_state=cfg.default_seed)
         me_pca = pca.fit_transform(tcga_processed_df)
