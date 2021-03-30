@@ -276,68 +276,134 @@ plt.subplots_adjust(top=0.85)
 # 
 # Split probes into type I and type II (based on Illumina manifest info), and plot beta value distributions for each probe type.
 # 
-# First we'll do this for 100 individual samples of each probe type (200 total distributions, 1 per sample), then we'll average over all samples (2 total distributions averaging over many samples).
+# In the first distribution plot, we'll take 100 individual probes of each probe type, and plot their beta distributions over all samples (resulting in 200 total distributions, 1 per probe).
+# 
+# In the second plot, we'll take 100 TCGA samples (all samples would be too slow), and look at the beta distribution averaged over all probes of each type (2 total distributions averaging over many probes).
 
 # In[16]:
 
 
 # sample n_samples probes of each type
 # using all the samples takes forever to run and produces a plot that's hard to read
-n_samples = 100
-tI_probes = (
-    tcga_norm_df[tcga_norm_df.probe_type == 'I']
-      .sample(n=n_samples, random_state=cfg.default_seed)
-)
-tII_probes = (
-    tcga_norm_df[tcga_norm_df.probe_type == 'II']
-      .sample(n=n_samples, random_state=cfg.default_seed)
-)
+def sample_probes(methylation_df, n_samples=100):
+    tI_probes = (
+        methylation_df[methylation_df.probe_type == 'I']
+          .sample(n=n_samples, random_state=cfg.default_seed)
+    )
+    tII_probes = (
+        methylation_df[methylation_df.probe_type == 'II']
+          .sample(n=n_samples, random_state=cfg.default_seed)
+    )
+    return tI_probes, tII_probes
 
-sns.set_style('whitegrid')
-sns.set({'figure.figsize': (8, 6)})
- 
-for ix, (probe, row) in enumerate(tI_probes.iterrows()):
-    betas = row.values[:-2].astype('float')
-    if ix == 0:
-        sns.kdeplot(x=betas, color='red', label='type I')
-    else:
-        sns.kdeplot(x=betas, color='red')
-    
-for ix, (probe, row) in enumerate(tII_probes.iterrows()):
-    betas = row.values[:-2].astype('float')
-    if ix == 0:
-        sns.kdeplot(x=betas, color='green', label='type II')
-    else:
-        sns.kdeplot(x=betas, color='green')
-    
-plt.title(r'Distribution of $\beta$ values for {} samples'.format(n_samples))
-plt.xlabel(r'$\beta$')
-plt.legend()
+tI_raw, tII_raw = sample_probes(tcga_methylation_df)
+tI_norm, tII_norm = sample_probes(tcga_norm_df)
 
 
 # In[17]:
 
 
-# single distribution from all probes of each type
-n_samples = 100000
-all_tI_probes = np.random.choice(
-    tcga_norm_df[tcga_norm_df.probe_type == 'I']
-      .drop(columns=['probe_type', 'chromosome'])
-      .values.astype('float').flatten()
-, size=n_samples)
-all_tII_probes = np.random.choice(
-    tcga_norm_df[tcga_norm_df.probe_type == 'II']
-      .drop(columns=['probe_type', 'chromosome'])
-      .values.astype('float').flatten()
-, size=n_samples)
-
 sns.set_style('whitegrid')
-sns.set({'figure.figsize': (8, 6)})
+sns.set({'figure.figsize': (15, 6)})
+
+fig, axarr = plt.subplots(1, 2)
  
-sns.kdeplot(x=all_tI_probes, color='red', label='type I')
-sns.kdeplot(x=all_tII_probes, color='green', label='type II')
+for ix, (probe, row) in enumerate(tI_raw.iterrows()):
+    betas = row.values[:-2].astype('float')
+    if ix == 0:
+        sns.kdeplot(x=betas, color='red', label='type I', ax=axarr[0])
+    else:
+        sns.kdeplot(x=betas, color='red', ax=axarr[0])
     
-plt.title(r'Distribution of $\beta$ values, all probes combined, {} samples'.format(n_samples))
-plt.xlabel(r'$\beta$')
-plt.legend()
+for ix, (probe, row) in enumerate(tII_raw.iterrows()):
+    betas = row.values[:-2].astype('float')
+    if ix == 0:
+        sns.kdeplot(x=betas, color='green', label='type II', ax=axarr[0])
+    else:
+        sns.kdeplot(x=betas, color='green', ax=axarr[0])
+    
+axarr[0].set_title(r'Distribution of $\beta$ values for individual probes, before correction')
+axarr[0].set_xlabel(r'$\beta$')
+axarr[0].legend()
+
+for ix, (probe, row) in enumerate(tI_norm.iterrows()):
+    betas = row.values[:-2].astype('float')
+    if ix == 0:
+        sns.kdeplot(x=betas, color='red', label='type I', ax=axarr[1])
+    else:
+        sns.kdeplot(x=betas, color='red', ax=axarr[1])
+    
+for ix, (probe, row) in enumerate(tII_norm.iterrows()):
+    betas = row.values[:-2].astype('float')
+    if ix == 0:
+        sns.kdeplot(x=betas, color='green', label='type II', ax=axarr[1])
+    else:
+        sns.kdeplot(x=betas, color='green', ax=axarr[1])
+    
+axarr[1].set_title(r'Distribution of $\beta$ values for individual probes, after correction')
+axarr[1].set_xlabel(r'$\beta$')
+axarr[1].legend()
+
+
+# In[18]:
+
+
+# single distribution from all probes of each type
+# first take all probes from the given number of random samples
+def sample_and_aggregate_probes(methylation_df, n_samples=100):
+    sampled_df = (methylation_df
+        .drop(columns=['probe_type', 'chromosome'])
+        .sample(n=n_samples,
+                replace=False,
+                random_state=cfg.default_seed,
+                axis='columns')
+    )
+    sampled_df['probe_type'] = methylation_df.probe_type
+
+    # split into type I and type II probes
+    all_tI_probes = (
+        sampled_df[sampled_df.probe_type == 'I']
+          .drop(columns=['probe_type'])
+          .values.astype('float').flatten()
+    )
+    all_tII_probes = (
+        sampled_df[sampled_df.probe_type == 'II']
+          .drop(columns=['probe_type'])
+          .values.astype('float').flatten()
+    )
+
+    # there should be far more tII than tI probes, just check
+    assert len(all_tI_probes) < len(all_tII_probes)
+
+    # downsample number of type II probes to equal number of type I probes
+    sampled_tII_probes = np.random.choice(all_tII_probes,
+                                          size=all_tI_probes.shape[0],
+                                          replace=False)
+    
+    return all_tI_probes, sampled_tII_probes
+
+tI_raw, tII_raw = sample_and_aggregate_probes(tcga_methylation_df)
+tI_norm, tII_norm = sample_and_aggregate_probes(tcga_norm_df)
+
+
+# In[19]:
+
+
+# now plot the aggregate distribution over all the probes
+sns.set_style('whitegrid')
+sns.set({'figure.figsize': (15, 6)})
+
+fig, axarr = plt.subplots(1, 2)
+ 
+sns.kdeplot(x=tI_raw, color='red', label='type I', ax=axarr[0])
+sns.kdeplot(x=tII_raw, color='green', label='type II', ax=axarr[0])
+axarr[0].set_title(r'Distribution of $\beta$ values, all probes combined, before correction')
+axarr[0].set_xlabel(r'$\beta$')
+axarr[0].legend()
+
+sns.kdeplot(x=tI_norm, color='red', label='type I', ax=axarr[1])
+sns.kdeplot(x=tII_norm, color='green', label='type II', ax=axarr[1])
+axarr[1].set_title(r'Distribution of $\beta$ values, all probes combined, after correction')
+axarr[1].set_xlabel(r'$\beta$')
+axarr[1].legend()
 
