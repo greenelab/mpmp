@@ -87,6 +87,9 @@ class TCGADataModel():
             genes_df = du.load_top_50()
         elif gene_set == 'vogelstein':
             genes_df = du.load_vogelstein()
+        elif gene_set == '50_random':
+            genes_df = du.load_50_random(self.mutation_df.columns,
+                                         self.verbose)
         else:
             from mpmp.exceptions import GenesNotFoundError
             assert isinstance(gene_set, typing.List)

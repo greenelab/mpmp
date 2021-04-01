@@ -14,6 +14,7 @@ results_dirs = {
 raw_data_dir = data_dir / 'raw'
 pancan_data = data_dir / 'pancancer_data.pkl'
 sample_counts = data_dir / 'tcga_sample_counts.tsv'
+random_genes = data_dir / 'random_genes.tsv'
 
 methylation_manifest = data_dir / 'HumanMethylation450_15017482_v1-2.csv'
 cross_reactive_probe_list = data_dir / 'cross_reactive_probes.txt'
