@@ -27,7 +27,8 @@ import mpmp.utilities.analysis_utilities as au
 
 
 # set results directory
-results_dir = Path(cfg.results_dir, 'compressed_results', 'gene').resolve()
+results_dir = Path(cfg.results_dirs['mutation'],
+                   'compressed_results', 'gene').resolve()
 # set significance cutoff after FDR correction
 SIG_ALPHA = 0.001
 
@@ -36,7 +37,9 @@ SIG_ALPHA = 0.001
 
 
 # load raw data
-results_df = au.load_compressed_prediction_results(results_dir, 'gene')
+results_df = au.load_compressed_prediction_results(results_dir,
+                                                   'gene',
+                                                   old_filenames=True)
 print(results_df.shape)
 results_df.head()
 
@@ -169,7 +172,7 @@ axarr[1].set_ylim(-0.2, max(compare_df.delta_mean + 0.05))
 
 # get results for full gene expression/27k methylation datasets
 # we want to compare compressed to full results below
-raw_results_dir = Path(cfg.results_dir, 'mutation_imputed_n10_i5', 'gene').resolve()
+raw_results_dir = Path(cfg.results_dirs['mutation'], 'mutation_imputed_n10_i5', 'gene').resolve()
 raw_results_df = au.load_stratified_prediction_results(raw_results_dir, 'gene')
 
 raw_expression_df = (

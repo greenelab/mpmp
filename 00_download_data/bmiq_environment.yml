@@ -1,0 +1,12 @@
+name: bmiq
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bioconductor-champ=2.16.0=r36_1
+  - bioconductor-champdata=2.18.0=r36_0
+  - bioconductor-minfi=1.32.0=r36_0
+  - bioconductor-watermelon=1.30.0=r36_0
+  - r-base=3.6.3=hd272fe0_4
+

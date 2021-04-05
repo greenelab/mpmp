@@ -29,7 +29,7 @@ import mpmp.utilities.data_utilities as du
 
 
 # set results directory
-results_dir = Path(cfg.results_dir,
+results_dir = Path(cfg.results_dirs['purity'],
                    'purity_reg_results',
                    'purity').resolve()
 
