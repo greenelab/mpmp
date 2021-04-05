@@ -376,10 +376,17 @@ def compare_control(results_df,
 
     return pd.DataFrame(results, columns=['identifier', 'delta_mean', 'p_value'])
 
+
 def compare_control_ind(results_df,
                         identifier='gene',
                         metric='auroc',
                         verbose=False):
+    """Compare signal vs. shuffled results for each seed/CV fold independently.
+
+    This allows customized statistical analysis after performing comparison
+    (as opposed to compare_control which automatically aggregates over
+    seeds/folds).
+    """
 
     results = []
     unique_identifiers = np.unique(results_df[identifier].values)
