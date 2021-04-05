@@ -28,7 +28,7 @@ import mpmp.utilities.analysis_utilities as au
 
 
 # set results directory
-results_dir = Path(cfg.results_dir, 'cancer_type').resolve()
+results_dir = Path(cfg.results_dirs['cancer_type'], 'cancer_type').resolve()
 # set significance cutoff after FDR correction
 SIG_ALPHA = 0.001
 
@@ -240,7 +240,8 @@ import os
 
 import mpmp.utilities.data_utilities as du
 
-preds_dir = os.path.join(cfg.repo_root, 'results_preds', 'cancer_type')
+preds_dir = os.path.join(cfg.results_dirs['cancer_type'],
+                         'results_preds', 'cancer_type')
 sample_info_df = du.load_sample_info()
 
 preds_expression_df = au.load_preds_to_matrix(preds_dir, sample_info_df,
@@ -300,7 +301,9 @@ plt.tight_layout()
 
 # ## Hierarchical clustering analysis
 # 
-# We want to see if these confusion matrices lead to reasonable "cancer groups" (i.e. are cancer types that we would expect to be similar close by in the "similarity matrix" given by model confusion?). To do this, we'll just do a super simple agglomerative hierarchical clustering.
+# Next, we want to see if these confusion matrices lead to reasonable "cancer groups". Or, stated slightly differently, we want to know if cancer types we'd expect to be similar (e.g. from the same tissue or same cell lineage) tend to get "confused" often by the model.
+# 
+# To look at this systematically, we can apply agglomerative hierarchical clustering from scikit-learn to our confusion matrices. We can use the results to build cancer type dendrograms, or we can pick a cutoff and use it to cluster cancer types (although we're not doing that here).
 
 # In[14]:
 

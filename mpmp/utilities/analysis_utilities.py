@@ -42,7 +42,9 @@ def load_stratified_prediction_results(results_dir, experiment_descriptor):
     return results_df
 
 
-def load_compressed_prediction_results(results_dir, experiment_descriptor):
+def load_compressed_prediction_results(results_dir,
+                                       experiment_descriptor,
+                                       old_filenames=False):
     """Load results of compressed prediction experiments.
 
     Arguments
@@ -52,6 +54,7 @@ def load_compressed_prediction_results(results_dir, experiment_descriptor):
     experiment_descriptor (str): string describing this experiment, can be
                                  useful to segment analyses involving multiple
                                  experiments or results sets
+    old_filenames (bool): use old filename format
 
     Returns
     -------
@@ -69,7 +72,10 @@ def load_compressed_prediction_results(results_dir, experiment_descriptor):
             if ('classify' not in results_filename or
                 'metrics' not in results_filename): continue
             if results_filename[0] == '.': continue
-            n_dims = int(results_filename.split('_')[-2].replace('n', ''))
+            if old_filenames:
+                n_dims = int(results_filename.split('_')[-3].replace('n', ''))
+            else:
+                n_dims = int(results_filename.split('_')[-2].replace('n', ''))
             id_results_df = pd.read_csv(results_file, sep='\t')
             id_results_df['n_dims'] = n_dims
             id_results_df['experiment'] = experiment_descriptor

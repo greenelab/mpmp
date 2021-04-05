@@ -45,7 +45,7 @@ def process_args():
                          'any gene or set of genes in TCGA, specified in --custom_genes')
     io.add_argument('--log_file', default=None,
                     help='name of file to log skipped genes to')
-    io.add_argument('--results_dir', default=cfg.results_dir,
+    io.add_argument('--results_dir', default=cfg.results_dirs['mutation'],
                     help='where to write results to')
     io.add_argument('--verbose', action='store_true')
 
