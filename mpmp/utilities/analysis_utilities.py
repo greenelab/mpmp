@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from scipy.stats import ttest_ind
+from scipy.stats import ttest_rel
 
 def load_stratified_prediction_results(results_dir, experiment_descriptor):
     """Load results of stratified prediction experiments.
@@ -348,15 +348,26 @@ def compare_control(results_df,
                       (results_df.data_type == 'test') &
                       (results_df.signal == 'signal'))
         signal_results = results_df[conditions][metric].values
+        signal_seeds = results_df[conditions]['seed'].values
+        signal_folds = results_df[conditions]['fold'].values
 
         conditions = ((results_df[identifier] == id_str) &
                       (results_df.data_type == 'test') &
                      (results_df.signal == 'shuffled'))
         shuffled_results = results_df[conditions][metric].values
+        shuffled_seeds = results_df[conditions]['seed'].values
+        shuffled_folds = results_df[conditions]['fold'].values
 
         if signal_results.shape != shuffled_results.shape:
             if verbose:
                 print('shapes unequal for {}, skipping'.format(id_str),
+                      file=sys.stderr)
+            continue
+
+        if not (np.array_equal(np.unique(signal_seeds), np.unique(shuffled_seeds))
+                and np.array_equal(np.unique(signal_folds), np.unique(shuffled_folds))):
+            if verbose:
+                print('samples unequal for {}, skipping'.format(id_str),
                       file=sys.stderr)
             continue
 
@@ -366,12 +377,22 @@ def compare_control(results_df,
                       file=sys.stderr)
             continue
 
+        # make sure seeds and folds are in same order
+        # this is necessary for paired t-test
+        try:
+            assert np.array_equal(signal_seeds, shuffled_seeds)
+            assert np.array_equal(signal_folds, shuffled_folds)
+        except AssertionError:
+            print(id_str)
+            print(signal_seeds, shuffled_seeds)
+            print(signal_folds, shuffled_folds)
+
         if np.array_equal(signal_results, shuffled_results):
             delta_mean = 0
             p_value = 1.0
         else:
             delta_mean = np.mean(signal_results) - np.mean(shuffled_results)
-            p_value = ttest_ind(signal_results, shuffled_results)[1]
+            p_value = ttest_rel(signal_results, shuffled_results)[1]
         results.append([id_str, delta_mean, p_value])
 
     return pd.DataFrame(results, columns=['identifier', 'delta_mean', 'p_value'])
