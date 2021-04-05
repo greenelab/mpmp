@@ -89,12 +89,21 @@ def run_cv_stratified(data_model,
         y_train_df = data_model.y_df.reindex(X_train_raw_df.index)
         y_test_df = data_model.y_df.reindex(X_test_raw_df.index)
 
-        X_train_df, X_test_df = tu.preprocess_multi_data(X_train_raw_df,
-                                                         X_test_raw_df,
-                                                         data_model.gene_features,
-                                                         data_model.gene_data_types,
-                                                         standardize_columns,
-                                                         data_model.subset_mad_genes)
+        # choose single-omics or multi-omics preprocessing function based on
+        # data_model.gene_data_types class attribute
+        if hasattr(data_model, 'gene_data_types'):
+            X_train_df, X_test_df = tu.preprocess_multi_data(X_train_raw_df,
+                                                             X_test_raw_df,
+                                                             data_model.gene_features,
+                                                             data_model.gene_data_types,
+                                                             standardize_columns,
+                                                             data_model.subset_mad_genes)
+        else:
+            X_train_df, X_test_df = tu.preprocess_data(X_train_raw_df,
+                                                       X_test_raw_df,
+                                                       data_model.gene_features,
+                                                       standardize_columns,
+                                                       data_model.subset_mad_genes)
 
         if cfg.subsample_to_smallest:
             sample_counts_df = pd.read_csv(cfg.sample_counts, sep='\t')

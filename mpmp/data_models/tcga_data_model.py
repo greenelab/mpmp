@@ -178,6 +178,9 @@ class TCGADataModel():
 
         # add non-gene features to data_types array if necessary
         if hasattr(self, 'data_types'):
+            # this has to have a different name than the general data_types
+            # array, since this preprocessing may happen multiple times (for
+            # each gene) in the same script call
             self.gene_data_types = np.concatenate(
                 (self.data_types, np.array([-1] * np.count_nonzero(~gene_features)))
             )
