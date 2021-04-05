@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# ## Plot results of multimodal classification experiments
+# ## Plot results of multi-omics classification experiments
+# 
+# In these experiments, we compare elastic net logistic regression models using multiple data types to models using only a single data type. We're not doing anything particularly fancy here, just concatenating the feature sets (genes or CpG probes) from the individual data types to create a "multi-omics" model.
+# 
+# For now, we're just doing this for gene expression and the two methylation datasets.
 
 # In[1]:
 
@@ -13,6 +17,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import seaborn as sns
+from scipy.stats import ttest_ind
 from adjustText import adjust_text
 
 import mpmp.config as cfg
@@ -25,13 +30,13 @@ import mpmp.utilities.analysis_utilities as au
 # set results directory
 results_dir = Path(
     cfg.results_dirs['multimodal'],
-    'pilot_results',
+    # 'pilot_results',
+    'pilot_results_all_feats',
     'gene'
 ).resolve()
 
-# set significance cutoff after FDR correction
-SIG_ALPHA = 0.001
 
+# ### Compare raw results (signal and shuffled)
 
 # In[3]:
 
@@ -86,12 +91,14 @@ fig.delaxes(axarr[1, 3])
 plt.legend(handles=handles, loc='lower right')
 
 
+# ### Compare single-omics and multi-omics results
+
 # In[5]:
 
 
-# get results from unimodal prediction to compare with
+# get results from unimodal prediction (individual data types) to compare with
 # these are spread across 3 different results directories
-# this is such a dumpster fire, I really need to clean up the results data
+# this is such a mess, I really need to clean up the results directories eventually
 
 # expression, seed 1
 unimodal_results_dir_1 = Path(
@@ -155,9 +162,8 @@ print(u_results_df_4.seed.unique())
 # In[7]:
 
 
-# ok, stick with me here
 # first, take the unimodal results and the multimodal results,
-# and mash them together into one giant results df
+# and concatenate them into one giant results df
 all_results_df = pd.concat((results_df,
                             u_results_df_1,
                             u_results_df_2,
@@ -189,17 +195,6 @@ compare_df.head(10)
 
 
 # In[9]:
-
-
-# filter out genes that don't have comparisons for all data types
-# data_type_counts = compare_df.groupby('gene').count().training_data
-# valid_genes = data_type_counts[data_type_counts == len(all_results_df.training_data.unique())].index
-# compare_df = compare_df[
-#     compare_df.gene.isin(valid_genes)
-# ]
-
-
-# In[10]:
 
 
 # each subplot will show results for one gene
@@ -244,3 +239,66 @@ for ix, data in enumerate(data_order):
 fig.delaxes(axarr[1, 3])
 plt.legend(handles=handles, loc='lower right')
 
+
+# ### Compare best-performing single-omics and multi-omics data types
+
+# In[10]:
+
+
+# for each data type, classify it as single-omics or multi-omics
+compare_df['model_type'] = 'single-omics'
+# multi-omics data types are concatenated using dots
+compare_df.loc[compare_df.training_data.str.contains('\.'), 'model_type'] = 'multi-omics'
+print(compare_df.training_data.unique())
+compare_df[compare_df.gene == 'TP53'].head(10)
+
+
+# In[11]:
+
+
+sns.set({'figure.figsize': (10, 6)})
+
+plot_df = pd.DataFrame()
+
+# plot mean performance over all genes in pilot experiment
+for ix, gene in enumerate(results_df.identifier.unique()):
+    
+    plot_gene_df = compare_df[(compare_df.gene == gene)].reset_index(drop=True)
+    
+    # get the best-performing data types from the single-omics and multi-omics models
+    max_single_data_type = (
+        plot_gene_df[plot_gene_df.model_type == 'single-omics']
+          .groupby('training_data')
+          .agg('mean')
+          .delta_aupr.idxmax()
+    )
+    max_multi_data_type = (
+        plot_gene_df[plot_gene_df.model_type == 'multi-omics']
+          .groupby('training_data')
+          .agg('mean')
+          .delta_aupr.idxmax()
+    )
+    
+    # get samples with that data type
+    max_single_df = plot_gene_df[plot_gene_df.training_data == max_single_data_type]
+    max_multi_df = plot_gene_df[plot_gene_df.training_data == max_multi_data_type]
+    
+    # calculate difference between means and t-test p-val for that data type
+    mean_diff = max_single_df.delta_aupr.mean() - max_multi_df.delta_aupr.mean()
+    _, p_val = ttest_ind(max_single_df.delta_aupr.values,
+                         max_multi_df.delta_aupr.values)
+    print('{} diff: {:.4f} (pval: {:.4f})'.format(gene, mean_diff, p_val))
+    
+    plot_df = pd.concat((plot_df, max_single_df, max_multi_df))
+
+sns.boxplot(data=plot_df, x='gene', y='delta_aupr', hue='model_type')
+plt.title('Best performing single-omics vs. multi-omics data type, per gene')
+plt.xlabel('Target gene')
+plt.ylabel('AUPR(signal) - AUPR(shuffled)')
+
+
+# Summary and interpretation:
+# 
+# * In this last figure, we can see that the difference in distributions between the best-performing single-omics and multi-omics model is visually quite small for all of the target genes, and none of the differences are statistically significant using a t-test over the 8 total CV folds.
+# * Looking at the other two figures, when we consider all data types the difference between single-omics and multi-omics models is still pretty minimal in general. There are some genes where adding expression data helps a lot (EGFR, PIK3CA, KRAS) and others where it doesn't really (IDH1, SETD2), but in general there's not a lot of added predictive ability when expression is combined with other data types, suggesting that methylation may be most useful in that it correlates with expression patterns (although more follow-up would be needed to really confirm this).
+# * We had hypothesized that the reason for this might be that the multi-omics models are only selecting features from the best performing data type, but looking at the model coefficients this doesn't really seem to be the case; non-zero coefficients seem to be roughly evenly distributed between data types.
