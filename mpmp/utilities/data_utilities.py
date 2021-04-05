@@ -187,6 +187,15 @@ def load_top_50():
     return genes_df
 
 
+def load_50_random(gene_list, verbose=False):
+    """Load 50 randomly sampled genes.
+
+    These are sampled in 00_download_data/sample_random_genes.ipynb; criteria
+    for sampling are described in that notebook.
+    """
+    return pd.read_csv(cfg.random_genes, sep='\t')
+
+
 def load_vogelstein():
     """Load list of cancer-relevant genes from Vogelstein and Kinzler,
     Nature Medicine 2004 (https://doi.org/10.1038/nm1087)
