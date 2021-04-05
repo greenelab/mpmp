@@ -47,8 +47,12 @@ def test_preprocessing(raw_data, standardize_columns, subset_mad_genes):
     # make sure no non-gene features were lost, and make sure that
     # each data type has the correct number of subset columns
     if subset_mad_genes == -1:
+        # if no subsetting by MAD, number of features shouldn't change
         assert (X_train_df.shape[1] == X_train_raw_df.shape[1])
     else:
+        # if we do subset by MAD:
+        # total number of features = (number of data types * number of features to
+        # subset to) + number of non-gene features
         assert (X_train_df.shape[1] ==
                   (subset_mad_genes * (np.unique(data_types).shape[0] - 1)) +
                   (np.count_nonzero(data_types == -1)))

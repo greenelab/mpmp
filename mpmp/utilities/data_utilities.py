@@ -109,7 +109,10 @@ def load_multiple_data_types(data_types, n_dims, verbose=False):
             print('- Loading {} data...'.format(data_type), file=sys.stderr)
         if n_dim is not None:
             partial_data_df = load_compressed_data(data_type, n_dim)
-            # have to rename PC columns in case we have multiple PC features
+            # the default PC name is just the integer index, so here we need
+            # to rename them in case we have PCs for more than one data type
+            #
+            # just rename them to {data_type}_pc{pc_number}
             partial_data_df = partial_data_df.add_prefix(
                                   '{}_pc'.format(data_type))
         else:

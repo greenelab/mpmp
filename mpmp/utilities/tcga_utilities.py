@@ -608,34 +608,3 @@ def get_and_save_sample_info(tcga_df,
 
     return tcga_id
 
-
-if __name__ == '__main__':
-    import string
-
-    cols = list(string.ascii_lowercase)[:8]
-    X_train_df = pd.DataFrame(np.random.uniform(size=(5, 8)), columns=cols)
-    X_test_df = pd.DataFrame(np.random.uniform(size=(3, 8)), columns=cols)
-    data_types = np.array([0, 0, 0, 1, 1, 1, -1, -1])
-    gene_features = np.array([True] * 6 + [False] * 2)
-
-    standardize_columns = [True, False]
-    subset_mad_genes = 1
-
-    print('Before preprocessing:')
-    print(X_train_df.shape)
-    print(X_test_df.shape)
-    print(X_train_df)
-    print(X_test_df)
-    X_train_df, X_test_df = preprocess_multi_data(X_train_df,
-                                                  X_test_df,
-                                                  gene_features,
-                                                  data_types,
-                                                  standardize_columns,
-                                                  subset_mad_genes)
-
-    print('After preprocessing:')
-    print(X_train_df.shape)
-    print(X_test_df.shape)
-    print(X_train_df)
-    print(X_test_df)
-
