@@ -302,8 +302,6 @@ def preprocess_multi_data(X_train_raw_df,
     -------
     X_train_df (pd.DataFrame): preprocessed training data
     X_test_df (pd.DataFrame): preprocessed test data
-
-    TODO write some tests, this logic is pretty complex
     """
     # standardize_columns should be a list having the same length as
     # the number of data types, in the same order

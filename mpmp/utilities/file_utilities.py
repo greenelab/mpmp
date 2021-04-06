@@ -98,7 +98,7 @@ def check_output_file(output_dir,
     else:
         training_data = model_options.training_data
 
-    if not isinstance(model_options.n_dim, str):
+    if isinstance(model_options.n_dim, list):
         n_dim = '.'.join(map(str, model_options.n_dim))
     else:
         n_dim = model_options.n_dim
@@ -137,7 +137,7 @@ def save_results(output_dir,
     else:
         training_data = model_options.training_data
 
-    if not isinstance(model_options.n_dim, str):
+    if isinstance(model_options.n_dim, list):
         n_dim = '.'.join(map(str, model_options.n_dim))
     else:
         n_dim = model_options.n_dim
