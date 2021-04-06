@@ -291,8 +291,8 @@ def preprocess_multi_data(X_train_raw_df,
                               correspond to genes and should be preprocessed
     data_types (np.array): 1D int array, indicating which data type each
                            feature corresponds to. Non-gene features should
-                           have a data type of -1, and other features should
-                           be indexed from 0.
+                           have a data type of config.NONGENE_FEATURE, and other
+                           features should be indexed from 0.
     standardize_columns (list): list of whether or not to standardize each
                                 data type, in the same order as indexing in
                                 data_types. Defaults to True for all data
@@ -320,7 +320,7 @@ def preprocess_multi_data(X_train_raw_df,
 
             # skip non-gene features, we don't want to subset those
             # we can add them back untransformed at the end
-            if data_type == -1: continue
+            if data_type == cfg.NONGENE_FEATURE: continue
 
             # subset to the features for the given data type, and filter
             data_ixs = (data_types == data_type)
@@ -345,7 +345,7 @@ def preprocess_multi_data(X_train_raw_df,
         train_datasets.append(X_train_non_gene_df)
         test_datasets.append(X_test_non_gene_df)
         gene_features_filtered += [False] * X_train_non_gene_df.shape[1]
-        data_types_filtered += [-1] * X_train_non_gene_df.shape[1]
+        data_types_filtered += [cfg.NONGENE_FEATURE] * X_train_non_gene_df.shape[1]
 
         # then concatenate all datasets together to get the final df
         X_train_raw_df = pd.concat(train_datasets, axis=1)
@@ -400,7 +400,7 @@ def standardize_multi_gene_features(X_df, standardize_columns, gene_features, da
     for data_type in np.unique(data_types):
 
         # skip non-gene features, these shouldn't be transformed
-        if data_type == -1: continue
+        if data_type == cfg.NONGENE_FEATURE: continue
 
         # get relevant columns of X_data_df
         data_ixs = (data_types == data_type)

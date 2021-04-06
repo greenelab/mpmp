@@ -182,7 +182,8 @@ class TCGADataModel():
             # array, since this preprocessing may happen multiple times (for
             # each gene) in the same script call
             self.gene_data_types = np.concatenate(
-                (self.data_types, np.array([-1] * np.count_nonzero(~gene_features)))
+                (self.data_types, np.array([cfg.NONGENE_FEATURE] *
+                                            np.count_nonzero(~gene_features)))
             )
             assert self.gene_data_types.shape[0] == gene_features.shape[0]
 

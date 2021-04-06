@@ -17,7 +17,8 @@ def raw_data():
     cols = list(string.ascii_lowercase)[:11]
     X_train_raw_df = pd.DataFrame(np.random.uniform(size=(20, 11)), columns=cols)
     X_test_raw_df = pd.DataFrame(np.random.uniform(size=(10, 11)), columns=cols)
-    data_types = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2, -1, -1])
+    data_types = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2,
+                           cfg.NONGENE_FEATURE, cfg.NONGENE_FEATURE])
     gene_features = np.array([True] * 9 + [False] * 2)
     return (X_train_raw_df,
             X_test_raw_df,
@@ -55,7 +56,7 @@ def test_preprocessing(raw_data, standardize_columns, subset_mad_genes):
         # subset to) + number of non-gene features
         assert (X_train_df.shape[1] ==
                   (subset_mad_genes * (np.unique(data_types).shape[0] - 1)) +
-                  (np.count_nonzero(data_types == -1)))
+                  (np.count_nonzero(data_types == cfg.NONGENE_FEATURE)))
     # make sure standardized columns were actually standardized
     for ix, std_col in enumerate(standardize_columns):
         if subset_mad_genes == -1:
@@ -71,7 +72,8 @@ def test_preprocessing(raw_data, standardize_columns, subset_mad_genes):
                     for ix in range(np.unique(data_types).shape[0] - 1)],
                 []
             )
-            data_types_filtered += [-1] * np.count_nonzero(data_types == -1)
+            data_types_filtered += [cfg.NONGENE_FEATURE] * np.count_nonzero(
+                    data_types == cfg.NONGENE_FEATURE)
             data_types_filtered = np.array(data_types_filtered)
         valid_cols = (data_types_filtered == ix)
         if std_col:
