@@ -495,7 +495,7 @@ def compare_experiment(single_cancer_df,
             p_value = 1.0
         else:
             delta_mean = np.mean(pancancer_results) - np.mean(single_cancer_results)
-            p_value = ttest_ind(pancancer_results, single_cancer_results)[1]
+            p_value = ttest_rel(pancancer_results, single_cancer_results)[1]
         results.append([id_str, delta_mean, p_value])
 
     return pd.DataFrame(results, columns=['identifier', 'delta_mean', 'p_value'])
