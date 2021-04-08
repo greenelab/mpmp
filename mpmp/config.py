@@ -8,6 +8,7 @@ results_dirs = {
     'mutation': repo_root / '02_classify_mutations' / 'results',
     'cancer_type': repo_root / '03_classify_cancer_type' / 'results',
     'purity': repo_root / '04_predict_tumor_purity' / 'results',
+    'multimodal': repo_root / '05_classify_mutations_multimodal' / 'results',
 }
 
 # locations of saved data files
@@ -134,3 +135,8 @@ standardize_data_types = ['expression', 'rppa']
 # subsample data to smallest cancer type
 # hopefully this will improve prediction for imbalanced cancer types
 subsample_to_smallest = False
+
+# constant for non-gene feature indices
+# this is used in multimodal prediction experiments, e.g. scripts in
+# 05_classify_mutations_multimodal directory
+NONGENE_FEATURE = -1

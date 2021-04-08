@@ -1,6 +1,6 @@
 """
 Script to run pan-cancer mutation classification experiments, with stratified
-train and test sets, for all provided genes.
+train and test sets, for multiple data types at once.
 """
 import sys
 import argparse
@@ -38,14 +38,14 @@ def process_args():
     io.add_argument('--custom_genes', nargs='*', default=None,
                     help='currently this needs to be a subset of top_50')
     io.add_argument('--gene_set', type=str,
-                    choices=['top_50', 'vogelstein', '50_random', 'custom'],
+                    choices=['top_50', 'vogelstein', 'custom'],
                     default='top_50',
                     help='choose which gene set to use. top_50 and vogelstein are '
                          'predefined gene sets (see data_utilities), and custom allows '
                          'any gene or set of genes in TCGA, specified in --custom_genes')
     io.add_argument('--log_file', default=None,
                     help='name of file to log skipped genes to')
-    io.add_argument('--results_dir', default=cfg.results_dirs['mutation'],
+    io.add_argument('--results_dir', default=cfg.results_dirs['multimodal'],
                     help='where to write results to')
     io.add_argument('--verbose', action='store_true')
 
@@ -60,15 +60,17 @@ def process_args():
                                      'experiment metadata ')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
+    opts.add_argument('--n_dim', nargs='*', default=None,
+                      help='list of compressed dimensions to use, defaults to '
+                           'uncompressed data for all data types')
     opts.add_argument('--num_folds', type=int, default=4,
                       help='number of folds of cross-validation to run')
     opts.add_argument('--seed', type=int, default=cfg.default_seed)
     opts.add_argument('--subset_mad_genes', type=int, default=cfg.num_features_raw,
                       help='if included, subset gene features to this number of '
                            'features having highest mean absolute deviation')
-    opts.add_argument('--training_data', type=str, default='expression',
-                      choices=list(cfg.data_types.keys()),
-                      help='what data type to train model on')
+    opts.add_argument('--training_data', nargs='*', default=['expression'],
+                      help='which data types to train model on')
 
     args = parser.parse_args()
 
@@ -85,16 +87,34 @@ def process_args():
     elif (args.gene_set != 'custom' and args.custom_genes is not None):
         parser.error('must use option --gene_set=\'custom\' if custom genes are included')
 
+    if (len(set(args.training_data).intersection(set(cfg.data_types.keys()))) !=
+            len(set(args.training_data))):
+        parser.error('training_data data types must be in config.data_types')
+
     # split args into defined argument groups, since we'll use them differently
     arg_groups = du.split_argument_groups(args, parser)
     io_args, model_options = arg_groups['io'], arg_groups['model_options']
 
+    # if no n_dim argument provided, set all to None
+    if model_options.n_dim is None:
+        model_options.n_dim = [None] * len(model_options.training_data)
+    else:
+        # convert None strings from argparse to python Nones
+        model_options.n_dim = (
+            [None if n == 'None' else n for n in model_options.n_dim]
+        )
+
     # add some additional hyperparameters/ranges from config file to model options
     # these shouldn't be changed by the user, so they aren't added as arguments
-    model_options.n_dim = None
     model_options.alphas = cfg.alphas
     model_options.l1_ratios = cfg.l1_ratios
-    model_options.standardize_data_types = cfg.standardize_data_types
+
+    # for these experiments, we need to standardize all data types that are not
+    # already PCA compressed
+    model_options.standardize_data_types = (
+        [t for ix, t in enumerate(model_options.training_data)
+           if model_options.n_dim[ix] == None]
+    )
 
     # add information about valid samples to model options
     model_options.sample_overlap_data_types = list(
@@ -108,8 +128,10 @@ if __name__ == '__main__':
 
     # process command line arguments
     io_args, model_options = process_args()
-    sample_info_df = du.load_sample_info(model_options.training_data,
-                                         verbose=io_args.verbose)
+
+    # TODO: how to do this for all training datatypes?
+    sample_info_df = du.load_sample_info_multi(model_options.training_data,
+                                               verbose=io_args.verbose)
 
     # create results dir and subdir for experiment if they don't exist
     experiment_dir = Path(io_args.results_dir, 'gene').resolve()
@@ -135,6 +157,7 @@ if __name__ == '__main__':
     tcga_data = TCGADataModel(seed=model_options.seed,
                               subset_mad_genes=model_options.subset_mad_genes,
                               training_data=model_options.training_data,
+                              n_dim=model_options.n_dim,
                               sample_info_df=sample_info_df,
                               verbose=io_args.verbose,
                               debug=model_options.debug)
@@ -177,7 +200,7 @@ if __name__ == '__main__':
                         gene), file=sys.stderr)
                 log_df = fu.generate_log_df(
                     log_columns,
-                    [gene, model_options.training_data, shuffle_labels, 'file_exists']
+                    [gene, '.'.join(model_options.training_data), shuffle_labels, 'file_exists']
                 )
                 fu.write_log_file(log_df, io_args.log_file)
                 continue
@@ -188,24 +211,23 @@ if __name__ == '__main__':
                       file=sys.stderr)
                 log_df = fu.generate_log_df(
                     log_columns,
-                    [gene, model_options.training_data, shuffle_labels, 'gene_not_found']
+                    [gene, '.'.join(model_options.training_data), shuffle_labels, 'gene_not_found']
                 )
                 fu.write_log_file(log_df, io_args.log_file)
                 continue
 
             try:
-                # for now, don't standardize methylation data
-                standardize_columns = (model_options.training_data in
-                                       cfg.standardize_data_types)
+                standardize_columns = [(t in model_options.standardize_data_types)
+                                          for t in model_options.training_data]
                 results = run_cv_stratified(tcga_data,
                                             'gene',
                                             gene,
                                             model_options.training_data,
                                             sample_info_df,
                                             model_options.num_folds,
-                                            True,
-                                            shuffle_labels,
-                                            standardize_columns)
+                                            classify=True,
+                                            shuffle_labels=shuffle_labels,
+                                            standardize_columns=standardize_columns)
                 # only save results if no exceptions
                 fu.save_results(gene_dir,
                                 check_file,
@@ -220,7 +242,7 @@ if __name__ == '__main__':
                         gene), file=sys.stderr)
                 log_df = fu.generate_log_df(
                     log_columns,
-                    [gene, model_options.training_data, shuffle_labels, 'no_train_samples']
+                    [gene, '.'.join(model_options.training_data), shuffle_labels, 'no_train_samples']
                 )
             except OneClassError:
                 if io_args.verbose:
@@ -228,7 +250,7 @@ if __name__ == '__main__':
                         gene), file=sys.stderr)
                 log_df = fu.generate_log_df(
                     log_columns,
-                    [gene, model_options.training_data, shuffle_labels, 'one_class']
+                    [gene, '.'.join(model_options.training_data), shuffle_labels, 'one_class']
                 )
 
             if log_df is not None:

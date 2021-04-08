@@ -179,6 +179,17 @@ class TCGADataModel():
         )
         train_filtered_df, y_filtered_df, gene_features = filtered_data
 
+        # add non-gene features to data_types array if necessary
+        if hasattr(self, 'data_types'):
+            # this has to have a different name than the general data_types
+            # array, since this preprocessing may happen multiple times (for
+            # each gene) in the same script call
+            self.gene_data_types = np.concatenate(
+                (self.data_types, np.array([cfg.NONGENE_FEATURE] *
+                                            np.count_nonzero(~gene_features)))
+            )
+            assert self.gene_data_types.shape[0] == gene_features.shape[0]
+
         if shuffle_labels:
             y_filtered_df.status = np.random.permutation(
                 y_filtered_df.status.values)
@@ -274,7 +285,15 @@ class TCGADataModel():
         test (bool): whether or not to subset columns in mutation data, for testing
         """
         # load training data
-        if compressed_data:
+        if not isinstance(train_data_type, str):
+            # if a list of train data types is provided, we have to load each
+            # of them and concatenate columns
+            # n_dim should be a list here
+            self.data_df, self.data_types = du.load_multiple_data_types(
+                                                train_data_type,
+                                                n_dims=n_dim,
+                                                verbose=self.verbose)
+        elif compressed_data:
             self.data_df = du.load_compressed_data(train_data_type,
                                                    n_dim=n_dim,
                                                    verbose=self.verbose,
