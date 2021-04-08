@@ -140,3 +140,10 @@ subsample_to_smallest = False
 # this is used in multimodal prediction experiments, e.g. scripts in
 # 05_classify_mutations_multimodal directory
 NONGENE_FEATURE = -1
+
+# gene aliases for Vogelstein dataset
+gene_aliases = {
+    'MLL2': 'KMT2D',
+    'MLL3': 'KMT2C',
+    'FAM123B': 'AMER1'
+}

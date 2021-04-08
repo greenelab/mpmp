@@ -211,6 +211,8 @@ def load_vogelstein():
           .rename(columns={'Gene Symbol'   : 'gene',
                            'Classification*': 'classification'})
     )
+    # some genes in vogelstein set have different names in mutation data
+    genes_df.gene.replace(to_replace=cfg.gene_aliases, inplace=True)
     return genes_df
 
 
