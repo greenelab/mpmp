@@ -217,6 +217,9 @@ def summarize_results(results,
     data_type: the type of data (either training, testing, or cv)
     fold_no: the fold number for the external cross-validation loop
     """
+    if not isinstance(training_data, str):
+        training_data = '.'.join(training_data)
+
     results_append_list = [
         identifier,
         training_data,

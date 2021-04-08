@@ -85,6 +85,45 @@ def load_compressed_data(data_type, n_dim, verbose=False, load_subset=False):
     return data_df
 
 
+def load_multiple_data_types(data_types, n_dims, verbose=False):
+    """Load multiple data types and concatenate columns.
+
+    Arguments
+    ---------
+    data_types (list): list of data types to use
+    n_dims (list): list of compressed dimensions to use, None for raw data
+    verbose (bool): whether or not to print verbose output
+
+    Returns
+    -------
+    data_df: samples x latent dimensions dataframe
+    data_ixs: 1D numpy array containing data type index for each column
+    """
+    data_df = pd.DataFrame()
+    data_ixs = []
+    if verbose:
+        print('Loading data for data types {}...'.format(', '.join(data_types)),
+              file=sys.stderr)
+    for ix, (data_type, n_dim) in enumerate(zip(data_types, n_dims)):
+        if verbose:
+            print('- Loading {} data...'.format(data_type), file=sys.stderr)
+        if n_dim is not None:
+            partial_data_df = load_compressed_data(data_type, n_dim)
+            # the default PC name is just the integer index, so here we need
+            # to rename them in case we have PCs for more than one data type
+            #
+            # just rename them to {data_type}_pc{pc_number}
+            partial_data_df = partial_data_df.add_prefix(
+                                  '{}_pc'.format(data_type))
+        else:
+            partial_data_df = load_raw_data(data_type)
+        data_ixs += [ix] * partial_data_df.shape[1]
+        # only keep samples that are in all data types (inner join)
+        data_df = pd.concat((data_df, partial_data_df), axis=1,
+                            join=('outer' if ix == 0 else 'inner'))
+    return data_df, np.array(data_ixs)
+
+
 def load_pancancer_data(verbose=False, test=False, subset_columns=None):
     """Load pan-cancer relevant data from previous Greene Lab repos.
 
@@ -224,6 +263,18 @@ def load_sample_info(train_data_type, verbose=False):
         print('Loading sample info...', file=sys.stderr)
     return pd.read_csv(cfg.sample_infos[train_data_type],
                        sep='\t', index_col='sample_id')
+
+def load_sample_info_multi(train_data_types, verbose=False):
+    if verbose:
+        print('Loading sample info for multiple data types...',
+              file=sys.stderr)
+    sample_info_df = load_sample_info(train_data_types[0])
+    for training_data in train_data_types[1:]:
+        # add the rows that are not in current sample info
+        add_df = load_sample_info(training_data)
+        add_df = add_df[~add_df.index.isin(sample_info_df.index)]
+        sample_info_df = pd.concat((sample_info_df, add_df))
+    return sample_info_df
 
 
 def load_purity(mut_burden_df,
