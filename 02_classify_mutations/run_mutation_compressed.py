@@ -70,6 +70,11 @@ def process_args():
                       help='number of compressed components/dimensions to use')
     opts.add_argument('--num_folds', type=int, default=4,
                       help='number of folds of cross-validation to run')
+    opts.add_argument('--overlap_data_types', nargs='*',
+                      default=['expression'],
+                      help='data types to define set of samples to use; e.g. '
+                           'set of data types for a model comparison, use only '
+                           'overlapping samples from these data types')
     opts.add_argument('--seed', type=int, default=cfg.default_seed)
     opts.add_argument('--training_data', type=str, default='expression',
                       choices=list(cfg.compressed_data_types.keys()),
@@ -89,6 +94,16 @@ def process_args():
         del args.custom_genes
     elif (args.gene_set != 'custom' and args.custom_genes is not None):
         parser.error('must use option --gene_set=\'custom\' if custom genes are included')
+
+    # check that all data types in overlap_data_types are valid
+    all_data_types = get_all_data_types(use_subsampled=args.debug, compressed_data=True).keys()
+    if (set(all_data_types).intersection(args.overlap_data_types) !=
+          set(args.overlap_data_types)):
+        parser.error(
+            'overlap data types must be subset of: [{}]'.format(
+                ', '.join(list(all_data_types))
+            )
+        )
 
     # split args into defined argument groups, since we'll use them differently
     arg_groups = du.split_argument_groups(args, parser)
