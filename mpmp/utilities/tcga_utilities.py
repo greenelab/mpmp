@@ -484,15 +484,24 @@ def get_all_data_types(use_subsampled=False, compressed_data=False):
 
 def filter_to_cross_data_samples(X_df,
                                  y_df,
+                                 data_types=None,
                                  use_subsampled=False,
                                  verbose=False,
                                  compressed_data_only=False,
                                  n_dim=None):
     """Filter dataset to samples included in all data modalities."""
 
-    # first, get intersection of samples in all training datasets
+    # only use data types in data_types list
+    if data_types is not None:
+        data_types = {
+            d: f for d, f in (
+                get_all_data_types(use_subsampled, compressed_data_only).items()
+            ) if d in data_types
+        }
+    else:
+        data_types = get_all_data_types(use_subsampled, compressed_data_only)
 
-    data_types = get_all_data_types(use_subsampled, compressed_data_only)
+    # get intersection of samples in all training datasets
     valid_samples = None
     for data_type, data_file in data_types.items():
         # get sample IDs for the given data type/processed data file

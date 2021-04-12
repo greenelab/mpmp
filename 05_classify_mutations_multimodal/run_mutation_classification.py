@@ -65,6 +65,11 @@ def process_args():
                            'uncompressed data for all data types')
     opts.add_argument('--num_folds', type=int, default=4,
                       help='number of folds of cross-validation to run')
+    opts.add_argument('--overlap_data_types', nargs='*',
+                      default=['expression'],
+                      help='data types to define set of samples to use; e.g. '
+                           'set of data types for a model comparison, use only '
+                           'overlapping samples from these data types')
     opts.add_argument('--seed', type=int, default=cfg.default_seed)
     opts.add_argument('--subset_mad_genes', type=int, default=cfg.num_features_raw,
                       help='if included, subset gene features to this number of '
@@ -87,9 +92,23 @@ def process_args():
     elif (args.gene_set != 'custom' and args.custom_genes is not None):
         parser.error('must use option --gene_set=\'custom\' if custom genes are included')
 
+    # check that all training data types are defined in config
     if (len(set(args.training_data).intersection(set(cfg.data_types.keys()))) !=
             len(set(args.training_data))):
         parser.error('training_data data types must be in config.data_types')
+
+    # check that all data types in overlap_data_types are valid
+    # here I'm just checking this argument against the non-compressed data types,
+    # later on we'll check if compressed data types really have compressed
+    # files but don't want to get into that here
+    all_data_types = get_all_data_types(use_subsampled=args.debug).keys()
+    if (set(all_data_types).intersection(args.overlap_data_types) !=
+          set(args.overlap_data_types)):
+        parser.error(
+            'overlap data types must be subset of: [{}]'.format(
+                ', '.join(list(all_data_types))
+            )
+        )
 
     # split args into defined argument groups, since we'll use them differently
     arg_groups = du.split_argument_groups(args, parser)
@@ -157,6 +176,7 @@ if __name__ == '__main__':
     tcga_data = TCGADataModel(seed=model_options.seed,
                               subset_mad_genes=model_options.subset_mad_genes,
                               training_data=model_options.training_data,
+                              overlap_data_types=model_options.overlap_data_types,
                               n_dim=model_options.n_dim,
                               sample_info_df=sample_info_df,
                               verbose=io_args.verbose,

@@ -156,6 +156,7 @@ if __name__ == '__main__':
 
     tcga_data = TCGADataModel(seed=model_options.seed,
                               training_data=model_options.training_data,
+                              overlap_data_types=model_options.overlap_data_types,
                               load_compressed_data=True,
                               n_dim=model_options.n_dim,
                               sample_info_df=sample_info_df,

@@ -26,6 +26,7 @@ class TCGADataModel():
                  seed=cfg.default_seed,
                  subset_mad_genes=-1,
                  training_data='expression',
+                 overlap_data_types=None,
                  load_compressed_data=False,
                  n_dim=None,
                  sample_info_df=None,
@@ -41,6 +42,7 @@ class TCGADataModel():
         subset_mad_genes (int): how many genes to keep (top by mean absolute deviation).
                                 -1 doesn't do any filtering (all genes will be kept).
         training_data (str): what data type to train the model on
+        overlap_data_types (list): what data types to use to determine sample set
         load_compressed_data (bool): whether or not to use compressed data
         n_dim (int): how many dimensions to use for compression algorithm
         verbose (bool): whether or not to write verbose output
@@ -53,6 +55,7 @@ class TCGADataModel():
         self.seed = seed
         self.subset_mad_genes = subset_mad_genes
         self.compressed_data = load_compressed_data
+        self.overlap_data_types = overlap_data_types
         self.n_dim = n_dim
         self.verbose = verbose
         self.debug = debug
@@ -142,6 +145,7 @@ class TCGADataModel():
             train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
                 train_filtered_df,
                 y_filtered_df,
+                data_types=self.overlap_data_types,
                 use_subsampled=(self.debug or self.test),
                 verbose=self.verbose
             )
@@ -197,6 +201,7 @@ class TCGADataModel():
             train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
                 train_filtered_df,
                 y_filtered_df,
+                data_types=self.overlap_data_types,
                 # if this option is True, use only samples for which we have
                 # compressed data. if false, take overlap of samples for which
                 # we have non-compressed data (generally a subset of compressed
@@ -248,6 +253,7 @@ class TCGADataModel():
             train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
                 train_filtered_df,
                 y_filtered_df,
+                data_types=self.overlap_data_types,
                 # if this option is True, use only samples for which we have
                 # compressed data. if False, take overlap of samples for which
                 # we have non-compressed data (generally a subset of compressed
