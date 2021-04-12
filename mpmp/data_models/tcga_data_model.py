@@ -84,12 +84,11 @@ class TCGADataModel():
             print('Loading gene label data...', file=sys.stderr)
 
         if gene_set == 'top_50':
-            genes_df = du.load_top_50()
+            genes_df = du.load_top_genes()
         elif gene_set == 'vogelstein':
             genes_df = du.load_vogelstein()
         elif gene_set == '50_random':
-            genes_df = du.load_50_random(self.mutation_df.columns,
-                                         self.verbose)
+            genes_df = du.load_random_genes()
         else:
             from mpmp.exceptions import GenesNotFoundError
             assert isinstance(gene_set, typing.List)
