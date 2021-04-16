@@ -16,6 +16,7 @@ dependencies:
   - svgutils=0.3.1
   - tqdm=4.54.1
   - umap-learn=0.4.6
+  - upsetplot=0.4.1=pyh9f0ad1d_1
   - pip:
     - venn==0.1.3
 
