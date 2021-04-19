@@ -1,5 +1,5 @@
 #!/bin/bash
-RESULTS_DIR=./results/all_data_types_results
+RESULTS_DIR=./02_classify_mutations/results/all_data_types_results
 ERRORS_DIR=./all_data_types_errors
 N_DIM=5000
 

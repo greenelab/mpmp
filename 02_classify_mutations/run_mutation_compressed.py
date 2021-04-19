@@ -20,7 +20,7 @@ from mpmp.exceptions import (
 from mpmp.prediction.cross_validation import run_cv_stratified
 import mpmp.utilities.data_utilities as du
 import mpmp.utilities.file_utilities as fu
-from mpmp.utilities.tcga_utilities import get_overlap_data_types
+from mpmp.utilities.tcga_utilities import get_all_data_types
 
 def process_args():
     """Parse and format command line arguments."""
@@ -114,14 +114,6 @@ def process_args():
     model_options.alphas = cfg.alphas
     model_options.l1_ratios = cfg.l1_ratios
     model_options.standardize_data_types = cfg.standardize_data_types
-
-    # add information about valid samples to model options
-    model_options.sample_overlap_data_types = list(
-        get_overlap_data_types(
-            use_subsampled=model_options.debug,
-            compressed_data=True
-        ).keys()
-    )
 
     return io_args, model_options
 
