@@ -96,7 +96,7 @@ def process_args():
         parser.error('must use option --gene_set=\'custom\' if custom genes are included')
 
     # check that all data types in overlap_data_types are valid
-    all_data_types = get_all_data_types(use_subsampled=args.debug, compressed_data=True).keys()
+    all_data_types = get_all_data_types(use_subsampled=args.debug).keys()
     if (set(all_data_types).intersection(args.overlap_data_types) !=
           set(args.overlap_data_types)):
         parser.error(
