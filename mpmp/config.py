@@ -11,6 +11,7 @@ results_dirs = {
     'multimodal': repo_root / '05_classify_mutations_multimodal' / 'results',
 }
 images_dirs = {
+    'data': repo_root / '00_download_data' / 'images',
     'mutation': repo_root / '02_classify_mutations' / 'images',
     'cancer_type': repo_root / '03_classify_cancer_type' / 'images',
     'purity': repo_root / '04_predict_tumor_purity' / 'images',
