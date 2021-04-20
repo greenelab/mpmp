@@ -73,7 +73,10 @@ def load_compressed_prediction_results(results_dir,
                 'metrics' not in results_filename): continue
             if results_filename[0] == '.': continue
             if old_filenames:
-                n_dims = int(results_filename.split('_')[-3].replace('n', ''))
+                try:
+                    n_dims = int(results_filename.split('_')[-3].replace('n', ''))
+                except ValueError:
+                    n_dims = int(results_filename.split('_')[-2].replace('n', ''))
             else:
                 n_dims = int(results_filename.split('_')[-2].replace('n', ''))
             id_results_df = pd.read_csv(results_file, sep='\t')
