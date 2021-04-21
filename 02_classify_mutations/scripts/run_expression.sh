@@ -13,7 +13,7 @@ for dataset in top_50 50_random vogelstein; do
         cmd+="--results_dir $results_dir "
         cmd+="--seed $seed "
         cmd+="--training_data expression "
-        cmd+="2>$errors_dir/errors_expression_s$seed.txt"
+        cmd+="2>$errors_dir/errors_expression_$dataset_s$seed.txt"
         echo "Running: $cmd"
         eval $cmd
     done
