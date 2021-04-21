@@ -219,8 +219,6 @@ ax.set_ylim(-0.2, max(all_results_df.delta_mean + 0.05))
 # plot mean performance for genes that are significant for at least one data type
 ax = axarr[0, 1]
 gene_list = all_results_df[all_results_df.reject_null == True].gene.unique()
-print(gene_list.shape)
-print(gene_list)
 sns.boxplot(data=all_results_df[all_results_df.gene.isin(gene_list)],
             x='gene_set', y='delta_mean', ax=ax)
 ax.set_title('Prediction for significant genes, performance vs. gene set')
@@ -242,4 +240,43 @@ ax.set_title('Prediction for significant genes, performance vs. gene set')
 ax.set_xlabel('Target gene set')
 ax.set_ylabel('AUPR(signal) - AUPR(shuffled)')
 ax.set_ylim(-0.2, max(all_results_df.delta_mean + 0.05))
+
+
+# ### Calculate gene set overlap
+# 
+# Of the significantly predictable genes in the top/random gene sets, how many of them are in the Vogelstein gene set?
+
+# In[9]:
+
+
+from venn import venn
+
+
+# In[10]:
+
+
+# first look at overlap of all genes
+genes_in_gene_set = {}
+for gene_set in all_results_df.gene_set.unique():
+    gene_list = all_results_df[all_results_df.gene_set == gene_set].gene.unique()
+    print(gene_set, len(gene_list))
+    genes_in_gene_set[gene_set] = set(gene_list)
+    
+venn(genes_in_gene_set)
+plt.title('Gene overlap between all genes in gene set', size=14)
+
+
+# In[11]:
+
+
+# now look at overlap of significant genes
+genes_in_gene_set = {}
+for gene_set in all_results_df.gene_set.unique():
+    gene_list = all_results_df[(all_results_df.gene_set == gene_set) &
+                               (all_results_df.reject_null)].gene.unique()
+    print(gene_set, len(gene_list))
+    genes_in_gene_set[gene_set] = set(gene_list)
+    
+venn(genes_in_gene_set)
+plt.title('Gene overlap between significantly predictable genes in gene set', size=14)
 
