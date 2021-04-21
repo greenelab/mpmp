@@ -175,16 +175,22 @@ def load_pancancer_data(verbose=False, test=False, subset_columns=None):
     return pancan_data
 
 
-def load_top_50():
-    """Load top 50 mutated genes in TCGA from BioBombe repo.
+def load_top_genes():
+    """Load top mutated genes in TCGA.
 
-    These were precomputed for the equivalent experiments in the
-    BioBombe paper, so no need to recompute them.
+    These are precomputed in 00_download_data/sample_random_genes.ipynb.
     """
-    file = "{}/{}/9.tcga-classify/data/top50_mutated_genes.tsv".format(
-            cfg.top50_base_url, cfg.top50_commit)
-    genes_df = pd.read_csv(file, sep='\t')
+    genes_df = pd.read_csv(cfg.top_genes, sep='\t')
     return genes_df
+
+
+def load_random_genes():
+    """Load randomly sampled genes.
+
+    These are sampled in 00_download_data/sample_random_genes.ipynb; criteria
+    for sampling are described in that notebook.
+    """
+    return pd.read_csv(cfg.random_genes, sep='\t')
 
 
 def load_vogelstein():
@@ -202,6 +208,8 @@ def load_vogelstein():
           .rename(columns={'Gene Symbol'   : 'gene',
                            'Classification*': 'classification'})
     )
+    # some genes in vogelstein set have different names in mutation data
+    genes_df.gene.replace(to_replace=cfg.gene_aliases, inplace=True)
     return genes_df
 
 
