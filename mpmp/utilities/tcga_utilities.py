@@ -482,6 +482,21 @@ def get_all_data_types(use_subsampled=False, compressed_data=False):
     return data_types
 
 
+def check_all_data_types(parser, overlap_data_types, debug=False):
+    """Check that all data types in overlap_data_types are valid.
+
+    If not, throw an argparse error.
+    """
+    all_data_types = get_all_data_types(use_subsampled=debug).keys()
+    if (set(all_data_types).intersection(overlap_data_types) !=
+          set(overlap_data_types)):
+        parser.error(
+            'overlap data types must be subset of: [{}]'.format(
+                ', '.join(list(all_data_types))
+            )
+        )
+
+
 def filter_to_cross_data_samples(X_df,
                                  y_df,
                                  data_types=None,

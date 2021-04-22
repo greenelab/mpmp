@@ -20,7 +20,10 @@ from mpmp.exceptions import (
 from mpmp.prediction.cross_validation import run_cv_stratified
 import mpmp.utilities.data_utilities as du
 import mpmp.utilities.file_utilities as fu
-from mpmp.utilities.tcga_utilities import get_all_data_types
+from mpmp.utilities.tcga_utilities import (
+    get_all_data_types,
+    check_all_data_types,
+)
 
 def process_args():
     """Parse and format command line arguments."""
@@ -98,17 +101,11 @@ def process_args():
         parser.error('training_data data types must be in config.data_types')
 
     # check that all data types in overlap_data_types are valid
+    #
     # here I'm just checking this argument against the non-compressed data types,
-    # later on we'll check if compressed data types really have compressed
-    # files but don't want to get into that here
-    all_data_types = get_all_data_types(use_subsampled=args.debug).keys()
-    if (set(all_data_types).intersection(args.overlap_data_types) !=
-          set(args.overlap_data_types)):
-        parser.error(
-            'overlap data types must be subset of: [{}]'.format(
-                ', '.join(list(all_data_types))
-            )
-        )
+    # downstream code will check if data types we request compressed data for
+    # really have compressed data, but don't need to catch that here
+    check_all_data_types(parser, args.overlap_data_types, args.debug)
 
     # split args into defined argument groups, since we'll use them differently
     arg_groups = du.split_argument_groups(args, parser)
