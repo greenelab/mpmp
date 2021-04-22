@@ -89,6 +89,13 @@ def run_cv_stratified(data_model,
         y_train_df = data_model.y_df.reindex(X_train_raw_df.index)
         y_test_df = data_model.y_df.reindex(X_test_raw_df.index)
 
+        if shuffle_labels:
+            # shuffle labels for train/test sets separately
+            # this ensures that overall label balance isn't affected
+            # (see https://github.com/greenelab/mpmp/issues/44)
+            y_train_df.status = np.random.permutation(y_train_df.status.values)
+            y_test_df.status = np.random.permutation(y_test_df.status.values)
+
         # choose single-omics or multi-omics preprocessing function based on
         # data_model.gene_data_types class attribute
         if hasattr(data_model, 'gene_data_types'):

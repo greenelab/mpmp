@@ -114,8 +114,7 @@ class TCGADataModel():
 
     def process_data_for_cancer_type(self,
                                      cancer_type,
-                                     cancer_type_dir,
-                                     shuffle_labels=False):
+                                     cancer_type_dir):
         """
         Prepare to run cancer type prediction experiments.
 
@@ -126,8 +125,6 @@ class TCGADataModel():
         cancer_type (str): cancer type to predict (one vs. rest binary)
         cancer_type_dir (str): directory to write output to, if None don't
                                write output
-        shuffle_labels (bool): whether or not to shuffle labels (negative
-                               control)
         """
         y_df_raw = self._generate_cancer_type_labels(cancer_type)
 
@@ -136,10 +133,6 @@ class TCGADataModel():
             y_df_raw
         )
         train_filtered_df, y_filtered_df, gene_features = filtered_data
-
-        if shuffle_labels:
-            y_filtered_df.status = np.random.permutation(
-                y_filtered_df.status.values)
 
         if cfg.use_only_cross_data_samples:
             train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
@@ -159,7 +152,6 @@ class TCGADataModel():
                               classification,
                               gene_dir,
                               use_pancancer=False,
-                              shuffle_labels=False,
                               compressed_only=False):
         """
         Prepare to run mutation prediction experiments for a given gene.
@@ -171,7 +163,6 @@ class TCGADataModel():
                               the given gene
         gene_dir (str): directory to write output to, if None don't write output
         use_pancancer (bool): whether or not to use pancancer data
-        shuffle_labels (bool): whether or not to shuffle labels (negative control)
         """
         y_df_raw = self._generate_gene_labels(gene, classification, gene_dir)
 
@@ -192,10 +183,6 @@ class TCGADataModel():
                                             np.count_nonzero(~gene_features)))
             )
             assert self.gene_data_types.shape[0] == gene_features.shape[0]
-
-        if shuffle_labels:
-            y_filtered_df.status = np.random.permutation(
-                y_filtered_df.status.values)
 
         if cfg.use_only_cross_data_samples:
             train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
@@ -222,7 +209,6 @@ class TCGADataModel():
     def process_purity_data(self,
                             output_dir,
                             classify=False,
-                            shuffle_labels=False,
                             compressed_only=False):
         """Prepare to run experiments predicting tumor purity.
 
@@ -230,7 +216,6 @@ class TCGADataModel():
         ---------
         output_dir (str): directory to write output to, if None don't write output
         classify (bool): if True do classification, else regression
-        shuffle_labels (bool): whether or not to shuffle labels (negative control)
         compressed_only (bool): if True, use intersection of compressed samples
         """
         y_df_raw = du.load_purity(self.mut_burden_df,
@@ -244,10 +229,6 @@ class TCGADataModel():
             add_cancertype_covariate=True
         )
         train_filtered_df, y_filtered_df, gene_features = filtered_data
-
-        if shuffle_labels:
-            y_filtered_df.status = np.random.permutation(
-                y_filtered_df.status.values)
 
         if cfg.use_only_cross_data_samples:
             train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
