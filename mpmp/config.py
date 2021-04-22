@@ -34,8 +34,8 @@ sample_infos = {
     'me_27k': me_27k_sample_info,
     'me_27k_bmiq': me_27k_sample_info,
     'me_450k': me_450k_sample_info,
-    # 'rppa': rppa_sample_info,
-    # 'mut_sigs': mut_sigs_sample_info,
+    'rppa': rppa_sample_info,
+    'mut_sigs': mut_sigs_sample_info,
 }
 
 # locations of processed multimodal data files
@@ -50,8 +50,8 @@ data_types = {
     'me_27k': methylation_27k_data,
     'me_27k_bmiq': methylation_27k_bmiq_data,
     'me_450k': methylation_450k_data,
-    # 'rppa': rppa_data,
-    # 'mut_sigs': mut_sigs_data,
+    'rppa': rppa_data,
+    'mut_sigs': mut_sigs_data,
 }
 # if true, use only the samples present in all datasets
 # if false, use all the samples present in the dataset being analyzed

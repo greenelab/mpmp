@@ -471,8 +471,8 @@ def subsample_to_smallest_cancer_type(X_df,
     return X_ss_df, y_ss_df
 
 
-def get_overlap_data_types(use_subsampled=False, compressed_data=False):
-    """Get data types to restrict training samples to."""
+def get_all_data_types(use_subsampled=False, compressed_data=False):
+    """Get all possible data types (that we have data for)."""
     if use_subsampled:
         data_types = cfg.subsampled_data_types
     elif compressed_data:
@@ -482,17 +482,41 @@ def get_overlap_data_types(use_subsampled=False, compressed_data=False):
     return data_types
 
 
+def check_all_data_types(parser, overlap_data_types, debug=False):
+    """Check that all data types in overlap_data_types are valid.
+
+    If not, throw an argparse error.
+    """
+    all_data_types = get_all_data_types(use_subsampled=debug).keys()
+    if (set(all_data_types).intersection(overlap_data_types) !=
+          set(overlap_data_types)):
+        parser.error(
+            'overlap data types must be subset of: [{}]'.format(
+                ', '.join(list(all_data_types))
+            )
+        )
+
+
 def filter_to_cross_data_samples(X_df,
                                  y_df,
+                                 data_types=None,
                                  use_subsampled=False,
                                  verbose=False,
                                  compressed_data_only=False,
                                  n_dim=None):
     """Filter dataset to samples included in all data modalities."""
 
-    # first, get intersection of samples in all training datasets
+    # only use data types in data_types list
+    if data_types is not None:
+        data_types = {
+            d: f for d, f in (
+                get_all_data_types(use_subsampled, compressed_data_only).items()
+            ) if d in data_types
+        }
+    else:
+        data_types = get_all_data_types(use_subsampled, compressed_data_only)
 
-    data_types = get_overlap_data_types(use_subsampled, compressed_data_only)
+    # get intersection of samples in all training datasets
     valid_samples = None
     for data_type, data_file in data_types.items():
         # get sample IDs for the given data type/processed data file

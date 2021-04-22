@@ -20,7 +20,10 @@ from mpmp.exceptions import (
 from mpmp.prediction.cross_validation import run_cv_stratified
 import mpmp.utilities.data_utilities as du
 import mpmp.utilities.file_utilities as fu
-from mpmp.utilities.tcga_utilities import get_overlap_data_types
+from mpmp.utilities.tcga_utilities import (
+    get_all_data_types,
+    check_all_data_types,
+)
 
 def process_args():
     """Parse and format command line arguments."""
@@ -70,6 +73,11 @@ def process_args():
                       help='number of compressed components/dimensions to use')
     opts.add_argument('--num_folds', type=int, default=4,
                       help='number of folds of cross-validation to run')
+    opts.add_argument('--overlap_data_types', nargs='*',
+                      default=['expression'],
+                      help='data types to define set of samples to use; e.g. '
+                           'set of data types for a model comparison, use only '
+                           'overlapping samples from these data types')
     opts.add_argument('--seed', type=int, default=cfg.default_seed)
     opts.add_argument('--training_data', type=str, default='expression',
                       choices=list(cfg.compressed_data_types.keys()),
@@ -90,6 +98,9 @@ def process_args():
     elif (args.gene_set != 'custom' and args.custom_genes is not None):
         parser.error('must use option --gene_set=\'custom\' if custom genes are included')
 
+    # check that all data types in overlap_data_types are valid
+    check_all_data_types(parser, args.overlap_data_types, args.debug)
+
     # split args into defined argument groups, since we'll use them differently
     arg_groups = du.split_argument_groups(args, parser)
     io_args, model_options = arg_groups['io'], arg_groups['model_options']
@@ -99,14 +110,6 @@ def process_args():
     model_options.alphas = cfg.alphas
     model_options.l1_ratios = cfg.l1_ratios
     model_options.standardize_data_types = cfg.standardize_data_types
-
-    # add information about valid samples to model options
-    model_options.sample_overlap_data_types = list(
-        get_overlap_data_types(
-            use_subsampled=model_options.debug,
-            compressed_data=True
-        ).keys()
-    )
 
     return io_args, model_options
 
@@ -141,6 +144,7 @@ if __name__ == '__main__':
 
     tcga_data = TCGADataModel(seed=model_options.seed,
                               training_data=model_options.training_data,
+                              overlap_data_types=model_options.overlap_data_types,
                               load_compressed_data=True,
                               n_dim=model_options.n_dim,
                               sample_info_df=sample_info_df,
