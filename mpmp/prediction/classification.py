@@ -75,7 +75,7 @@ def train_classifier(X_train,
         param_grid=clf_parameters,
         n_jobs=-1,
         cv=n_folds,
-        scoring="roc_auc",
+        scoring="average_precision",
         return_train_score=True,
     )
 
