@@ -8,7 +8,7 @@
 # Notebook parameters:
 # * SIG_ALPHA (float): significance cutoff (after FDR correction)
 
-# In[1]:
+# In[3]:
 
 
 from pathlib import Path
@@ -23,17 +23,18 @@ import mpmp.config as cfg
 import mpmp.utilities.analysis_utilities as au
 
 
-# In[2]:
+# In[4]:
 
 
 # set results directory
 results_dir = Path(cfg.results_dirs['mutation'],
-                   'mut_sigs_results', 'gene').resolve()
+                   'all_data_types_results',
+                   'gene').resolve()
 # set significance cutoff after FDR correction
 SIG_ALPHA = 0.001
 
 
-# In[3]:
+# In[5]:
 
 
 # load raw data
@@ -43,7 +44,9 @@ results_df = au.load_stratified_prediction_results(results_dir, 'gene')
 # the results in 02_classify_compressed/compressed_vs_raw_results.ipynb show that
 # performance is equal or slightly better for PCA compressed methylation data,
 # and it's much easier/faster to fit models on
-results_df = results_df[results_df.training_data.isin(['expression', 'rppa', 'mut_sigs'])]
+results_df = results_df[results_df.training_data.isin(
+    ['expression', 'rppa', 'mirna', 'mut_sigs']
+)]
 
 # make sure that we're correctly pointing to raw data for non-methylation data types
 # and that we have data for two replicates (two random seeds)
@@ -53,13 +56,11 @@ print(results_df.training_data.unique())
 results_df.head()
 
 
-# In[4]:
+# In[7]:
 
 
 # load compressed data for me_27k and me_450k
-compressed_results_df = au.load_compressed_prediction_results(results_dir,
-                                                              'gene',
-                                                              old_filenames=True)
+compressed_results_df = au.load_compressed_prediction_results(results_dir, 'gene')
 
 # make sure that we're correctly pointing to compressed methylation data
 # and that we have data for one dimension and two replicates (two random seeds)
@@ -70,7 +71,7 @@ print(compressed_results_df.n_dims.unique())
 compressed_results_df.head()
 
 
-# In[5]:
+# In[8]:
 
 
 results_df['n_dims'] = 'raw'
@@ -82,7 +83,7 @@ print(results_df.shape)
 results_df.head()
 
 
-# In[6]:
+# In[9]:
 
 
 all_results_df = pd.DataFrame()
@@ -108,7 +109,7 @@ all_results_df = all_results_df[
 all_results_df.sort_values(by='p_value').head(10)
 
 
-# In[7]:
+# In[10]:
 
 
 all_results_df['nlog10_p'] = -np.log10(all_results_df.corr_pval)
@@ -175,7 +176,7 @@ for ix, training_data in enumerate(sorted(all_results_df.training_data.unique())
     ))
 
 
-# In[8]:
+# In[13]:
 
 
 # compare expression against all other data modalities
@@ -192,9 +193,9 @@ def label_points(x, y, gene, ax):
             )
     return text_labels
 
-sns.set({'figure.figsize': (20, 14)})
+sns.set({'figure.figsize': (24, 14)})
 sns.set_style('whitegrid')
-fig, axarr = plt.subplots(2, 2)
+fig, axarr = plt.subplots(2, 3)
 
 # all plots should have the same axes for a fair comparison
 xlim = (-0.75, 0.75)
@@ -206,7 +207,7 @@ data_types = sorted([dt for dt in all_results_df.training_data.unique() if dt !=
 exp_results_df = results_df[results_df.training_data == 'expression']
 
 for ix, training_data in enumerate(data_types):
-    ax = axarr[ix // 2, ix % 2]
+    ax = axarr[ix // 3, ix % 3]
     data_results_df = results_df[results_df.training_data == training_data]
     compare_results_df = au.compare_results(exp_results_df,
                                             pancancer_df=data_results_df,
@@ -250,4 +251,49 @@ for ix, training_data in enumerate(data_types):
     print('{}: {}/{}'.format(training_data,
                              np.count_nonzero(compare_results_df.reject_null),
                              compare_results_df.shape[0]))
+
+
+# In[17]:
+
+
+sns.set({'figure.figsize': (18, 12)})
+fig, axarr = plt.subplots(2, 2)
+
+data_order = ['expression', 'me_27k', 'me_450k', 'rppa', 'mirna', 'mut_sigs']
+
+# plot mean performance over all genes in Vogelstein dataset
+ax = axarr[0, 0]
+sns.boxplot(data=all_results_df, x='training_data', y='delta_mean',
+            order=data_order, notch=True, ax=ax)
+ax.set_title('Prediction for all genes, performance vs. gene set')
+ax.set_xlabel('Target gene set')
+ax.set_ylabel('AUPR(signal) - AUPR(shuffled)')
+ax.set_ylim(-0.2, max(all_results_df.delta_mean + 0.05))
+
+# plot mean performance for genes that are significant for at least one data type
+ax = axarr[0, 1]
+gene_list = all_results_df[all_results_df.reject_null == True].gene.unique()
+sns.boxplot(data=all_results_df[all_results_df.gene.isin(gene_list)],
+            x='training_data', y='delta_mean', order=data_order, 
+            notch=True, ax=ax)
+ax.set_title('Prediction for significant genes, performance vs. gene set')
+ax.set_xlabel('Target gene set')
+ax.set_ylabel('AUPR(signal) - AUPR(shuffled)')
+ax.set_ylim(-0.2, max(all_results_df.delta_mean + 0.05))
+
+ax = axarr[1, 0]
+sns.stripplot(data=all_results_df, x='training_data', y='delta_mean', dodge=True, 
+              order=data_order, ax=ax)
+ax.set_title('Prediction for all genes, performance vs. gene set')
+ax.set_xlabel('Target gene set')
+ax.set_ylabel('AUPR(signal) - AUPR(shuffled)')
+ax.set_ylim(-0.2, max(all_results_df.delta_mean + 0.05))
+
+ax = axarr[1, 1]
+sns.stripplot(data=all_results_df[all_results_df.gene.isin(gene_list)],
+              x='training_data', y='delta_mean', dodge=True, order=data_order, ax=ax)
+ax.set_title('Prediction for significant genes, performance vs. gene set')
+ax.set_xlabel('Target gene set')
+ax.set_ylabel('AUPR(signal) - AUPR(shuffled)')
+ax.set_ylim(-0.2, max(all_results_df.delta_mean + 0.05))
 
