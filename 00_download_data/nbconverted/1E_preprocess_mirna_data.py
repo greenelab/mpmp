@@ -47,7 +47,9 @@ sample_types_df.head(2)
 # first load manifest file, this tells us the filenames of the raw data files
 manifest_df = pd.read_csv(os.path.join(cfg.data_dir, 'manifest.tsv'),
                           sep='\t', index_col=0)
-manifest_df.head(1)
+
+# we have sample info for the mirna data (mirna_sample), and the data itself (mirna)
+manifest_df.filter(like='mirna', axis=0)
 
 
 # In[5]:
