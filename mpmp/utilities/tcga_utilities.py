@@ -23,7 +23,8 @@ def process_y_matrix(y_mutation,
                      filter_prop,
                      output_directory,
                      hyper_filter=5,
-                     test=False):
+                     test=False,
+                     overlap_data_types=None):
     """
     Combine copy number and mutation data and filter cancer-types to build y matrix
 
@@ -40,6 +41,7 @@ def process_y_matrix(y_mutation,
     output_directory: the name of the directory to store the gene summary
     hyper_filter: the number of std dev above log10 mutation burden to filter
     test: if true, don't write filtering info to disk
+    overlap_data_types: if not None, use samples present for all included data types
 
     Returns
     -------
@@ -61,6 +63,15 @@ def process_y_matrix(y_mutation,
         .set_index("SAMPLE_BARCODE")
         .merge(mutation_burden, left_index=True, right_index=True)
     )
+
+    if overlap_data_types is not None:
+        valid_samples = (
+            set(get_cross_data_samples(data_types=overlap_data_types))
+              .intersection(set(y_df.index))
+        )
+        y_df = y_df.reindex(valid_samples)
+    else:
+        valid_samples = None
 
     # Get statistics per gene and disease
     disease_counts_df = pd.DataFrame(y_df.groupby("DISEASE").sum()["status"])
@@ -92,7 +103,7 @@ def process_y_matrix(y_mutation,
     burden_filter = y_df["log10_mut"] < hyper_filter * y_df["log10_mut"].std()
     y_df = y_df.loc[burden_filter, :].query("DISEASE in @use_diseases")
 
-    return y_df
+    return y_df, valid_samples
 
 
 def process_y_matrix_cancertype(acronym,
@@ -497,14 +508,12 @@ def check_all_data_types(parser, overlap_data_types, debug=False):
         )
 
 
-def filter_to_cross_data_samples(X_df,
-                                 y_df,
-                                 data_types=None,
-                                 use_subsampled=False,
-                                 verbose=False,
-                                 compressed_data_only=False,
-                                 n_dim=None):
-    """Filter dataset to samples included in all data modalities."""
+def get_cross_data_samples(data_types=None,
+                           use_subsampled=False,
+                           verbose=False,
+                           compressed_data_only=False,
+                           n_dim=None):
+    """Get set of samples included in desired data modalities."""
 
     # only use data types in data_types list
     if data_types is not None:
@@ -541,6 +550,29 @@ def filter_to_cross_data_samples(X_df,
         else:
             valid_samples = valid_samples.intersection(df.index)
 
+    return valid_samples
+
+
+def filter_to_cross_data_samples(X_df,
+                                 y_df,
+                                 valid_samples=None,
+                                 data_types=None,
+                                 use_subsampled=False,
+                                 verbose=False,
+                                 compressed_data_only=False,
+                                 n_dim=None):
+    """Filter dataset to samples included in all data modalities."""
+
+    # get samples that are valid for all data types, unless they're provided
+    if valid_samples is None:
+        valid_samples = get_cross_data_samples(
+            data_types=data_types,
+            use_subsampled=use_subsampled,
+            verbose=verbose,
+            compressed_data_only=compressed_data_only,
+            n_dim=n_dim
+        )
+
     # then reindex data and labels to common sample IDs
     if verbose:
         print('Taking intersection of sample IDs...', end='')
@@ -552,6 +584,7 @@ def filter_to_cross_data_samples(X_df,
         print('done')
 
     return (X_filtered_df, y_filtered_df)
+
 
 def get_tcga_barcode_info():
     """Map TCGA barcodes to cancer type and sample type.
