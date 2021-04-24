@@ -69,6 +69,8 @@ def process_y_matrix(y_mutation,
             set(get_cross_data_samples(data_types=overlap_data_types))
               .intersection(set(y_df.index))
         )
+        # convert back to list, to make the sample order deterministic
+        valid_samples = sorted(list(valid_samples))
         y_df = y_df.reindex(valid_samples)
     else:
         valid_samples = None
@@ -548,7 +550,7 @@ def get_cross_data_samples(data_types=None,
         if valid_samples is None:
             valid_samples = df.index
         else:
-            valid_samples = valid_samples.intersection(df.index)
+            valid_samples = df.index.intersection(valid_samples)
 
     return valid_samples
 
@@ -577,8 +579,8 @@ def filter_to_cross_data_samples(X_df,
     if verbose:
         print('Taking intersection of sample IDs...', end='')
 
-    X_filtered_df = X_df.reindex(valid_samples.intersection(X_df.index))
-    y_filtered_df = y_df.reindex(valid_samples.intersection(y_df.index))
+    X_filtered_df = X_df.reindex(X_df.index.intersection(valid_samples))
+    y_filtered_df = y_df.reindex(y_df.index.intersection(valid_samples))
 
     if verbose:
         print('done')
