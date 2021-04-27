@@ -95,7 +95,7 @@ def process_y_matrix(y_mutation,
         suffixes=("_count", "_proportion"),
     ).merge(filter_disease_df, left_index=True, right_index=True)
 
-    if not test:
+    if not test and output_directory is not None:
         filter_file = "{}_filtered_cancertypes.tsv".format(gene)
         filter_file = os.path.join(output_directory, filter_file)
         disease_stats_df.to_csv(filter_file, sep="\t")
