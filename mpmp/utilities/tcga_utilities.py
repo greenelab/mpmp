@@ -75,6 +75,10 @@ def process_y_matrix(y_mutation,
     else:
         valid_samples = None
 
+    # Filter to remove hyper-mutated samples
+    burden_filter = y_df["log10_mut"] < hyper_filter * y_df["log10_mut"].std()
+    y_df = y_df.loc[burden_filter, :]
+
     # Get statistics per gene and disease
     disease_counts_df = pd.DataFrame(y_df.groupby("DISEASE").sum()["status"])
 
@@ -100,10 +104,8 @@ def process_y_matrix(y_mutation,
         filter_file = os.path.join(output_directory, filter_file)
         disease_stats_df.to_csv(filter_file, sep="\t")
 
-    # Filter
     use_diseases = disease_stats_df.query("disease_included").index.tolist()
-    burden_filter = y_df["log10_mut"] < hyper_filter * y_df["log10_mut"].std()
-    y_df = y_df.loc[burden_filter, :].query("DISEASE in @use_diseases")
+    y_df = y_df.query("DISEASE in @use_diseases")
 
     return y_df, valid_samples
 
