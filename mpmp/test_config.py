@@ -14,9 +14,9 @@ test_stratified_results = str(test_data_dir / 'stratified_results_{}_{}.tsv')
 # data types used in tests
 test_data_types = ['expression', 'me_27k']
 # gene mutation info used in tests
-test_genes = ['TP53', 'EGFR', 'ARID1A']
+test_genes = ['TP53', 'EGFR', 'TTN']
 
 # gene/training data/classification combos for stratified CV model tests
 stratified_gene_info = [('TP53', 'TSG'),
                         ('EGFR', 'Oncogene'),
-                        ('ARID1A', 'TSG')]
+                        ('TTN', 'neither')]
