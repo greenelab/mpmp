@@ -130,6 +130,7 @@ for dataset, overlap_data_types in training_data_types.items():
 
 
 # now load gene count files and count valid genes
+valid_genes_datasets = {}
 for dataset in training_data_types.keys():
     gene_counts_df = pd.read_csv(
         gene_counts_dir / 'gene_count_{}.tsv'.format(dataset),
@@ -137,7 +138,131 @@ for dataset in training_data_types.keys():
         sep='\t'
     )
     valid_genes = gene_counts_df.groupby('gene').all().is_valid
+    valid_genes_datasets[dataset] = valid_genes
     print('{}:'.format(dataset),
           '{} valid /'.format(np.count_nonzero(valid_genes)),
           '{} total'.format(len(valid_genes)))
+
+
+# ### Compare valid genes to previously profiled gene set
+
+# In[5]:
+
+
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from adjustText import adjust_text
+
+import mpmp.config as cfg
+import mpmp.utilities.analysis_utilities as au
+
+
+# In[6]:
+
+
+dataset_directory = {
+    'expression': 'vogelstein_expression_only',
+    'methylation': 'compressed_results',
+    'all': 'all_data_types_results'
+}
+dataset = 'expression'
+
+# set results directory
+results_dir = Path(cfg.results_dirs['mutation'],
+                   dataset_directory[dataset],
+                   'gene').resolve()
+# set significance cutoff after FDR correction
+SIG_ALPHA = 0.001
+
+# load raw data
+results_df = au.load_stratified_prediction_results(results_dir, 'gene')
+results_df = results_df[results_df.training_data == 'expression']
+
+# make sure that we're correctly pointing to raw data for non-methylation data types
+# and that we have data for two replicates (two random seeds)
+print(results_df.shape)
+print(results_df.seed.unique())
+print(results_df.training_data.unique())
+results_df.head()
+
+
+# In[7]:
+
+
+all_results_df = au.compare_results(results_df,
+                                    identifier='identifier',
+                                    metric='aupr',
+                                    correction=True,
+                                    correction_method='fdr_bh',
+                                    correction_alpha=SIG_ALPHA,
+                                    verbose=True)
+all_results_df.rename(columns={'identifier': 'gene'}, inplace=True)
+all_results_df.sort_values(by='p_value').head(10)
+
+
+# In[8]:
+
+
+prev_genes = all_results_df.gene.unique()
+cur_genes = valid_genes_datasets[dataset][
+    valid_genes_datasets[dataset] == True
+].index.values
+prev_not_cur = [g for g in prev_genes if g not in cur_genes]
+cur_not_prev = [g for g in cur_genes if g not in prev_genes]
+print(prev_not_cur)
+print(cur_not_prev)
+
+
+# In[9]:
+
+
+sns.set({'figure.figsize': (8, 6)})
+sns.set_style('whitegrid')
+
+all_results_df['nlog10_p'] = -np.log10(all_results_df.corr_pval)
+
+# all plots should have the same axes for a fair comparison
+xlim = (-0.2, 1.0)
+y_max = all_results_df.nlog10_p.max()
+ylim = (0, y_max+3)
+
+# function to add gene labels to points
+def label_points(x, y, gene, ax):
+    text_labels = []
+    a = pd.DataFrame({'x': x, 'y': y, 'gene': gene})
+    for i, point in a.iterrows():
+        if point['y'] > -np.log10(SIG_ALPHA / 1000):
+            text_labels.append(
+                ax.text(point['x'], point['y'], str(point['gene']))
+            )
+    return text_labels
+
+# plot mutation prediction from expression, in a volcano-like plot
+ax = plt.gca()
+sns.scatterplot(data=all_results_df, x='delta_mean', y='nlog10_p', hue='reject_null',
+                hue_order=[False, True], ax=ax, alpha=0.5)
+# add vertical line at 0
+ax.axvline(x=0, linestyle='--', linewidth=1.25, color='black')
+# add horizontal line at statistical significance threshold
+l = ax.axhline(y=-np.log10(SIG_ALPHA), linestyle='--', linewidth=1.25)
+# label horizontal line with significance threshold
+# (matplotlib makes this fairly difficult, sadly)
+ax.text(0.9, -np.log10(SIG_ALPHA)+0.01,
+        r'$\mathbf{{\alpha = {}}}$'.format(SIG_ALPHA),
+        va='center', ha='center', color=l.get_color(),
+        backgroundcolor=ax.get_facecolor())
+ax.set_xlabel('AUPR(signal) - AUPR(shuffled)')
+ax.set_ylabel(r'$-\log_{10}($adjusted $p$-value$)$')
+ax.set_xlim(xlim)
+ax.set_ylim(ylim)
+ax.legend(title=r'Reject $H_0$', loc='upper left')
+ax.set_title(r'Mutation prediction, Vogelstein et al., {}'.format(dataset))
+
+prev_genes_df = all_results_df[all_results_df.gene.isin(prev_not_cur)]
+sns.scatterplot(data=prev_genes_df, x='delta_mean', y='nlog10_p', ax=ax,
+                marker='+', s=100, linewidth=2, color='red', legend=False)
 
