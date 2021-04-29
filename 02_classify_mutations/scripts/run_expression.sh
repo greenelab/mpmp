@@ -2,14 +2,19 @@
 
 # Run mutation classification experiments for expression data,
 # using various gene sets
-
-RESULTS_DIR=./02_classify_mutations/results/50_random
-ERRORS_DIR=./50_random_errors
-
-mkdir -p $ERRORS_DIR
-
-for seed in 42 1; do
-    cmd="python 02_classify_mutations/run_mutation_classification.py --gene_set 50_random --results_dir $RESULTS_DIR --training_data expression --seed $seed 2>$ERRORS_DIR/errors_expression_s$seed.txt"
-    echo "Running: $cmd"
-    eval $cmd
+for dataset in top_50 50_random vogelstein; do
+    results_dir=./02_classify_mutations/results/${dataset}_expression_only
+    errors_dir=./${dataset}_errors
+    mkdir -p $errors_dir
+    for seed in 42 1; do
+        cmd="python 02_classify_mutations/run_mutation_classification.py "
+        cmd+="--gene_set $dataset "
+        cmd+="--overlap_data_types expression "
+        cmd+="--results_dir $results_dir "
+        cmd+="--seed $seed "
+        cmd+="--training_data expression "
+        cmd+="2>$errors_dir/errors_expression_$dataset_s$seed.txt"
+        echo "Running: $cmd"
+        eval $cmd
+    done
 done

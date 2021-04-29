@@ -163,8 +163,7 @@ if __name__ == '__main__':
                                                   shuffle_labels,
                                                   model_options)
                 tcga_data.process_data_for_cancer_type(cancer_type,
-                                                       cancer_type_dir,
-                                                       shuffle_labels=shuffle_labels)
+                                                       cancer_type_dir)
             except ResultsFileExistsError:
                 # this happens if cross-validation for this cancer type has
                 # already been run (i.e. the results file already exists)

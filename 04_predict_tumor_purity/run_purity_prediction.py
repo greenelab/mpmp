@@ -177,8 +177,7 @@ if __name__ == '__main__':
             continue
 
         tcga_data.process_purity_data(experiment_dir,
-                                      classify=model_options.classify,
-                                      shuffle_labels=shuffle_labels)
+                                      classify=model_options.classify)
 
         try:
             # for now, don't standardize methylation data

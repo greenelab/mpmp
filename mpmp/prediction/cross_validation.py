@@ -3,7 +3,9 @@ Functions to split data for cross-validation.
 
 """
 import warnings
+import contextlib
 
+import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold
 
@@ -88,6 +90,17 @@ def run_cv_stratified(data_model,
 
         y_train_df = data_model.y_df.reindex(X_train_raw_df.index)
         y_test_df = data_model.y_df.reindex(X_test_raw_df.index)
+
+        # shuffle labels for train/test sets separately
+        # this ensures that overall label balance isn't affected
+        # (see https://github.com/greenelab/mpmp/issues/44)
+        if shuffle_labels:
+            # we set a temp seed here to make sure this shuffling order
+            # is the same for each gene between data types, otherwise
+            # it might be slightly different depending on the global state
+            with temp_seed(data_model.seed):
+                y_train_df.status = np.random.permutation(y_train_df.status.values)
+                y_test_df.status = np.random.permutation(y_test_df.status.values)
 
         # choose single-omics or multi-omics preprocessing function based on
         # data_model.gene_data_types class attribute
@@ -288,5 +301,19 @@ def extract_coefficients(cv_pipeline,
     )
 
     return coef_df
+
+@contextlib.contextmanager
+def temp_seed(cntxt_seed):
+    """Set a temporary np.random seed in the resulting context.
+
+    This saves the global random number state and puts it back once the context
+    is closed. See https://stackoverflow.com/a/49557127 for more detail.
+    """
+    state = np.random.get_state()
+    np.random.seed(cntxt_seed)
+    try:
+        yield
+    finally:
+        np.random.set_state(state)
 
 
