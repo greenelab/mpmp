@@ -266,3 +266,9 @@ prev_genes_df = all_results_df[all_results_df.gene.isin(prev_not_cur)]
 sns.scatterplot(data=prev_genes_df, x='delta_mean', y='nlog10_p', ax=ax,
                 marker='+', s=100, linewidth=2, color='red', legend=False)
 
+
+# We can see from these volcano plots that most of the "missing" genes tend to be close to the origin (not much more predictable than the baseline).
+# 
+# The reason they were "missing" before is that there was only a few positive labels, so sometimes we'd (randomly) end up with a CV split with no positive labels, and AUROC/AUPR are undefined in that case. But because there were so few positive labels in these cases, we most likely weren't able to train good classifiers anyway, so they'd end up near the origin because the label imbalance was so extreme.
+# 
+# The genes with large effect sizes in these experiments tend to have more positive labels/be more frequently mutated, so I'm not surprised that we're not losing any of them with this change.
