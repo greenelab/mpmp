@@ -57,9 +57,6 @@ data_types = {
     'mirna': mirna_data,
     'mut_sigs': mut_sigs_data,
 }
-# if true, use only the samples present in all datasets
-# if false, use all the samples present in the dataset being analyzed
-use_only_cross_data_samples = True
 
 # locations of compressed multimodal data files
 exp_compressed_dir = data_dir / 'exp_compressed'

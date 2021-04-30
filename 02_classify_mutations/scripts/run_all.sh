@@ -26,7 +26,7 @@ for seed in 42 1; do
         cmd+="--gene_set vogelstein "
         cmd+="--results_dir $RESULTS_DIR "
         cmd+="--training_data ${data_type} "
-        cmd+="--seed $SEED "
+        cmd+="--seed $seed "
         cmd+="--n_dim $N_DIM "
         cmd+="--overlap_data_types expression me_27k me_450k rppa mirna mut_sigs "
         cmd+="2>$ERRORS_DIR/errors_${data_type}.txt"

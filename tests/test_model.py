@@ -34,8 +34,7 @@ def test_stratified_classification(data_model, data_type, gene_info):
     gene, classification = gene_info
     tcga_data.process_data_for_gene(gene,
                                     classification,
-                                    gene_dir=None,
-                                    shuffle_labels=False)
+                                    gene_dir=None)
     results = run_cv_stratified(tcga_data,
                                 'gene',
                                 gene,

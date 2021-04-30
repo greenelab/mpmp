@@ -25,3 +25,4 @@ data/pancancer_data.pkl
 
 # don't track results files
 **/results/*
+**/gene_counts/*

@@ -179,8 +179,7 @@ if __name__ == '__main__':
                                                   model_options)
                 tcga_data.process_data_for_gene(gene,
                                                 classification,
-                                                gene_dir,
-                                                shuffle_labels=shuffle_labels)
+                                                gene_dir)
             except ResultsFileExistsError:
                 # this happens if cross-validation for this gene has already been
                 # run (i.e. the results file already exists)

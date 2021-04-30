@@ -30,8 +30,7 @@ def generate_stratified_test_data(tcga_data, data_type, sample_info_df, verbose=
             print(output_file)
         tcga_data.process_data_for_gene(gene,
                                         classification,
-                                        gene_dir=None,
-                                        shuffle_labels=False)
+                                        gene_dir=None)
         results = run_cv_stratified(tcga_data,
                                     'gene',
                                     gene,

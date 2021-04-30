@@ -114,8 +114,7 @@ class TCGADataModel():
 
     def process_data_for_cancer_type(self,
                                      cancer_type,
-                                     cancer_type_dir,
-                                     shuffle_labels=False):
+                                     cancer_type_dir):
         """
         Prepare to run cancer type prediction experiments.
 
@@ -126,8 +125,6 @@ class TCGADataModel():
         cancer_type (str): cancer type to predict (one vs. rest binary)
         cancer_type_dir (str): directory to write output to, if None don't
                                write output
-        shuffle_labels (bool): whether or not to shuffle labels (negative
-                               control)
         """
         y_df_raw = self._generate_cancer_type_labels(cancer_type)
 
@@ -136,10 +133,6 @@ class TCGADataModel():
             y_df_raw
         )
         train_filtered_df, y_filtered_df, gene_features = filtered_data
-
-        if shuffle_labels:
-            y_filtered_df.status = np.random.permutation(
-                y_filtered_df.status.values)
 
         if cfg.use_only_cross_data_samples:
             train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
@@ -159,7 +152,6 @@ class TCGADataModel():
                               classification,
                               gene_dir,
                               use_pancancer=False,
-                              shuffle_labels=False,
                               compressed_only=False):
         """
         Prepare to run mutation prediction experiments for a given gene.
@@ -171,9 +163,9 @@ class TCGADataModel():
                               the given gene
         gene_dir (str): directory to write output to, if None don't write output
         use_pancancer (bool): whether or not to use pancancer data
-        shuffle_labels (bool): whether or not to shuffle labels (negative control)
         """
-        y_df_raw = self._generate_gene_labels(gene, classification, gene_dir)
+        y_df_raw, valid_samples = self._generate_gene_labels(
+                gene, classification, gene_dir)
 
         filtered_data = self._filter_data(
             self.data_df,
@@ -183,6 +175,7 @@ class TCGADataModel():
         train_filtered_df, y_filtered_df, gene_features = filtered_data
 
         # add non-gene features to data_types array if necessary
+        # this is used when building multi-omics models
         if hasattr(self, 'data_types'):
             # this has to have a different name than the general data_types
             # array, since this preprocessing may happen multiple times (for
@@ -193,24 +186,20 @@ class TCGADataModel():
             )
             assert self.gene_data_types.shape[0] == gene_features.shape[0]
 
-        if shuffle_labels:
-            y_filtered_df.status = np.random.permutation(
-                y_filtered_df.status.values)
-
-        if cfg.use_only_cross_data_samples:
-            train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
-                train_filtered_df,
-                y_filtered_df,
-                data_types=self.overlap_data_types,
-                # if this option is True, use only samples for which we have
-                # compressed data. if false, take overlap of samples for which
-                # we have non-compressed data (generally a subset of compressed
-                # data samples)
-                compressed_data_only=compressed_only,
-                n_dim=self.n_dim,
-                use_subsampled=(self.debug or self.test),
-                verbose=self.verbose
-            )
+        train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
+            train_filtered_df,
+            y_filtered_df,
+            valid_samples=valid_samples,
+            data_types=self.overlap_data_types,
+            # if this option is True, use only samples for which we have
+            # compressed data. if false, take overlap of samples for which
+            # we have non-compressed data (generally a subset of compressed
+            # data samples)
+            compressed_data_only=compressed_only,
+            n_dim=self.n_dim,
+            use_subsampled=(self.debug or self.test),
+            verbose=self.verbose
+        )
 
         self.X_df = train_filtered_df
         self.y_df = y_filtered_df
@@ -222,7 +211,6 @@ class TCGADataModel():
     def process_purity_data(self,
                             output_dir,
                             classify=False,
-                            shuffle_labels=False,
                             compressed_only=False):
         """Prepare to run experiments predicting tumor purity.
 
@@ -230,7 +218,6 @@ class TCGADataModel():
         ---------
         output_dir (str): directory to write output to, if None don't write output
         classify (bool): if True do classification, else regression
-        shuffle_labels (bool): whether or not to shuffle labels (negative control)
         compressed_only (bool): if True, use intersection of compressed samples
         """
         y_df_raw = du.load_purity(self.mut_burden_df,
@@ -244,10 +231,6 @@ class TCGADataModel():
             add_cancertype_covariate=True
         )
         train_filtered_df, y_filtered_df, gene_features = filtered_data
-
-        if shuffle_labels:
-            y_filtered_df.status = np.random.permutation(
-                y_filtered_df.status.values)
 
         if cfg.use_only_cross_data_samples:
             train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
@@ -361,7 +344,7 @@ class TCGADataModel():
 
         # construct labels from mutation/CNV information, and filter for
         # cancer types without an extreme label imbalance
-        y_df = process_y_matrix(
+        y_df, valid_samples = process_y_matrix(
             y_mutation=y_mutation_df,
             y_copy=y_copy_number_df,
             include_copy=include_copy,
@@ -372,9 +355,10 @@ class TCGADataModel():
             filter_prop=cfg.filter_prop,
             output_directory=gene_dir,
             hyper_filter=5,
-            test=self.test
+            test=self.test,
+            overlap_data_types=self.overlap_data_types
         )
-        return y_df
+        return y_df, valid_samples
 
     def _filter_data(self,
                      data_df,
