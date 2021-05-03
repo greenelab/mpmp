@@ -7,7 +7,7 @@ mkdir -p $ERRORS_DIR
 
 for seed in 42 1; do
 
-    # use raw data for non-expression data types
+    # use raw data for non-methylation data types
     for data_type in mirna mut_sigs rppa expression; do
         cmd="python 02_classify_mutations/run_mutation_classification.py "
         cmd+="--gene_set vogelstein "
