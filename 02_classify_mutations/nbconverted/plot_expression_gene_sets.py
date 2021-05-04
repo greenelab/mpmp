@@ -34,8 +34,6 @@ import mpmp.utilities.analysis_utilities as au
 
 
 # set results directory
-# TODO: may need to rerun these on only expression samples
-# (i.e. without methylation data overlap)
 vogelstein_results_dir = Path(cfg.results_dirs['mutation'],
                               'vogelstein_expression_only',
                               'gene').resolve()
