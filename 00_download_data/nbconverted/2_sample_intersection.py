@@ -9,50 +9,56 @@
 
 
 import os
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from venn import venn, pseudovenn
+from venn import venn, pseudovenn, generate_petal_labels
+import upsetplot as up
 
 import mpmp.config as cfg
+import mpmp.utilities.data_utilities as du
 
 
 # In[2]:
 
 
-# get sample list for each data type
-sample_lists = {}
-for training_data, sample_info_file in cfg.sample_infos.items():
-    samples = pd.read_csv(sample_info_file, sep='\t', index_col=0).index
-    sample_lists[training_data] = set(samples)
+# if True, save figures to ./images directory
+SAVE_FIGS = True
 
 
 # In[3]:
 
 
-# counts per data type
-print('\n'.join(['{}\t{}'.format(n, len(v)) for n, v in sample_lists.items()]))
+# map data types to readable names
+# TODO: store this somewhere central
+data_map = {
+    'expression': 'gene expression',
+    'me_27k': '27k methylation',
+    'me_450k': '450k methylation',
+    'rppa': 'RPPA',
+    'mut_sigs': 'mut sigs',
+}
 
+# get sample list for each -omics data type
+sample_lists = {}
+for training_data, sample_info_file in cfg.sample_infos.items():
+    samples = pd.read_csv(sample_info_file, sep='\t', index_col=0).index
+    try:
+        sample_lists[data_map[training_data]] = set(samples)
+    except KeyError: 
+        # bias-corrected results, ignore them here
+        import sys
+        print(training_data, file=sys.stderr)
+        continue
 
-# We'll start by just counting the number of samples that have data for each of the relevant data types.
 
 # In[4]:
 
 
-# plot venn diagram of data without mutations
-sns.set_style('white')
-venn(sample_lists)
-plt.title('Sample overlap between TCGA data types', size=14)
-
-
-# In[5]:
-
-
 # add mutation data to sample list
-import mpmp.utilities.data_utilities as du
-
 pancan_data = du.load_pancancer_data()
 (sample_freeze_df,
  mutation_df,
@@ -67,27 +73,129 @@ print(copy_gain_df.shape)
 print(mut_burden_df.shape)
 
 
+# In[5]:
+
+
+# all these dfs contain the same samples, so just use one of the indexes
+sample_lists['mutation'] = set(mutation_df.index)
+
+
 # In[6]:
 
 
-# these all contain the same samples, so just use one of the indexes
-sample_lists['mutation'] = set(mutation_df.index)
+# counts per data type
+print('\n'.join(['{}\t{}'.format(n, len(v)) for n, v in sample_lists.items()]))
 
+
+# ### Count overlap between gene expression and mutation data
+
+# We'll start by just counting the number of samples that have data for gene expression and mutations, corresponding to the first figure panel.
 
 # In[7]:
 
 
-# venn diagram including mutation info
+def series_from_samples(samples, labels):
+    # use pyvenn to generate overlaps/labels from sample IDs
+    venn_labels = generate_petal_labels(samples)
+    # generate format upset plot package expects
+    df_ix = [[(i == '1') for i in list(b)] + [int(v)] for b, v in venn_labels.items()]
+    # generate dataframe from list
+    rename_map = {ix: labels[ix] for ix in range(len(labels))}
+    index_names = list(rename_map.values())
+    rename_map[len(labels)] = 'id'
+    df = (pd.DataFrame(df_ix)
+        .rename(columns=rename_map)
+        .set_index(index_names)
+    )
+    # and return as series
+    return df['id']
+
+
+# In[24]:
+
+
+# probably stick with venn diagram here
+sns.set({'figure.figsize': (8, 10)})
 sns.set_style('white')
-pseudovenn(sample_lists, legend_loc='upper left')
-plt.title('Sample overlap between TCGA data types', size=14)
+
+# get only sample lists from gene expression and mutation
+labels = ['gene expression', 'mutation']
+label_map = {l: sample_lists[l] for l in labels}
+
+venn(label_map)
+plt.title('TCGA sample intersections, gene expression data', size=14)
+
+
+# In[9]:
+
+
+# plt.title('Sample overlap between gene expression and mutation data', size=14)
+
+
+# we can clean up whitespace below in figure assembly script
+# if SAVE_FIGS:
+#     images_dir = Path(cfg.images_dirs['data'])
+#     images_dir.mkdir(exist_ok=True)
+#     plt.savefig(images_dir / 'expression_only_overlap.svg', bbox_inches='tight')
+#     plt.savefig(images_dir / 'expression_only_overlap.png',
+#                 dpi=300, bbox_inches='tight')
+
+
+# ### Count overlap between gene expression, methylation, and mutation datasets
+
+# In[10]:
+
+
+sns.set_style('white')
+labels = ['gene expression', 'mutation', '27k methylation', '450k methylation']
+samples = [sample_lists[l] for l in labels]
+
+upset_series = series_from_samples(samples, labels)
+subplots = up.plot(upset_series[upset_series != 0], element_size=60)
+plt.title('TCGA sample intersections, expression/methylation datasets', size=13)
+plt.ylabel('Intersection size', size=13)
+plt.yticks(fontsize=13)
+subplots['matrix'].set_yticklabels(labels=subplots['matrix'].get_yticklabels(), fontsize=12)
+
+# we can clean up whitespace below in figure assembly script
+if SAVE_FIGS:
+    images_dir = Path(cfg.images_dirs['data'])
+    images_dir.mkdir(exist_ok=True)
+    plt.savefig(images_dir / 'expression_me_overlap_upset.svg', bbox_inches='tight')
+    plt.savefig(images_dir / 'expression_me_overlap_upset.png',
+                dpi=300, bbox_inches='tight')
+
+
+# ### Count overlap between all datasets
+
+# In[11]:
+
+
+sns.set_style('white')
+labels = ['gene expression', 'mutation', '27k methylation', '450k methylation',
+          'RPPA', 'mut sigs']
+samples = [sample_lists[l] for l in labels]
+
+upset_series = series_from_samples(samples, labels)
+subplots = up.plot(upset_series[upset_series >= 100], element_size=60)
+plt.title('TCGA sample intersections, all datasets', size=13)
+plt.ylabel('Intersection size', size=13)
+plt.yticks(fontsize=13)
+subplots['matrix'].set_yticklabels(labels=subplots['matrix'].get_yticklabels(), fontsize=12)
+
+if SAVE_FIGS:
+    images_dir = Path(cfg.images_dirs['data'])
+    images_dir.mkdir(exist_ok=True)
+    plt.savefig(images_dir / 'all_overlap_upset.svg', bbox_inches='tight')
+    plt.savefig(images_dir / 'all_overlap_upset.png',
+                dpi=300, bbox_inches='tight')
 
 
 # ### Cancer type analysis
 # 
 # The sample counts by themselves aren't that informative. More specifically, we want to know which cancer types are getting dropped when we take the overlap between data types. That is, are there certain cancer types that are or are not generally in the overlap, or are the samples we filter out roughly uniformly distributed between cancer types?
 
-# In[8]:
+# In[12]:
 
 
 # get sample info (sample IDs and cancer types) for each data modality
@@ -109,7 +217,7 @@ print(
 sample_info_dfs['expression'].head()
 
 
-# In[9]:
+# In[13]:
 
 
 # the goal here is to examine how the proportion of cancer types changes when we add
@@ -135,7 +243,7 @@ exp_mut_cancer_types = (sample_info_dfs['expression']
 diff_df = exp_cancer_types - exp_mut_cancer_types
 
 
-# In[10]:
+# In[14]:
 
 
 # check these are all in expression data (they should be)
@@ -145,7 +253,7 @@ cur_counts = exp_mut_cancer_types
 
 for ix, data_type in enumerate(data_types[1:], 1):
     cur_samples = cur_samples.intersection(
-        sample_lists[data_type]
+        sample_lists[data_map[data_type]]
     )
     print(data_type, len(cur_samples))
     overlap_counts = (sample_info_dfs[data_type]
@@ -170,7 +278,7 @@ print(diff_df.shape)
 diff_df.head(33)
 
 
-# In[11]:
+# In[15]:
 
 
 # make sure number of removed samples equals number of samples we started with
@@ -187,7 +295,7 @@ compare_df = pd.concat((
 assert (compare_df.expression.values == compare_df.other.values).all()
 
 
-# In[12]:
+# In[16]:
 
 
 def flip(items, ncol):
@@ -205,7 +313,7 @@ plt.title('Samples dropped when taking data type overlap, by cancer type')
 plt.ylabel('Sample count')
 
 
-# In[13]:
+# In[17]:
 
 
 # instead of plotting absolute number of each cancer type dropped at
@@ -215,7 +323,7 @@ diff_norm_df = diff_df / np.tile(diff_df.sum(axis=1).values, (diff_df.shape[1], 
 diff_norm_df.head()
 
 
-# In[14]:
+# In[18]:
 
 
 sns.set()
@@ -225,4 +333,50 @@ plt.legend(flip(h, 8), flip(l, 8), bbox_to_anchor=(-0.025, -0.55),
            loc='lower left', ncol=8, title='Cancer type')
 plt.title('Proportion of samples dropped when taking data type overlap, by cancer type')
 plt.ylabel('Proportion')
+
+
+# In[19]:
+
+
+# what happens when we add miRNA data?
+
+# get overlap of all previous data types
+# print(cur_samples)
+
+# get miRNA sample info
+from urllib.request import urlretrieve
+manifest_df = pd.read_csv(os.path.join(cfg.data_dir, 'manifest.tsv'),
+                          sep='\t', index_col=0)
+mirna_sample_id, mirna_sample_filename = manifest_df.loc['mirna_sample'].id, manifest_df.loc['mirna_sample'].filename
+
+url = 'http://api.gdc.cancer.gov/data/{}'.format(mirna_sample_id)
+mirna_sample_filepath = os.path.join(cfg.raw_data_dir, mirna_sample_filename)
+
+if not os.path.exists(mirna_sample_filepath):
+    urlretrieve(url, mirna_sample_filepath)
+else:
+    print('Downloaded data file already exists, skipping download')
+
+
+# In[20]:
+
+
+# plot how many additional samples would be lost if we added miRNA
+mirna_sample_df = pd.read_csv(mirna_sample_filepath, sep='\t', index_col=0)
+# update sample IDs to remove multiple samples measured on the same tumor
+# and to map with the clinical information
+mirna_sample_df.index = mirna_sample_df.index.str.slice(start=0, stop=15)
+mirna_sample_df = mirna_sample_df.loc[~mirna_sample_df.index.duplicated(), :]
+
+print(mirna_sample_df.shape)
+mirna_sample_df.head()
+
+
+# In[21]:
+
+
+sns.set_style('white')
+venn({'miRNA': set(mirna_sample_df.index),
+      'other': cur_samples})
+plt.title('Sample overlap between miRNA and other data', size=14)
 

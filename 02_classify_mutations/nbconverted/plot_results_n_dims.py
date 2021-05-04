@@ -99,11 +99,13 @@ for row_ix, n_dims in enumerate(compressed_results_df.n_dims.unique()):
     for col_ix, train_data in enumerate(compressed_results_df.training_data.unique()):
         raw_data_df = raw_results_df[
             (raw_results_df.training_data == train_data)
-        ]
+        ].copy()
+        raw_data_df.sort_values(by=['seed', 'fold'], inplace=True)
         compressed_data_df = compressed_results_df[
             (compressed_results_df.n_dims == n_dims) &
             (compressed_results_df.training_data == train_data)
-        ]
+        ].copy()
+        compressed_data_df.sort_values(by=['seed', 'fold'], inplace=True)
         compare_df = au.compare_results(raw_data_df,
                                         compressed_data_df,
                                         identifier='identifier',

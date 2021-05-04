@@ -298,13 +298,15 @@ y_max = all_results_df.nlog10_p.max()
 ylim = (0, y_max+1)
 
 data_types = sorted([dt for dt in training_data_map.values() if dt != 'gene expression'])
-exp_results_df = results_df[results_df.training_data == 'gene expression']
+exp_results_df = results_df[results_df.training_data == 'gene expression'].copy()
+exp_results_df.sort_values(by=['seed', 'fold'], inplace=True)
 
 for ix, training_data in enumerate(data_types):
     ax = axarr[ix // 3, ix % 3]
-    data_results_df = results_df[results_df.training_data == training_data]
+    data_results_df = results_df[results_df.training_data == training_data].copy()
+    data_results_df.sort_values(by=['seed', 'fold'], inplace=True)
     compare_results_df = au.compare_results(exp_results_df,
-                                            pancancer_df=data_results_df,
+                                            condition_2_df=data_results_df,
                                             identifier='identifier',
                                             metric='aupr',
                                             correction=True,
@@ -379,13 +381,15 @@ y_max = all_results_df.nlog10_p.max()
 ylim = (0, y_max+1)
 
 data_types = ['RPPA', 'microRNA', 'mutational signatures']
-exp_results_df = results_df[results_df.training_data == 'gene expression']
+exp_results_df = results_df[results_df.training_data == 'gene expression'].copy()
+exp_results_df.sort_values(by=['seed', 'fold'], inplace=True)
 
 for ix, training_data in enumerate(data_types):
     ax = axarr[ix]
-    data_results_df = results_df[results_df.training_data == training_data]
+    data_results_df = results_df[results_df.training_data == training_data].copy()
+    data_results_df.sort_values(by=['seed', 'fold'], inplace=True)
     compare_results_df = au.compare_results(exp_results_df,
-                                            pancancer_df=data_results_df,
+                                            condition_2_df=data_results_df,
                                             identifier='identifier',
                                             metric='aupr',
                                             correction=True,

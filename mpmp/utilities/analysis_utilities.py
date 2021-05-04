@@ -285,8 +285,8 @@ def load_preds_to_matrix(preds_dir,
     return preds_df.sort_index()
 
 
-def compare_results(single_cancer_df,
-                    pancancer_df=None,
+def compare_results(condition_1_df,
+                    condition_2_df=None,
                     identifier='gene',
                     metric='auroc',
                     correction=False,
@@ -299,17 +299,13 @@ def compare_results(single_cancer_df,
     (shuffled labels), and for comparing two experimental conditions against
     one another.
 
-    Note that this currently uses an unpaired t-test to compare results.
-    TODO this could probably use a paired t-test, but need to verify that
-    CV folds are actually the same between runs
-
     Arguments
     ---------
-    single_cancer_df (pd.DataFrame): either a single dataframe to compare against
-                                     its negative control, or the single-cancer
-                                     dataframe
-    pancancer_df (pd.DataFrame): if provided, a second dataframe to compare against
-                                 single_cancer_df
+    condition_1_df (pd.DataFrame): either a single dataframe to compare against
+                                   its negative control, or the first of 2
+                                   conditions to compare against each other
+    condition_2_df (pd.DataFrame): if provided, a second dataframe to compare
+                                   against condition_1_df
     identifier (str): column to use as the sample identifier
     metric (str): column to use as the evaluation metric
     correction (bool): whether or not to use a multiple testing correction
@@ -322,10 +318,10 @@ def compare_results(single_cancer_df,
     -------
     results_df (pd.DataFrame): identifiers and results of statistical test
     """
-    if pancancer_df is None:
-        results_df = compare_control(single_cancer_df, identifier, metric, verbose)
+    if condition_2_df is None:
+        results_df = compare_control(condition_1_df, identifier, metric, verbose)
     else:
-        results_df = compare_experiment(single_cancer_df, pancancer_df,
+        results_df = compare_experiment(condition_1_df, condition_2_df,
                                         identifier, metric, verbose)
     if correction:
         from statsmodels.stats.multitest import multipletests
@@ -386,9 +382,9 @@ def compare_control(results_df,
             assert np.array_equal(signal_seeds, shuffled_seeds)
             assert np.array_equal(signal_folds, shuffled_folds)
         except AssertionError:
-            print(id_str)
-            print(signal_seeds, shuffled_seeds)
-            print(signal_folds, shuffled_folds)
+            print(id_str, file=sys.stderr)
+            print(signal_seeds, shuffled_seeds, file=sys.stderr)
+            print(signal_folds, shuffled_folds, file=sys.stderr)
 
         if np.array_equal(signal_results, shuffled_results):
             delta_mean = 0
@@ -457,48 +453,62 @@ def compare_control_ind(results_df,
                                 'delta_{}'.format(metric)])
 
 
-def compare_experiment(single_cancer_df,
-                       pancancer_df,
+def compare_experiment(condition_1_df,
+                       condition_2_df,
                        identifier='gene',
                        metric='auroc',
                        verbose=False):
 
     results = []
-    single_cancer_ids = np.unique(single_cancer_df[identifier].values)
-    pancancer_ids = np.unique(pancancer_df[identifier].values)
-    unique_identifiers = list(set(single_cancer_ids).intersection(pancancer_ids))
+    condition_1_ids = np.unique(condition_1_df[identifier].values)
+    condition_2_ids = np.unique(condition_2_df[identifier].values)
+    unique_identifiers = list(set(condition_1_ids).intersection(condition_2_ids))
 
     for id_str in unique_identifiers:
 
-        conditions = ((single_cancer_df[identifier] == id_str) &
-                      (single_cancer_df.data_type == 'test') &
-                      (single_cancer_df.signal == 'signal'))
-        single_cancer_results = single_cancer_df[conditions][metric].values
+        conditions = ((condition_1_df[identifier] == id_str) &
+                      (condition_1_df.data_type == 'test') &
+                      (condition_1_df.signal == 'signal'))
+        condition_1_results = condition_1_df[conditions][metric].values
+        condition_1_seeds = condition_1_df[conditions]['seed'].values
+        condition_1_folds = condition_1_df[conditions]['fold'].values
 
-        conditions = ((pancancer_df[identifier] == id_str) &
-                      (pancancer_df.data_type == 'test') &
-                      (pancancer_df.signal == 'signal'))
-        pancancer_results = pancancer_df[conditions][metric].values
+        conditions = ((condition_2_df[identifier] == id_str) &
+                      (condition_2_df.data_type == 'test') &
+                      (condition_2_df.signal == 'signal'))
+        condition_2_results = condition_2_df[conditions][metric].values
+        condition_2_seeds = condition_2_df[conditions]['seed'].values
+        condition_2_folds = condition_2_df[conditions]['fold'].values
 
-        if single_cancer_results.shape != pancancer_results.shape:
+        if condition_1_results.shape != condition_2_results.shape:
             if verbose:
                 print('shapes unequal for {}, skipping'.format(id_str),
                       file=sys.stderr)
             continue
 
-        if (single_cancer_results.size == 0) or (pancancer_results.size == 0):
+        if (condition_1_results.size == 0) or (condition_2_results.size == 0):
             if verbose:
                 print('size 0 results array for {}, skipping'.format(id_str),
                       file=sys.stderr)
             continue
 
-        delta_mean = np.mean(pancancer_results) - np.mean(single_cancer_results)
-        if np.array_equal(pancancer_results, single_cancer_results):
+        # make sure seeds and folds are in same order
+        # this is necessary for paired t-test
+        try:
+            assert np.array_equal(condition_1_seeds, condition_2_seeds)
+            assert np.array_equal(condition_1_folds, condition_2_folds)
+        except AssertionError:
+            print(id_str, file=sys.stderr)
+            print(condition_1_seeds, condition_2_seeds, file=sys.stderr)
+            print(condition_1_folds, condition_2_folds, file=sys.stderr)
+
+        if np.array_equal(condition_2_results, condition_1_results):
             delta_mean = 0
             p_value = 1.0
         else:
-            delta_mean = np.mean(pancancer_results) - np.mean(single_cancer_results)
-            p_value = ttest_rel(pancancer_results, single_cancer_results)[1]
+            # note that a positive value = better performance in condition 2
+            delta_mean = np.mean(condition_2_results) - np.mean(condition_1_results)
+            p_value = ttest_rel(condition_2_results, condition_1_results)[1]
         results.append([id_str, delta_mean, p_value])
 
     return pd.DataFrame(results, columns=['identifier', 'delta_mean', 'p_value'])
