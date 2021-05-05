@@ -126,21 +126,6 @@ venn(label_map)
 plt.title('TCGA sample intersections, gene expression data', size=14)
 
 
-# In[9]:
-
-
-# plt.title('Sample overlap between gene expression and mutation data', size=14)
-
-
-# we can clean up whitespace below in figure assembly script
-# if SAVE_FIGS:
-#     images_dir = Path(cfg.images_dirs['data'])
-#     images_dir.mkdir(exist_ok=True)
-#     plt.savefig(images_dir / 'expression_only_overlap.svg', bbox_inches='tight')
-#     plt.savefig(images_dir / 'expression_only_overlap.png',
-#                 dpi=300, bbox_inches='tight')
-
-
 # ### Count overlap between gene expression, methylation, and mutation datasets
 
 # In[10]:
@@ -339,10 +324,6 @@ plt.ylabel('Proportion')
 
 
 # what happens when we add miRNA data?
-
-# get overlap of all previous data types
-# print(cur_samples)
-
 # get miRNA sample info
 from urllib.request import urlretrieve
 manifest_df = pd.read_csv(os.path.join(cfg.data_dir, 'manifest.tsv'),
@@ -363,8 +344,6 @@ else:
 
 # plot how many additional samples would be lost if we added miRNA
 mirna_sample_df = pd.read_csv(mirna_sample_filepath, sep='\t', index_col=0)
-# update sample IDs to remove multiple samples measured on the same tumor
-# and to map with the clinical information
 mirna_sample_df.index = mirna_sample_df.index.str.slice(start=0, stop=15)
 mirna_sample_df = mirna_sample_df.loc[~mirna_sample_df.index.duplicated(), :]
 
