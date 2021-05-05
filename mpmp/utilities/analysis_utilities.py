@@ -296,8 +296,8 @@ def compare_results(condition_1_df,
     """Compare cross-validation results between two experimental conditions.
 
     Main uses for this are comparing an experiment against its negative control
-    (shuffled labels), and for comparing two experimental conditions against
-    one another.
+    (shuffled labels), and for comparing two experimental "conditions" (e.g.
+    different models, different data types) against one another.
 
     Arguments
     ---------
