@@ -29,11 +29,16 @@ import mpmp.utilities.analysis_utilities as au
 
 # set results directory
 results_dir = Path(
-    cfg.results_dirs['multimodal'],
+    # cfg.results_dirs['multimodal'],
     # 'pilot_results',
+    '../04_classify_mutations_multimodal',
+    'results',
     'pilot_results_all_feats',
     'gene'
 ).resolve()
+
+# if True, save figures to ./images directory
+SAVE_FIGS = True
 
 
 # ### Compare raw results (signal and shuffled)
@@ -43,6 +48,9 @@ results_dir = Path(
 
 # load raw data
 results_df = au.load_stratified_prediction_results(results_dir, 'gene')
+
+# drop TET2 for now
+results_df = results_df[~(results_df.identifier == 'TET2')].copy()
 
 # make sure that we have data for all data types and for two replicates (random seeds)
 print(results_df.shape)
@@ -198,46 +206,58 @@ compare_df.head(10)
 
 
 # each subplot will show results for one gene
-sns.set({'figure.figsize': (24, 12)})
-fig, axarr = plt.subplots(2, 4)
+sns.set({'figure.figsize': (20, 12)})
+sns.set_style('whitegrid')
+sns.set_palette('Dark2')
+
+# fig, axarr = plt.subplots(2, 4)
+fig, axarr = plt.subplots(2, 3)
 compare_df.sort_values(by=['gene', 'training_data'], inplace=True)
 compare_map = {v: str(i) for i, v in enumerate(compare_df.training_data.unique())}
-compare_df['train_index'] = compare_df.training_data.map(compare_map)
 min_aupr = compare_df.delta_aupr.min()
 max_aupr = compare_df.delta_aupr.max()
 
-
-data_order =['expression',
-             'me_27k',
-             'me_450k',
-             'expression.me_27k',
-             'expression.me_450k',
-             'me_27k.me_450k',
-             'expression.me_27k.me_450k']
+data_names = {
+    'expression': 'gene expression',
+    'me_27k': '27K methylation',
+    'me_450k': '450K methylation',
+    'expression.me_27k': 'expression + 27K methylation',
+    'expression.me_450k': 'expression + 450K methylation',
+    'me_27k.me_450k': '27K methylation + 450K methylation',
+    'expression.me_27k.me_450k': 'expression + 27K methylation + 450K methylation'
+}
 
 # plot mean performance over all genes in pilot experiment
 for ix, gene in enumerate(results_df.identifier.unique()):
     
-    ax = axarr[ix // 4, ix % 4]
+    ax = axarr[ix // 3, ix % 3]
     
-    plot_df = compare_df[(compare_df.gene == gene)]
+    plot_df = compare_df[(compare_df.gene == gene)].copy()
+    plot_df.training_data.replace(data_names, inplace=True)
 
     sns.boxplot(data=plot_df, x='training_data', y='delta_aupr',
-                order=data_order, ax=ax)
-    ax.set_title('Prediction for {} mutation'.format(gene))
-    ax.set_xlabel('Training data type')
+                order=list(data_names.values()), ax=ax)
+    ax.set_title('Prediction for {} mutation'.format(gene), size=13)
+    ax.set_xlabel('Training data type', size=13)
     # hide x-axis tick text
     ax.get_xaxis().set_ticklabels([])
-    ax.set_ylabel('AUPR(signal) - AUPR(shuffled)')
+    ax.set_ylabel('AUPR(signal) - AUPR(shuffled)', size=13)
     ax.set_ylim(-0.2, max_aupr)
     
 handles = []
-for ix, data in enumerate(data_order):
+for ix, data in enumerate(list(data_names.values())):
     handle = mpatches.Patch(color=sns.color_palette()[ix], label=data)
     handles.append(handle)
     
-fig.delaxes(axarr[1, 3])
-plt.legend(handles=handles, loc='lower right')
+plt.legend(title='Data types used to train model', handles=handles, loc='lower right')
+plt.tight_layout()
+
+if SAVE_FIGS:
+    images_dir = Path(cfg.images_dirs['multimodal'])
+    images_dir.mkdir(exist_ok=True)
+    plt.savefig(images_dir / 'multi_omics_boxes.svg', bbox_inches='tight')
+    plt.savefig(images_dir / 'multi_omics_boxes.png',
+                dpi=300, bbox_inches='tight')
 
 
 # ### Compare best-performing single-omics and multi-omics data types
@@ -246,9 +266,9 @@ plt.legend(handles=handles, loc='lower right')
 
 
 # for each data type, classify it as single-omics or multi-omics
-compare_df['model_type'] = 'single-omics'
+compare_df['model_type'] = 'Best single-omics'
 # multi-omics data types are concatenated using dots
-compare_df.loc[compare_df.training_data.str.contains('\.'), 'model_type'] = 'multi-omics'
+compare_df.loc[compare_df.training_data.str.contains('\.'), 'model_type'] = 'Best multi-omics'
 print(compare_df.training_data.unique())
 compare_df[compare_df.gene == 'TP53'].head(10)
 
@@ -256,7 +276,8 @@ compare_df[compare_df.gene == 'TP53'].head(10)
 # In[11]:
 
 
-sns.set({'figure.figsize': (10, 6)})
+sns.set({'figure.figsize': (13, 6)})
+sns.set_style('whitegrid')
 
 plot_df = pd.DataFrame()
 
@@ -267,13 +288,13 @@ for ix, gene in enumerate(results_df.identifier.unique()):
     
     # get the best-performing data types from the single-omics and multi-omics models
     max_single_data_type = (
-        plot_gene_df[plot_gene_df.model_type == 'single-omics']
+        plot_gene_df[plot_gene_df.model_type.str.contains('single-omics')]
           .groupby('training_data')
           .agg('mean')
           .delta_aupr.idxmax()
     )
     max_multi_data_type = (
-        plot_gene_df[plot_gene_df.model_type == 'multi-omics']
+        plot_gene_df[plot_gene_df.model_type.str.contains('multi-omics')]
           .groupby('training_data')
           .agg('mean')
           .delta_aupr.idxmax()
@@ -292,9 +313,18 @@ for ix, gene in enumerate(results_df.identifier.unique()):
     plot_df = pd.concat((plot_df, max_single_df, max_multi_df))
 
 sns.boxplot(data=plot_df, x='gene', y='delta_aupr', hue='model_type')
-plt.title('Best performing single-omics vs. multi-omics data type, per gene')
-plt.xlabel('Target gene')
-plt.ylabel('AUPR(signal) - AUPR(shuffled)')
+plt.title('Best performing single-omics vs. multi-omics data type, per gene', size=13)
+plt.xlabel('Target gene', size=13)
+plt.ylabel('AUPR(signal) - AUPR(shuffled)', size=13)
+plt.ylim(0.0, 0.6)
+plt.legend(title='Model type', loc='lower left', fontsize=12, title_fontsize=12)
+
+if SAVE_FIGS:
+    images_dir = Path(cfg.images_dirs['multimodal'])
+    images_dir.mkdir(exist_ok=True)
+    plt.savefig(images_dir / 'multi_omics_best_model.svg', bbox_inches='tight')
+    plt.savefig(images_dir / 'multi_omics_best_model.png',
+                dpi=300, bbox_inches='tight')
 
 
 # Summary and interpretation:

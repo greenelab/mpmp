@@ -23,6 +23,10 @@ data/tcga_methylation_matrix_processed.tsv.gz
 data/tcga_wes_sbs_mutational_signatures.tsv
 data/pancancer_data.pkl
 
+# don't track images files
+figures/*
+**/images/*
+
 # don't track results files
 **/results/*
 **/gene_counts/*
