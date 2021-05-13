@@ -3,7 +3,7 @@
 
 # ## Compare compressed vs. raw results
 # 
-# In this notebook, we want to compare mutation status classification results with compressed (PCA) components as predictors against results with raw features (CpG beta values for methylation data, standardized per-gene expression values for RNA-seq data).
+# In this notebook, we want to compare mutation status classification results with varying numbers of PCA components as predictors against results with raw features (CpG beta values for methylation data, standardized per-gene expression values for RNA-seq data).
 # 
 # Notebook parameters:
 # * SIG_ALPHA (float): significance cutoff after FDR correction
@@ -27,12 +27,16 @@ import mpmp.utilities.analysis_utilities as au
 
 
 # set results directories
-raw_450k_results_dir = Path(cfg.results_dir, 'vogelstein_450k_mad100k', 'gene').resolve()
-raw_results_dir = Path(cfg.results_dir, 'gene').resolve()
-compressed_results_dir = Path(cfg.results_dir, 'compressed_results', 'gene').resolve()
+raw_exp_results_dir = Path(cfg.results_dirs['mutation'], 'compressed_results', 'gene').resolve()
+raw_27k_results_dir = Path(cfg.results_dirs['mutation'], 'bmiq_results_me_control', 'gene').resolve()
+raw_450k_results_dir = Path(cfg.results_dirs['mutation'], 'vogelstein_450k_mad100k', 'gene').resolve()
+compressed_results_dir = Path(cfg.results_dirs['mutation'], 'compressed_results', 'gene').resolve()
 
 # set significance cutoff after FDR correction
 SIG_ALPHA = 0.001
+
+# if True, save figures to ./images directory
+SAVE_FIGS = True
 
 
 # In[3]:
@@ -40,13 +44,14 @@ SIG_ALPHA = 0.001
 
 # load raw data
 raw_results_df = pd.concat((
-    au.load_stratified_prediction_results(raw_results_dir, 'gene'),
+    au.load_stratified_prediction_results(raw_exp_results_dir, 'gene'),
+    au.load_stratified_prediction_results(raw_27k_results_dir, 'gene'),
     au.load_stratified_prediction_results(raw_450k_results_dir, 'gene')
 ))
 
-# clean some stuff up
+# we've only run 1 seed for raw 450K methylation data, so just use 1 seed
+# for other data types, for now
 raw_results_df = raw_results_df[raw_results_df.seed == 42].copy()
-raw_results_df.loc[raw_results_df.training_data == 'methylation', 'training_data'] = 'me_27k'
 
 print(raw_results_df.shape)
 print(raw_results_df.seed.unique())
@@ -58,7 +63,8 @@ raw_results_df.head()
 
 
 # load compressed data
-compressed_results_df = au.load_compressed_prediction_results(compressed_results_dir, 'gene')
+compressed_results_df = au.load_compressed_prediction_results(compressed_results_dir, 'gene',
+                                                              old_filenames=True)
 compressed_results_df = compressed_results_df[compressed_results_df.seed == 42].copy()
 print(compressed_results_df.shape)
 print(compressed_results_df.seed.unique())
@@ -93,11 +99,13 @@ for row_ix, n_dims in enumerate(compressed_results_df.n_dims.unique()):
     for col_ix, train_data in enumerate(compressed_results_df.training_data.unique()):
         raw_data_df = raw_results_df[
             (raw_results_df.training_data == train_data)
-        ]
+        ].copy()
+        raw_data_df.sort_values(by=['seed', 'fold'], inplace=True)
         compressed_data_df = compressed_results_df[
             (compressed_results_df.n_dims == n_dims) &
             (compressed_results_df.training_data == train_data)
-        ]
+        ].copy()
+        compressed_data_df.sort_values(by=['seed', 'fold'], inplace=True)
         compare_df = au.compare_results(raw_data_df,
                                         compressed_data_df,
                                         identifier='identifier',
@@ -163,6 +171,7 @@ for train_data in raw_results_df.training_data.unique():
         raw_results_df[raw_results_df.training_data == train_data]
             .drop(columns=['training_data'])
     )
+    raw_train_df.sort_values(by=['seed', 'fold'], inplace=True)
     raw_train_compare_df = au.compare_results(raw_train_df,
                                               identifier='identifier',
                                               metric='aupr',
@@ -188,6 +197,7 @@ for train_data in compressed_results_df.training_data.unique():
                                   (compressed_results_df.n_dims == n_dims)]
                 .drop(columns=['training_data'])
         )
+        cmp_train_df.sort_values(by=['seed', 'fold'], inplace=True)
         cmp_train_compare_df = au.compare_results(cmp_train_df,
                                                   identifier='identifier',
                                                   metric='aupr',
@@ -210,27 +220,43 @@ cmp_compare_df.head(5)
 # performance over increasing number of PCs
 # dotted line = performance with raw features (genes/probes)
 genes = ['TP53', 'KRAS', 'NF1', 'IDH1', 'ERBB2', 'SETD2']
-sns.set({'figure.figsize': (20, 10)})
+sns.set({'figure.figsize': (21, 10)})
+sns.set_style('whitegrid')
 fig, axarr = plt.subplots(2, 3)
 
 for ix, gene in enumerate(genes):
     ax = axarr[ix // 3, ix % 3]
-    cmp_gene_df = cmp_compare_df[cmp_compare_df.gene == gene]
-    sns.pointplot(data=cmp_gene_df, x='n_dims', y='delta_mean', hue='training_data', ax=ax)
+    cmp_gene_df = cmp_compare_df[cmp_compare_df.gene == gene].copy()
+    cmp_gene_df.training_data.replace(to_replace=train_names, inplace=True)
+    g = sns.pointplot(data=cmp_gene_df, x='n_dims', y='delta_mean', hue='training_data', ax=ax, legend=False)
+    if ix != 0:
+        ax.get_legend().remove()
+    else:
+        ax.legend(title='Training data', fontsize=12, title_fontsize=12,
+                  loc='lower left')
     for color_ix, train_data in enumerate(raw_compare_df.training_data.unique()):
         ax.axhline(y=raw_compare_df[(raw_compare_df.gene == gene) &
                                     (raw_compare_df.training_data == train_data)].delta_mean.values[0],
-                   linestyle='--',
+                   linestyle='--', linewidth=3,
                    color=sns.color_palette()[color_ix])
-    ax.set_title('{} mutation prediction, performance vs. PCA components'.format(gene))
-    ax.set_xlabel('Number of PCA components')
-    ax.set_ylabel('AUPR(signal) - AUPR(shuffled)')
+    ax.set_title('{} mutation prediction, performance vs. PCA components'.format(gene), size=14)
+    ax.set_xlabel('Number of PCA components', size=14)
+    ax.set_ylabel('AUPR(signal) - AUPR(shuffled)', size=14)
     raw_gene_df = raw_compare_df[raw_compare_df.gene == gene]
-    ax.set_ylim(-0.05, max(max(cmp_gene_df.delta_mean), max(raw_gene_df.delta_mean))+0.05)
+    # ax.set_ylim(-0.05, max(max(cmp_gene_df.delta_mean), max(raw_gene_df.delta_mean))+0.05)
+    ax.set_ylim(-0.05, 0.6)
+    
 plt.tight_layout()
 
+if SAVE_FIGS:
+    images_dir = Path(cfg.images_dirs['mutation'])
+    images_dir.mkdir(exist_ok=True)
+    plt.savefig(images_dir / 'methylation_genes.svg', bbox_inches='tight')
+    plt.savefig(images_dir / 'methylation_genes.png',
+                dpi=300, bbox_inches='tight')
 
-# In[12]:
+
+# In[9]:
 
 
 raw_compare_df['n_dims'] = 'raw'
@@ -238,8 +264,10 @@ compare_df = (
     pd.concat((raw_compare_df, cmp_compare_df))
       .sort_values(by=['training_data', 'n_dims'])
 )
+compare_df.training_data.replace(to_replace=train_names, inplace=True)
 
 sns.set({'figure.figsize': (18, 12)})
+
 fig, axarr = plt.subplots(2, 2)
 
 # plot mean performance over all genes in Vogelstein dataset
@@ -276,6 +304,47 @@ ax.set_title('Prediction for sig genes only, performance vs. PCA components')
 ax.set_xlabel('Number of PCA components')
 ax.set_ylabel('AUPR(signal) - AUPR(shuffled)')
 ax.set_ylim(-0.2, max(compare_df.delta_mean + 0.05))
+
+
+# In[10]:
+
+
+# same plot but only the first row (box plots)
+sns.set({'figure.figsize': (16, 6)})
+sns.set_style('whitegrid')
+
+fig, axarr = plt.subplots(1, 2)
+
+# plot mean performance over all genes in Vogelstein dataset
+ax = axarr[0]
+sns.boxplot(data=compare_df, x='n_dims', y='delta_mean', hue='training_data', notch=True, ax=ax)
+ax.get_legend().remove()
+ax.set_title('Prediction for all genes, performance vs. PCA components', size=13)
+ax.set_xlabel('Number of PCA components', size=13)
+ax.set_ylabel('AUPR(signal) - AUPR(shuffled)', size=13)
+ax.set_ylim(-0.2, 0.7)
+
+
+# plot mean performance for genes that are significant for at least one data type
+ax = axarr[1]
+gene_list = compare_df[compare_df.reject_null == True].gene.unique()
+print(gene_list.shape)
+print(gene_list)
+sns.boxplot(data=compare_df[compare_df.gene.isin(gene_list)], x='n_dims', y='delta_mean',
+            hue='training_data', notch=True, ax=ax)
+ax.legend(title='Training data', fontsize=12, title_fontsize=12,
+          loc='lower left')
+ax.set_title('Prediction for sig genes only, performance vs. PCA components', size=13)
+ax.set_xlabel('Number of PCA components', size=13)
+ax.set_ylabel('AUPR(signal) - AUPR(shuffled)', size=13)
+ax.set_ylim(-0.2, 0.7)
+
+if SAVE_FIGS:
+    images_dir = Path(cfg.images_dirs['mutation'])
+    images_dir.mkdir(exist_ok=True)
+    plt.savefig(images_dir / 'methylation_compress_boxes.svg', bbox_inches='tight')
+    plt.savefig(images_dir / 'methylation_compress_boxes.png',
+                dpi=300, bbox_inches='tight')
 
 
 # Takeaways:
