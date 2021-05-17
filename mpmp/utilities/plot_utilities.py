@@ -13,6 +13,19 @@ def plot_volcano_baseline(results_df,
                           xlim=None,
                           ylim=None,
                           verbose=False):
+    """Make a scatter plot comparing classifier results to shuffled baseline.
+
+    Arguments
+    ---------
+    results_df (pd.DataFrame): dataframe with processed results/p-values
+    axarr (array of Axes): axes array from plt.subplots
+    training_data_map (dict): maps internal data type names to display names
+    sig_alpha (float): significance testing threshold
+
+    Returns
+    -------
+    axarr (array of Axes): axes with plots
+    """
 
     # set axis limits if not provided
     if xlim is None:
@@ -89,6 +102,19 @@ def plot_volcano_comparison(results_df,
                             xlim=None,
                             ylim=None,
                             verbose=False):
+    """Make a scatter plot comparing classifier results to expression.
+
+    Arguments
+    ---------
+    results_df (pd.DataFrame): dataframe with processed results/p-values
+    axarr (array of Axes): axes array from plt.subplots
+    training_data_map (dict): maps internal data type names to display names
+    sig_alpha (float): significance testing threshold
+
+    Returns
+    -------
+    axarr (array of Axes): axes with plots
+    """
 
     # set axis limits if not provided
     if xlim is None:
@@ -180,6 +206,18 @@ def plot_boxes(results_df,
                training_data_map,
                orientation='h',
                verbose=False):
+    """Make a box plot comparing classifier results between data types.
+
+    Arguments
+    ---------
+    results_df (pd.DataFrame): dataframe with processed results/p-values
+    axarr (array of Axes): axes array from plt.subplots
+    training_data_map (dict): maps internal data type names to display names
+
+    Returns
+    -------
+    axarr (array of Axes): axes with plots
+    """
 
     # plot mean performance over all genes in Vogelstein dataset
     ax = axarr[0]
