@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from adjustText import adjust_text
+from matplotlib.patches import Rectangle
 
 import mpmp.utilities.analysis_utilities as au
 
@@ -252,6 +253,55 @@ def plot_boxes(results_df,
         tick.set_rotation(30)
 
     plt.tight_layout()
+
+
+def plot_heatmap(heatmap_df, results_df):
+    """Plot heatmap comparing data types for each gene."""
+
+    ax = sns.heatmap(heatmap_df, cmap='Greens',
+                     cbar_kws={'aspect': 10, 'fraction': 0.1, 'pad': 0.01})
+    ax.xaxis.labelpad = 15
+
+    # outline around heatmap
+    for _, spine in ax.spines.items():
+        spine.set_visible(True)
+        spine.set_color('black')
+
+    # outline around colorbar
+    cbar = ax.collections[0].colorbar
+    cbar.set_label('AUPR(signal) - AUPR(shuffled)', labelpad=15)
+    cbar.outline.set_edgecolor('black')
+    cbar.outline.set_linewidth(1)
+
+    # add blue highlights to cells that are significant over baseline
+    # add red highlights to cells that are significant and "best" predictor for that gene
+    ax = plt.gca()
+    for gene_ix, gene in enumerate(heatmap_df.columns):
+        best_data_type = heatmap_df.loc[:, gene].idxmax()
+        for data_ix, data_type in enumerate(heatmap_df.index):
+            if (best_data_type == data_type) and (
+                _check_gene_data_type(results_df, gene, data_type)):
+                ax.add_patch(
+                    Rectangle((gene_ix, data_ix), 1, 1, fill=False,
+                              edgecolor='red', lw=3, zorder=1.5)
+                )
+            elif _check_gene_data_type(results_df, gene, data_type):
+                ax.add_patch(
+                    Rectangle((gene_ix, data_ix), 1, 1, fill=False,
+                              edgecolor='blue', lw=3)
+                )
+
+    plt.xlabel('Gene name')
+    plt.ylabel('Training data type')
+    plt.tight_layout()
+
+    return ax
+
+
+def _check_gene_data_type(results_df, gene, data_type):
+    return results_df[
+        (results_df.gene == gene) &
+        (results_df.training_data == data_type)].reject_null.values[0]
 
 
 def _label_points(x, y, labels, ax, sig_alpha):
