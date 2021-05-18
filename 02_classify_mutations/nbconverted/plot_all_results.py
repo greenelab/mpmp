@@ -112,11 +112,11 @@ sns.set_style('whitegrid')
 
 fig, axarr = plt.subplots(2, 3)
 
-axarr = plu.plot_volcano_baseline(all_results_df,
-                                  axarr,
-                                  training_data_map,
-                                  SIG_ALPHA,
-                                  verbose=True)
+plu.plot_volcano_baseline(all_results_df,
+                          axarr,
+                          training_data_map,
+                          SIG_ALPHA,
+                          verbose=True)
 
 
 # In[8]:
@@ -131,11 +131,11 @@ fig, axarr = plt.subplots(2, 2)
 datasets = ['gene expression', 'RPPA', 'microRNA', 'mutational signatures']
 filtered_data_map = {k: v for k, v in training_data_map.items() if v in datasets}
 
-axarr = plu.plot_volcano_baseline(all_results_df,
-                                  axarr,
-                                  filtered_data_map,
-                                  SIG_ALPHA,
-                                  verbose=True)
+plu.plot_volcano_baseline(all_results_df,
+                          axarr,
+                          filtered_data_map,
+                          SIG_ALPHA,
+                          verbose=True)
     
 if SAVE_FIGS:
     images_dir = Path(cfg.images_dirs['mutation'])
@@ -155,11 +155,11 @@ sns.set_style('whitegrid')
 
 fig, axarr = plt.subplots(2, 3)
 
-axarr = plu.plot_volcano_comparison(results_df,
-                                    axarr,
-                                    training_data_map,
-                                    SIG_ALPHA,
-                                    verbose=True)
+plu.plot_volcano_comparison(results_df,
+                            axarr,
+                            training_data_map,
+                            SIG_ALPHA,
+                            verbose=True)
     
 fig.delaxes(axarr[1, 2])
 
@@ -177,11 +177,11 @@ filtered_data_map = {k: v for k, v in training_data_map.items() if v in datasets
 
 fig, axarr = plt.subplots(1, 3)
 
-axarr = plu.plot_volcano_comparison(results_df,
-                                    axarr,
-                                    filtered_data_map,
-                                    SIG_ALPHA,
-                                    verbose=True)
+plu.plot_volcano_comparison(results_df,
+                            axarr,
+                            filtered_data_map,
+                            SIG_ALPHA,
+                            verbose=True)
 
 if SAVE_FIGS:
     images_dir = Path(cfg.images_dirs['mutation'])
@@ -199,11 +199,11 @@ sns.set_style('whitegrid')
 
 fig, axarr = plt.subplots(2, 1)
 
-axarr = plu.plot_boxes(all_results_df,
-                       axarr,
-                       training_data_map,
-                       orientation='v',
-                       verbose=True)
+plu.plot_boxes(all_results_df,
+               axarr,
+               training_data_map,
+               orientation='v',
+               verbose=True)
 
 
 # In[12]:
@@ -214,10 +214,10 @@ sns.set_style('whitegrid')
 
 fig, axarr = plt.subplots(1, 2)
 
-axarr = plu.plot_boxes(all_results_df,
-                       axarr,
-                       training_data_map,
-                       verbose=True)
+plu.plot_boxes(all_results_df,
+               axarr,
+               training_data_map,
+               verbose=True)
 
 if SAVE_FIGS:
     images_dir = Path(cfg.images_dirs['mutation'])

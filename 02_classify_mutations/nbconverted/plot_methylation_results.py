@@ -106,11 +106,11 @@ sns.set_style('whitegrid')
 
 fig, axarr = plt.subplots(1, 3)
 
-axarr = plu.plot_volcano_baseline(all_results_df,
-                                  axarr,
-                                  training_data_map,
-                                  SIG_ALPHA,
-                                  verbose=True)
+plu.plot_volcano_baseline(all_results_df,
+                          axarr,
+                          training_data_map,
+                          SIG_ALPHA,
+                          verbose=True)
     
 if SAVE_FIGS:
     images_dir = Path(cfg.images_dirs['mutation'])
@@ -130,12 +130,12 @@ sns.set_style('whitegrid')
 
 fig, axarr = plt.subplots(1, 2)
 
-axarr = plu.plot_volcano_comparison(results_df,
-                                    axarr,
-                                    training_data_map,
-                                    SIG_ALPHA,
-                                    xlim=(-0.6, 0.6),
-                                    verbose=True)
+plu.plot_volcano_comparison(results_df,
+                            axarr,
+                            training_data_map,
+                            SIG_ALPHA,
+                            xlim=(-0.6, 0.6),
+                            verbose=True)
 
 if SAVE_FIGS:
     images_dir = Path(cfg.images_dirs['mutation'])
@@ -153,10 +153,10 @@ sns.set_style('whitegrid')
 
 fig, axarr = plt.subplots(1, 2)
 
-axarr = plu.plot_boxes(all_results_df,
-                       axarr,
-                       training_data_map,
-                       verbose=True)
+plu.plot_boxes(all_results_df,
+               axarr,
+               training_data_map,
+               verbose=True)
 
 if SAVE_FIGS:
     images_dir = Path(cfg.images_dirs['mutation'])
