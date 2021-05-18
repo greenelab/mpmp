@@ -28,6 +28,7 @@ from adjustText import adjust_text
 
 import mpmp.config as cfg
 import mpmp.utilities.analysis_utilities as au
+import mpmp.utilities.plot_utilities as plu
 
 
 # In[2]:
@@ -106,32 +107,19 @@ random_50_df.head()
 results_df = (
     pd.concat((vogelstein_df, top_50_df, random_50_df))
       .drop(columns=['training_data', 'experiment'])
+      .rename(columns={'gene_set': 'training_data'})
 )
 
-# for each gene set, compare signal vs. shuffled + do statistical testing
-all_results_df = pd.DataFrame()
-for gene_set in results_df.gene_set.unique():
-    gene_df = results_df[results_df.gene_set == gene_set].copy()
-    gene_df.sort_values(by=['seed', 'fold'], inplace=True)
-    data_results_df = au.compare_results(gene_df,
-                                         identifier='identifier',
-                                         metric='aupr',
-                                         correction=True,
-                                         correction_method='fdr_bh',
-                                         correction_alpha=SIG_ALPHA,
-                                         verbose=True)
-    data_results_df['gene_set'] = gene_set
-    data_results_df.rename(columns={'identifier': 'gene'}, inplace=True)
-    all_results_df = pd.concat((all_results_df, data_results_df))
-    
-all_results_df.sort_values(by='gene_set', inplace=True)
+all_results_df = au.compare_all_data_types(results_df,
+                                           SIG_ALPHA,
+                                           filter_genes=False)
+
+all_results_df['nlog10_p'] = -np.log10(all_results_df.corr_pval)
 all_results_df.sort_values(by='p_value').head(10)
 
 
 # In[7]:
 
-
-all_results_df['nlog10_p'] = -np.log10(all_results_df.corr_pval)
 
 sns.set({'figure.figsize': (24, 6)})
 sns.set_style('whitegrid')
@@ -142,68 +130,14 @@ gene_set_map = {
     'random_50': 'random',
     'vogelstein': 'Vogelstein et al.'
 }
+all_results_df.training_data.replace(to_replace=gene_set_map, inplace=True)
 
-# all plots should have the same axes for a fair comparison
-xlim = (-0.2, 1.0)
-y_max = all_results_df.nlog10_p.max()
-ylim = (0, y_max+3)
+plu.plot_volcano_baseline(all_results_df,
+                          axarr,
+                          gene_set_map,
+                          SIG_ALPHA,
+                          verbose=True)
 
-# function to add gene labels to points
-def label_points(x, y, gene, ax):
-    text_labels = []
-    a = pd.DataFrame({'x': x, 'y': y, 'gene': gene})
-    for i, point in a.iterrows():
-        if point['y'] > -np.log10(SIG_ALPHA / 1000):
-            text_labels.append(
-                ax.text(point['x'], point['y'], str(point['gene']))
-            )
-    return text_labels
-
-# plot mutation prediction from expression, in a volcano-like plot
-for ix, gene_set in enumerate(sorted(all_results_df.gene_set.unique())):
-    ax = axarr[ix]
-    data_results_df = all_results_df[all_results_df.gene_set == gene_set]
-    sns.scatterplot(data=data_results_df, x='delta_mean', y='nlog10_p', hue='reject_null',
-                    hue_order=[False, True], ax=ax, legend=(ix == 0))
-    # add vertical line at 0
-    ax.axvline(x=0, linestyle='--', linewidth=1.25, color='black')
-    # add horizontal line at statistical significance threshold
-    l = ax.axhline(y=-np.log10(SIG_ALPHA), linestyle='--', linewidth=1.25)
-    # label horizontal line with significance threshold
-    # (matplotlib makes this fairly difficult, sadly)
-    ax.text(0.9, -np.log10(SIG_ALPHA)+0.01,
-            r'$\mathbf{{\alpha = {}}}$'.format(SIG_ALPHA),
-            va='center', ha='center', color=l.get_color(),
-            backgroundcolor=ax.get_facecolor())
-    ax.set_xlabel('AUPR(signal) - AUPR(shuffled)', size=14)
-    ax.set_ylabel(r'$-\log_{10}($adjusted $p$-value$)$', size=14)
-    ax.set_xlim(xlim)
-    ax.set_ylim(ylim)
-    if ix == 0:
-        ax.legend(title=r'Reject $H_0$', loc='upper left', fontsize=14, title_fontsize=14)
-    ax.set_title(r'Mutation prediction, {} genes'.format(gene_set_map[gene_set]),
-                 size=15)
-
-    # label genes and adjust text to not overlap
-    # automatic alignment isn't perfect, can align by hand in inkscape if necessary
-    text_labels = label_points(data_results_df['delta_mean'],
-                               data_results_df['nlog10_p'],
-                               data_results_df.gene,
-                               ax)
-    
-    adjust_text(text_labels,
-                ax=ax, 
-                expand_text=(1., 1.),
-                lim=5)
-    
-    print('{}: {}/{} ({:.4f})'.format(
-        gene_set,
-        np.count_nonzero(data_results_df.reject_null),
-        data_results_df.shape[0],
-        np.count_nonzero(data_results_df.reject_null) / data_results_df.shape[0]
-    ))
-    
-    
 if SAVE_FIGS:
     images_dir = Path(cfg.images_dirs['mutation'])
     images_dir.mkdir(exist_ok=True)
@@ -221,7 +155,7 @@ sns.set_style('whitegrid')
 sns.set_palette('Set2')
 fig, axarr = plt.subplots(1, 1)
 
-all_results_df.replace({'gene_set': gene_set_map}, inplace=True)
+all_results_df.rename(columns={'training_data': 'gene_set'}, inplace=True)
 
 # plot mean performance over all genes in Vogelstein dataset
 ax = axarr
