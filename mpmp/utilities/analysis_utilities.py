@@ -567,7 +567,25 @@ def compare_all_data_types(results_df,
                            filter_genes=True,
                            identifier='identifier',
                            metric='aupr'):
-    """Run compare_results for each data type + assemble into dataframe"""
+    """Run compare_results for each data type + assemble into dataframe.
+
+    Returns a dataframe with mean difference and statistical testing results
+    for each gene in each data type, typically aggregated across multiple
+    train/test folds and random seeds.
+
+    Arguments
+    ---------
+    results_df (pd.DataFrame): dataframe with unprocessed results
+    sig_alpha (float): significance testing threshold
+    filter_genes (bool): whether to filter genes that are not present
+                         in all data types or not
+    identifier (str): name of distinguishing identifier (usually gene)
+    metric (str): performance metric
+
+    Returns
+    -------
+    all_results_df (pd.DataFrame): dataframe with processed results
+    """
     all_results_df = pd.DataFrame()
     for training_data in results_df.training_data.unique():
         data_df = results_df[results_df.training_data == training_data].copy()
