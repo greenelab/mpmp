@@ -226,3 +226,28 @@ if SAVE_FIGS:
     plt.savefig(images_dir / 'all_boxes.png',
                 dpi=300, bbox_inches='tight')
 
+
+# In[13]:
+
+
+all_results_df.head()
+
+
+# In[14]:
+
+
+heatmap_df = (all_results_df
+    .pivot(index='training_data', columns='gene', values='delta_mean')
+)
+heatmap_df.iloc[:, :5]
+
+
+# In[15]:
+
+
+sns.set({'figure.figsize': (28, 6)})
+sns.set_context('notebook', font_scale=1.5)
+
+ax = plu.plot_heatmap(heatmap_df, all_results_df)
+plt.title('Performance by data type for Vogelstein et al. genes, all data types', pad=15)
+
