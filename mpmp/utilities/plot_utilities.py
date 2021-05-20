@@ -22,10 +22,6 @@ def plot_volcano_baseline(results_df,
     axarr (array of Axes): axes array from plt.subplots
     training_data_map (dict): maps internal data type names to display names
     sig_alpha (float): significance testing threshold
-
-    Returns
-    -------
-    axarr (array of Axes): axes with plots
     """
 
     # set axis limits if not provided
@@ -93,8 +89,6 @@ def plot_volcano_baseline(results_df,
                 data_results_df.shape[0]
             ))
 
-    return axarr
-
 
 def plot_volcano_comparison(results_df,
                             axarr,
@@ -111,10 +105,6 @@ def plot_volcano_comparison(results_df,
     axarr (array of Axes): axes array from plt.subplots
     training_data_map (dict): maps internal data type names to display names
     sig_alpha (float): significance testing threshold
-
-    Returns
-    -------
-    axarr (array of Axes): axes with plots
     """
 
     # set axis limits if not provided
@@ -199,8 +189,6 @@ def plot_volcano_comparison(results_df,
                                      np.count_nonzero(compare_results_df.reject_null),
                                      compare_results_df.shape[0]))
 
-    return axarr
-
 
 def plot_boxes(results_df,
                axarr,
@@ -214,10 +202,6 @@ def plot_boxes(results_df,
     results_df (pd.DataFrame): dataframe with processed results/p-values
     axarr (array of Axes): axes array from plt.subplots
     training_data_map (dict): maps internal data type names to display names
-
-    Returns
-    -------
-    axarr (array of Axes): axes with plots
     """
 
     # plot mean performance over all genes in Vogelstein dataset

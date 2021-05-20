@@ -132,11 +132,11 @@ gene_set_map = {
 }
 all_results_df.training_data.replace(to_replace=gene_set_map, inplace=True)
 
-axarr = plu.plot_volcano_baseline(all_results_df,
-                                  axarr,
-                                  gene_set_map,
-                                  SIG_ALPHA,
-                                  verbose=True)
+plu.plot_volcano_baseline(all_results_df,
+                          axarr,
+                          gene_set_map,
+                          SIG_ALPHA,
+                          verbose=True)
 
 if SAVE_FIGS:
     images_dir = Path(cfg.images_dirs['mutation'])
