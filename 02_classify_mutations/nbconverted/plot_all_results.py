@@ -35,7 +35,7 @@ results_dir = Path(cfg.results_dirs['mutation'],
 SIG_ALPHA = 0.001
 
 # if True, save figures to ./images directory
-SAVE_FIGS = False
+SAVE_FIGS = True
 
 
 # In[3]:
@@ -221,7 +221,6 @@ plu.plot_boxes(all_results_df,
 
 if SAVE_FIGS:
     images_dir = Path(cfg.images_dirs['mutation'])
-    images_dir.mkdir(exist_ok=True)
     plt.savefig(images_dir / 'all_boxes.svg', bbox_inches='tight')
     plt.savefig(images_dir / 'all_boxes.png',
                 dpi=300, bbox_inches='tight')
@@ -230,19 +229,13 @@ if SAVE_FIGS:
 # In[13]:
 
 
-all_results_df.head()
-
-
-# In[14]:
-
-
 heatmap_df = (all_results_df
     .pivot(index='training_data', columns='gene', values='delta_mean')
 )
 heatmap_df.iloc[:, :5]
 
 
-# In[15]:
+# In[14]:
 
 
 sns.set({'figure.figsize': (28, 6)})
@@ -250,4 +243,10 @@ sns.set_context('notebook', font_scale=1.5)
 
 ax = plu.plot_heatmap(heatmap_df, all_results_df)
 plt.title('Performance by data type for Vogelstein et al. genes, all data types', pad=15)
+
+if SAVE_FIGS:
+    images_dir = Path(cfg.images_dirs['mutation'])
+    plt.savefig(images_dir / 'all_heatmap.svg', bbox_inches='tight')
+    plt.savefig(images_dir / 'all_heatmap.png',
+                dpi=300, bbox_inches='tight')
 

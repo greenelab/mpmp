@@ -139,7 +139,6 @@ plu.plot_volcano_comparison(results_df,
 
 if SAVE_FIGS:
     images_dir = Path(cfg.images_dirs['mutation'])
-    images_dir.mkdir(exist_ok=True)
     plt.savefig(images_dir / 'methylation_comparison.svg', bbox_inches='tight')
     plt.savefig(images_dir / 'methylation_comparison.png',
                 dpi=300, bbox_inches='tight')
@@ -160,7 +159,6 @@ plu.plot_boxes(all_results_df,
 
 if SAVE_FIGS:
     images_dir = Path(cfg.images_dirs['mutation'])
-    images_dir.mkdir(exist_ok=True)
     plt.savefig(images_dir / 'methylation_best_boxes.svg', bbox_inches='tight')
     plt.savefig(images_dir / 'methylation_best_boxes.png',
                 dpi=300, bbox_inches='tight')
@@ -183,4 +181,10 @@ sns.set_context('notebook', font_scale=1.5)
 
 ax = plu.plot_heatmap(heatmap_df, all_results_df)
 plt.title('Performance by data type for Vogelstein et al. genes, expression vs. methylation', pad=15)
+
+if SAVE_FIGS:
+    images_dir = Path(cfg.images_dirs['mutation'])
+    plt.savefig(images_dir / 'methylation_heatmap.svg', bbox_inches='tight')
+    plt.savefig(images_dir / 'methylation_heatmap.png',
+                dpi=300, bbox_inches='tight')
 

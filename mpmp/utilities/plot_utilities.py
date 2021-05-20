@@ -240,7 +240,14 @@ def plot_boxes(results_df,
 
 
 def plot_heatmap(heatmap_df, results_df):
-    """Plot heatmap comparing data types for each gene."""
+    """Plot heatmap comparing data types for each gene.
+
+    Arguments
+    ---------
+    heatmap_df (pd.DataFrame): dataframe with rows as data types, columns as
+                               genes, entries are mean AUPR differences
+    results_df (pd.DataFrame): dataframe with processed results/p-values
+    """
 
     ax = sns.heatmap(heatmap_df, cmap='Greens',
                      cbar_kws={'aspect': 10, 'fraction': 0.1, 'pad': 0.01})
@@ -278,8 +285,6 @@ def plot_heatmap(heatmap_df, results_df):
     plt.xlabel('Gene name')
     plt.ylabel('Training data type')
     plt.tight_layout()
-
-    return ax
 
 
 def _check_gene_data_type(results_df, gene, data_type):
