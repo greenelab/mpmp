@@ -169,6 +169,7 @@ if SAVE_FIGS:
 
 heatmap_df = (all_results_df
     .pivot(index='training_data', columns='gene', values='delta_mean')
+    .reindex(training_data_map.values())
 )
 heatmap_df.iloc[:, :5]
 
