@@ -613,3 +613,57 @@ def compare_all_data_types(results_df,
     all_results_df['nlog10_p'] = -np.log10(all_results_df.corr_pval)
     return all_results_df
 
+def compare_data_types_and_dims(results_df,
+                                sig_alpha,
+                                filter_genes=True,
+                                identifier='identifier',
+                                metric='aupr'):
+    """Run compare_results for each data type and dimension.
+
+    Returns a dataframe with mean difference and statistical testing results
+    for each gene in each data type, typically aggregated across multiple
+    train/test folds and random seeds.
+
+    Arguments
+    ---------
+    results_df (pd.DataFrame): dataframe with unprocessed results
+    sig_alpha (float): significance testing threshold
+    filter_genes (bool): whether to filter genes that are not present
+                         in all data types or not
+    identifier (str): name of distinguishing identifier (usually gene)
+    metric (str): performance metric
+
+    Returns
+    -------
+    all_results_df (pd.DataFrame): dataframe with processed results
+    """
+    all_results_df = pd.DataFrame()
+    for training_data in results_df.training_data.unique():
+        for n_dims in results_df.n_dims.unique():
+            data_df = results_df[(results_df.training_data == training_data) &
+                                 (results_df.n_dims == n_dims)].copy()
+            # sorting is necessary for paired/repeated measures statistical tests
+            data_df.sort_values(by=['seed', 'fold'], inplace=True)
+            data_results_df = compare_results(data_df,
+                                              identifier=identifier,
+                                              metric=metric,
+                                              correction=True,
+                                              correction_method='fdr_bh',
+                                              correction_alpha=sig_alpha,
+                                              verbose=True)
+            data_results_df['training_data'] = training_data
+            data_results_df['n_dims'] = n_dims
+            data_results_df.rename(columns={'identifier': 'gene'}, inplace=True)
+            all_results_df = pd.concat((all_results_df, data_results_df))
+
+    # now filter out genes that don't have comparisons for all data types
+    if filter_genes:
+        data_type_counts = all_results_df.groupby('gene').count().training_data
+        valid_genes = data_type_counts[data_type_counts == len(results_df.training_data.unique())].index
+        all_results_df = all_results_df[
+            all_results_df.gene.isin(valid_genes)
+        ].copy()
+
+    all_results_df['nlog10_p'] = -np.log10(all_results_df.corr_pval)
+    return all_results_df
+
