@@ -23,16 +23,15 @@ import mpmp.utilities.data_utilities as du
 
 
 # this is the number of valid genes in the Vogelstein gene set
-NUM_GENES = 107
+NUM_GENES = 85
 
 # sample random genes from set of genes with every gene with >= NUM_CANCERS
 # valid cancer types
 #
 # if we sampled them randomly from all genes, it's likely that many of them
 # would end up with no valid cancer types (i.e. not enough mutations to train
-# a classifier), so we add this criterion to make sure they're reasonably
-# frequently mutated
-NUM_CANCERS = 2
+# a classifier), so we add this criterion to make sure they have at least one
+NUM_CANCERS = 1
 
 
 # ### Load mutation and sample/cancer type info
@@ -41,18 +40,35 @@ NUM_CANCERS = 2
 
 
 sample_info_df = du.load_sample_info('expression', verbose=True)
-mutation_df = du.load_pancancer_data(verbose=True)[1]
+pancancer_data = du.load_pancancer_data(verbose=True)
+mutation_df = pancancer_data[1]
+mut_burden_df = pancancer_data[4]
 print(sample_info_df.shape)
 print(mutation_df.shape)
+print(mut_burden_df.shape)
 
 
 # In[4]:
 
 
+# merge sample info and mutation burden info
+hyper_filter = 5
+
+print(mutation_df.shape)
+
 mutations_df = (mutation_df
     .merge(sample_info_df, how='inner', left_index=True, right_index=True)
-    .drop(columns=['sample_type', 'id_for_stratification'])
+    .merge(mut_burden_df, how='inner', left_index=True, right_index=True)
 )
+
+# then filter to remove hyper-mutated samples
+burden_filter = mutations_df['log10_mut'] < hyper_filter * mutations_df['log10_mut'].std()
+mutations_df = mutations_df.loc[burden_filter, :]
+
+# and get rid of unnecessary columns
+mutations_df.drop(columns=['sample_type', 'id_for_stratification', 'log10_mut'],
+                  inplace=True)
+
 print(mutations_df.shape)
 
 
@@ -84,7 +100,7 @@ valid_df.iloc[:5, :5]
 
 # ### Sample randomly from set of all valid genes
 
-# In[8]:
+# In[7]:
 
 
 valid_genes = valid_df.sum()[valid_df.sum() >= NUM_CANCERS]
@@ -92,15 +108,15 @@ print(valid_genes.head(10))
 print(len(valid_genes))
 
 
-# In[9]:
+# In[8]:
 
 
 # sample randomly from valid genes and write to dataframe
 sampled_genes = valid_genes.sample(n=NUM_GENES, random_state=cfg.default_seed)
-print(sampled_genes.head())
+print(sampled_genes.sort_values(ascending=False).head(20))
 
 
-# In[11]:
+# In[9]:
 
 
 # get oncogene/TSG status from Vogelstein gene list
@@ -125,7 +141,7 @@ random_df = pd.DataFrame({
 random_df.head()
 
 
-# In[12]:
+# In[10]:
 
 
 random_df.to_csv(cfg.random_genes, sep='\t')
@@ -135,14 +151,14 @@ random_df.to_csv(cfg.random_genes, sep='\t')
 # 
 # Same methods as in https://github.com/greenelab/BioBombe/blob/master/9.tcga-classify/top-50-pancanatlas-mutations.ipynb (but we want more than 50 genes, since we want a gene set of the same size as Vogelstein)
 
-# In[13]:
+# In[11]:
 
 
 mutation_count_df = mutation_df.sum().sort_values(ascending=False)
 mutation_count_df.head()
 
 
-# In[14]:
+# In[12]:
 
 
 top_genes = mutation_count_df[:NUM_GENES]
@@ -154,7 +170,7 @@ top_df = pd.DataFrame({
 top_df.head()
 
 
-# In[15]:
+# In[13]:
 
 
 top_df.to_csv(cfg.top_genes, sep='\t')
