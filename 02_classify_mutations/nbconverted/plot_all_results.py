@@ -122,13 +122,13 @@ plu.plot_volcano_baseline(all_results_df,
 # In[8]:
 
 
-sns.set({'figure.figsize': (18, 12)})
+sns.set({'figure.figsize': (22, 5)})
 sns.set_style('whitegrid')
 
-fig, axarr = plt.subplots(2, 2)
+fig, axarr = plt.subplots(1, 3)
 
 # plot mutation prediction from expression, in a volcano-like plot
-datasets = ['gene expression', 'RPPA', 'microRNA', 'mutational signatures']
+datasets = ['RPPA', 'microRNA', 'mutational signatures']
 filtered_data_map = {k: v for k, v in training_data_map.items() if v in datasets}
 
 plu.plot_volcano_baseline(all_results_df,
@@ -194,7 +194,7 @@ if SAVE_FIGS:
 # In[11]:
 
 
-sns.set({'figure.figsize': (8, 9)})
+sns.set({'figure.figsize': (12, 9)})
 sns.set_style('whitegrid')
 
 fig, axarr = plt.subplots(2, 1)
@@ -204,6 +204,13 @@ plu.plot_boxes(all_results_df,
                training_data_map,
                orientation='v',
                verbose=True)
+
+if SAVE_FIGS:
+    images_dir = Path(cfg.images_dirs['mutation'])
+    images_dir.mkdir(exist_ok=True)
+    plt.savefig(images_dir / 'all_boxes.svg', bbox_inches='tight')
+    plt.savefig(images_dir / 'all_boxes.png',
+                dpi=300, bbox_inches='tight')
 
 
 # In[12]:

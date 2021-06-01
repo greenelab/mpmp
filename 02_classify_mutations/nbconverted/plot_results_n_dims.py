@@ -27,10 +27,7 @@ import mpmp.utilities.analysis_utilities as au
 
 
 # set results directories
-raw_exp_results_dir = Path(cfg.results_dirs['mutation'], 'compressed_results', 'gene').resolve()
-raw_27k_results_dir = Path(cfg.results_dirs['mutation'], 'bmiq_results_me_control', 'gene').resolve()
-raw_450k_results_dir = Path(cfg.results_dirs['mutation'], 'vogelstein_450k_mad100k', 'gene').resolve()
-compressed_results_dir = Path(cfg.results_dirs['mutation'], 'compressed_results', 'gene').resolve()
+results_dir = Path(cfg.results_dirs['mutation'], 'methylation_results_new', 'gene').resolve()
 
 # set significance cutoff after FDR correction
 SIG_ALPHA = 0.001
@@ -43,15 +40,7 @@ SAVE_FIGS = True
 
 
 # load raw data
-raw_results_df = pd.concat((
-    au.load_stratified_prediction_results(raw_exp_results_dir, 'gene'),
-    au.load_stratified_prediction_results(raw_27k_results_dir, 'gene'),
-    au.load_stratified_prediction_results(raw_450k_results_dir, 'gene')
-))
-
-# we've only run 1 seed for raw 450K methylation data, so just use 1 seed
-# for other data types, for now
-raw_results_df = raw_results_df[raw_results_df.seed == 42].copy()
+raw_results_df = au.load_stratified_prediction_results(results_dir, 'gene')
 
 print(raw_results_df.shape)
 print(raw_results_df.seed.unique())
@@ -63,11 +52,11 @@ raw_results_df.head()
 
 
 # load compressed data
-compressed_results_df = au.load_compressed_prediction_results(compressed_results_dir, 'gene',
-                                                              old_filenames=True)
-compressed_results_df = compressed_results_df[compressed_results_df.seed == 42].copy()
+compressed_results_df = au.load_compressed_prediction_results(results_dir, 'gene')
+
 print(compressed_results_df.shape)
 print(compressed_results_df.seed.unique())
+print(compressed_results_df.n_dims.unique())
 print(compressed_results_df.training_data.unique())
 compressed_results_df.head()
 
@@ -165,56 +154,53 @@ plt.subplots_adjust(top=0.94)
 # In[6]:
 
 
-raw_compare_df = pd.DataFrame()
-for train_data in raw_results_df.training_data.unique():
-    raw_train_df = (
-        raw_results_df[raw_results_df.training_data == train_data]
-            .drop(columns=['training_data'])
-    )
-    raw_train_df.sort_values(by=['seed', 'fold'], inplace=True)
-    raw_train_compare_df = au.compare_results(raw_train_df,
-                                              identifier='identifier',
-                                              metric='aupr',
-                                              correction=True,
-                                              correction_method='fdr_bh',
-                                              correction_alpha=SIG_ALPHA,
-                                              verbose=False)
-    raw_train_compare_df['training_data'] = train_data
-    raw_train_compare_df.rename(columns={'identifier': 'gene'}, inplace=True)
-    raw_compare_df = pd.concat((raw_compare_df, raw_train_compare_df))
-raw_compare_df.sort_values(by=['training_data', 'p_value'], inplace=True)
+raw_compare_df = au.compare_all_data_types(raw_results_df,
+                                           SIG_ALPHA,
+                                           filter_genes=False,
+                                           compare_ind=True)
+
+raw_compare_df.sort_values(by=['training_data'], inplace=True)
 raw_compare_df.head(5)
 
 
 # In[7]:
 
 
-cmp_compare_df = pd.DataFrame()
-for train_data in compressed_results_df.training_data.unique():
-    for n_dims in compressed_results_df.n_dims.unique():
-        cmp_train_df = (
-            compressed_results_df[(compressed_results_df.training_data == train_data) &
-                                  (compressed_results_df.n_dims == n_dims)]
-                .drop(columns=['training_data'])
-        )
-        cmp_train_df.sort_values(by=['seed', 'fold'], inplace=True)
-        cmp_train_compare_df = au.compare_results(cmp_train_df,
-                                                  identifier='identifier',
-                                                  metric='aupr',
-                                                  correction=True,
-                                                  correction_method='fdr_bh',
-                                                  correction_alpha=SIG_ALPHA,
-                                                  verbose=False)
-        cmp_train_compare_df['training_data'] = train_data
-        cmp_train_compare_df['n_dims'] = n_dims
-        cmp_train_compare_df.rename(columns={'identifier': 'gene'}, inplace=True)
-        cmp_compare_df = pd.concat((cmp_compare_df, cmp_train_compare_df))
-cmp_compare_df.sort_values(by=['training_data', 'n_dims', 'p_value'], inplace=True)
-cmp_compare_df.head(5)
+raw_compare_all_df = au.compare_all_data_types(raw_results_df,
+                                               SIG_ALPHA,
+                                               filter_genes=False)
+
+raw_compare_all_df.sort_values(by=['nlog10_p'], inplace=True)
+raw_compare_all_df.head(5)
 
 
 # In[8]:
 
+
+cmp_compare_df = au.compare_data_types_and_dims(compressed_results_df,
+                                                SIG_ALPHA,
+                                                filter_genes=False,
+                                                compare_ind=True)
+
+cmp_compare_df.sort_values(by=['training_data', 'n_dims'], inplace=True)
+cmp_compare_df.head(5)
+
+
+# In[9]:
+
+
+cmp_compare_all_df = au.compare_data_types_and_dims(compressed_results_df,
+                                                    SIG_ALPHA,
+                                                    filter_genes=False)
+
+cmp_compare_all_df.sort_values(by=['nlog10_p'], inplace=True)
+cmp_compare_all_df.head(5)
+
+
+# In[10]:
+
+
+from matplotlib.patches import Rectangle
 
 # look at some specific genes, we can do this using a line plot of 
 # performance over increasing number of PCs
@@ -228,23 +214,76 @@ for ix, gene in enumerate(genes):
     ax = axarr[ix // 3, ix % 3]
     cmp_gene_df = cmp_compare_df[cmp_compare_df.gene == gene].copy()
     cmp_gene_df.training_data.replace(to_replace=train_names, inplace=True)
-    g = sns.pointplot(data=cmp_gene_df, x='n_dims', y='delta_mean', hue='training_data', ax=ax, legend=False)
+    g = sns.pointplot(data=cmp_gene_df, x='n_dims', y='delta_aupr',
+                      hue='training_data', ax=ax, legend=False)
     if ix != 0:
         ax.get_legend().remove()
     else:
         ax.legend(title='Training data', fontsize=12, title_fontsize=12,
                   loc='lower left')
+        
     for color_ix, train_data in enumerate(raw_compare_df.training_data.unique()):
-        ax.axhline(y=raw_compare_df[(raw_compare_df.gene == gene) &
-                                    (raw_compare_df.training_data == train_data)].delta_mean.values[0],
-                   linestyle='--', linewidth=3,
-                   color=sns.color_palette()[color_ix])
+        raw_vals = raw_compare_df[
+            (raw_compare_df.gene == gene) &
+            (raw_compare_df.training_data == train_data)].delta_aupr.values
+        
+        # get mean and plot as dotted line
+        raw_mean = np.mean(raw_vals)
+        ax.axhline(y=raw_mean, linestyle='--', linewidth=3, color=sns.color_palette()[color_ix])
+        
+        # get bootstrapped 95% CI, using seaborn method
+        # plot as transparent shaded region
+        raw_ci = sns.utils.ci(
+            sns.algorithms.bootstrap(raw_vals,
+                                     func=np.mean,
+                                     n_boot=1000,
+                                     units=None,
+                                     seed=cfg.default_seed)
+        )
+        ax.axhspan(raw_ci[0], raw_ci[1], facecolor=sns.color_palette()[color_ix], alpha=0.3)
+        
+    def get_marker(p_val):
+        if p_val > 0.05:
+            return 0
+        elif p_val > 0.01:
+            return '$*$'
+        elif p_val > 0.001:
+            return '$**$'
+        else:
+            return '$***$'
+        
+    # add significance indicators
+    for x, n_dims in enumerate([100, 1000, 5000, 'raw']):
+        
+        if n_dims == 'raw':
+            p_vals = raw_compare_all_df[raw_compare_all_df.gene == gene]
+        else:
+            p_vals = cmp_compare_all_df[(cmp_compare_all_df.gene == gene) &
+                                        (cmp_compare_all_df.n_dims == n_dims)]
+            
+        for train_ix, train_data in enumerate(p_vals.training_data.unique()):
+            p_val = p_vals[p_vals.training_data == train_data].p_value.values[0]
+            marker = get_marker(p_val)
+            color = sns.color_palette()[train_ix]
+            
+            if marker != 0:
+                # adjust the raw significance marker so it's off to the right a bit
+                # put the other ones on top of the relevant n_dims
+                x_loc = (x - 0.5 if n_dims == 'raw' else x)
+                ax.scatter(x_loc, 0.6+(0.02*train_ix), marker=marker, color=color, s=300)
+                
+            # add a black rectangle around significance indicators
+            ax.add_patch(
+                Rectangle((x_loc-0.1, 0.5875), 0.2, 0.07,
+                          edgecolor='black', fill=True, facecolor='white',
+                          lw=1, zorder=0.6)
+            )
+        
     ax.set_title('{} mutation prediction, performance vs. PCA components'.format(gene), size=14)
     ax.set_xlabel('Number of PCA components', size=14)
     ax.set_ylabel('AUPR(signal) - AUPR(shuffled)', size=14)
     raw_gene_df = raw_compare_df[raw_compare_df.gene == gene]
-    # ax.set_ylim(-0.05, max(max(cmp_gene_df.delta_mean), max(raw_gene_df.delta_mean))+0.05)
-    ax.set_ylim(-0.05, 0.6)
+    ax.set_ylim(-0.05, 0.7)
     
 plt.tight_layout()
 
@@ -256,15 +295,20 @@ if SAVE_FIGS:
                 dpi=300, bbox_inches='tight')
 
 
-# In[9]:
+# In[11]:
 
 
-raw_compare_df['n_dims'] = 'raw'
+raw_compare_all_df['n_dims'] = 'raw'
 compare_df = (
-    pd.concat((raw_compare_df, cmp_compare_df))
+    pd.concat((raw_compare_all_df, cmp_compare_all_df))
       .sort_values(by=['training_data', 'n_dims'])
 )
 compare_df.training_data.replace(to_replace=train_names, inplace=True)
+compare_df.head()
+
+
+# In[12]:
+
 
 sns.set({'figure.figsize': (18, 12)})
 
@@ -306,7 +350,7 @@ ax.set_ylabel('AUPR(signal) - AUPR(shuffled)')
 ax.set_ylim(-0.2, max(compare_df.delta_mean + 0.05))
 
 
-# In[10]:
+# In[13]:
 
 
 # same plot but only the first row (box plots)
@@ -346,12 +390,3 @@ if SAVE_FIGS:
     plt.savefig(images_dir / 'methylation_compress_boxes.png',
                 dpi=300, bbox_inches='tight')
 
-
-# Takeaways:
-# 
-# * Generally, 450K methylation data seems to provide better predictive performance than 27K methylation data
-# * Generally, gene expression data seems to outperform 27K methylation as well
-# * Comparison between 450K methylation data and gene expression is less clear, but generally expression data seems to have a slight edge. Especially when filtering to significant genes, the average AUPR for the raw expression data is fairly clearly the best performer.
-# * We were expecting that there would be a few genes where methylation clearly outperformed expression (e.g. the IDH1 example), but that doesn't really seem to be the case. SETD1 is a possible exception, but the difference between methylation and expression isn't statistically significant (probably due to high variance in cross-validation results). On the other hand, there are a handful of genes where expression outperforms methylation clearly (e.g. ERBB2, EGFR, NF1).
-# 
-# Also, note that we're only currently using a single random seed here. For all the previous experiments we've run 2 replicates (2 random seeds) of 4-fold CV, so we should eventually do that here as well. The CV experiments for the raw 450k data take 3-4 days to run.

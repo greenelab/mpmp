@@ -39,6 +39,7 @@ data_map = {
     'me_27k': '27k methylation',
     'me_450k': '450k methylation',
     'rppa': 'RPPA',
+    'mirna': 'microRNA',
     'mut_sigs': 'mut sigs',
 }
 
@@ -111,7 +112,7 @@ def series_from_samples(samples, labels):
     return df['id']
 
 
-# In[24]:
+# In[8]:
 
 
 # probably stick with venn diagram here
@@ -128,7 +129,7 @@ plt.title('TCGA sample intersections, gene expression data', size=14)
 
 # ### Count overlap between gene expression, methylation, and mutation datasets
 
-# In[10]:
+# In[9]:
 
 
 sns.set_style('white')
@@ -136,6 +137,12 @@ labels = ['gene expression', 'mutation', '27k methylation', '450k methylation']
 samples = [sample_lists[l] for l in labels]
 
 upset_series = series_from_samples(samples, labels)
+upset_series[upset_series != 0].sort_values().head(20)
+
+
+# In[10]:
+
+
 subplots = up.plot(upset_series[upset_series != 0], element_size=60)
 plt.title('TCGA sample intersections, expression/methylation datasets', size=13)
 plt.ylabel('Intersection size', size=13)
@@ -158,10 +165,16 @@ if SAVE_FIGS:
 
 sns.set_style('white')
 labels = ['gene expression', 'mutation', '27k methylation', '450k methylation',
-          'RPPA', 'mut sigs']
+          'RPPA', 'microRNA', 'mut sigs']
 samples = [sample_lists[l] for l in labels]
 
 upset_series = series_from_samples(samples, labels)
+upset_series[upset_series >= 100].sort_values().head(20)
+
+
+# In[12]:
+
+
 subplots = up.plot(upset_series[upset_series >= 100], element_size=60)
 plt.title('TCGA sample intersections, all datasets', size=13)
 plt.ylabel('Intersection size', size=13)
@@ -180,7 +193,7 @@ if SAVE_FIGS:
 # 
 # The sample counts by themselves aren't that informative. More specifically, we want to know which cancer types are getting dropped when we take the overlap between data types. That is, are there certain cancer types that are or are not generally in the overlap, or are the samples we filter out roughly uniformly distributed between cancer types?
 
-# In[12]:
+# In[13]:
 
 
 # get sample info (sample IDs and cancer types) for each data modality
@@ -202,7 +215,7 @@ print(
 sample_info_dfs['expression'].head()
 
 
-# In[13]:
+# In[14]:
 
 
 # the goal here is to examine how the proportion of cancer types changes when we add
@@ -228,7 +241,7 @@ exp_mut_cancer_types = (sample_info_dfs['expression']
 diff_df = exp_cancer_types - exp_mut_cancer_types
 
 
-# In[14]:
+# In[15]:
 
 
 # check these are all in expression data (they should be)
@@ -263,7 +276,7 @@ print(diff_df.shape)
 diff_df.head(33)
 
 
-# In[15]:
+# In[16]:
 
 
 # make sure number of removed samples equals number of samples we started with
@@ -280,7 +293,7 @@ compare_df = pd.concat((
 assert (compare_df.expression.values == compare_df.other.values).all()
 
 
-# In[16]:
+# In[17]:
 
 
 def flip(items, ncol):
@@ -298,7 +311,7 @@ plt.title('Samples dropped when taking data type overlap, by cancer type')
 plt.ylabel('Sample count')
 
 
-# In[17]:
+# In[18]:
 
 
 # instead of plotting absolute number of each cancer type dropped at
@@ -308,7 +321,7 @@ diff_norm_df = diff_df / np.tile(diff_df.sum(axis=1).values, (diff_df.shape[1], 
 diff_norm_df.head()
 
 
-# In[18]:
+# In[19]:
 
 
 sns.set()
@@ -318,44 +331,4 @@ plt.legend(flip(h, 8), flip(l, 8), bbox_to_anchor=(-0.025, -0.55),
            loc='lower left', ncol=8, title='Cancer type')
 plt.title('Proportion of samples dropped when taking data type overlap, by cancer type')
 plt.ylabel('Proportion')
-
-
-# In[19]:
-
-
-# what happens when we add miRNA data?
-# get miRNA sample info
-from urllib.request import urlretrieve
-manifest_df = pd.read_csv(os.path.join(cfg.data_dir, 'manifest.tsv'),
-                          sep='\t', index_col=0)
-mirna_sample_id, mirna_sample_filename = manifest_df.loc['mirna_sample'].id, manifest_df.loc['mirna_sample'].filename
-
-url = 'http://api.gdc.cancer.gov/data/{}'.format(mirna_sample_id)
-mirna_sample_filepath = os.path.join(cfg.raw_data_dir, mirna_sample_filename)
-
-if not os.path.exists(mirna_sample_filepath):
-    urlretrieve(url, mirna_sample_filepath)
-else:
-    print('Downloaded data file already exists, skipping download')
-
-
-# In[20]:
-
-
-# plot how many additional samples would be lost if we added miRNA
-mirna_sample_df = pd.read_csv(mirna_sample_filepath, sep='\t', index_col=0)
-mirna_sample_df.index = mirna_sample_df.index.str.slice(start=0, stop=15)
-mirna_sample_df = mirna_sample_df.loc[~mirna_sample_df.index.duplicated(), :]
-
-print(mirna_sample_df.shape)
-mirna_sample_df.head()
-
-
-# In[21]:
-
-
-sns.set_style('white')
-venn({'miRNA': set(mirna_sample_df.index),
-      'other': cur_samples})
-plt.title('Sample overlap between miRNA and other data', size=14)
 
