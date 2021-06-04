@@ -126,8 +126,8 @@ sns.set_style('whitegrid')
 fig, axarr = plt.subplots(1, 3)
 
 gene_set_map = {
-    'top_50': 'most mutated',
     'random_50': 'random',
+    'top_50': 'most mutated',
     'vogelstein': 'Vogelstein et al.'
 }
 all_results_df.training_data.replace(to_replace=gene_set_map, inplace=True)
@@ -155,7 +155,10 @@ sns.set_style('whitegrid')
 sns.set_palette('Set2')
 fig, axarr = plt.subplots(1, 1)
 
-all_results_df.rename(columns={'training_data': 'gene_set'}, inplace=True)
+all_results_df = (all_results_df
+   .rename(columns={'training_data': 'gene_set'})
+   .sort_values(by='gene_set', ascending=False)
+)
 
 # plot mean performance over all genes in Vogelstein dataset
 ax = axarr

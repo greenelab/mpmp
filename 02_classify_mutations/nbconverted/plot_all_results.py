@@ -226,12 +226,6 @@ plu.plot_boxes(all_results_df,
                training_data_map,
                verbose=True)
 
-if SAVE_FIGS:
-    images_dir = Path(cfg.images_dirs['mutation'])
-    plt.savefig(images_dir / 'all_boxes.svg', bbox_inches='tight')
-    plt.savefig(images_dir / 'all_boxes.png',
-                dpi=300, bbox_inches='tight')
-
 
 # In[13]:
 
