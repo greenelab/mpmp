@@ -49,7 +49,7 @@ results_df = au.load_stratified_prediction_results(results_dir, 'gene')
 # the results in 02_classify_compressed/compressed_vs_raw_results.ipynb show that
 # performance is equal or slightly better for PCA compressed methylation data,
 # and it's much easier/faster to fit models on
-results_df = results_df[results_df.training_data.isin(['expression'])]
+results_df = results_df[results_df.training_data.isin(['expression'])].copy()
 
 print(results_df.shape)
 print(results_df.seed.unique())
@@ -63,8 +63,10 @@ results_df.head()
 # load compressed data for me_27k and me_450k
 compressed_results_df = au.load_compressed_prediction_results(results_dir, 'gene',
                                                               old_filenames=True)
-compressed_results_df = compressed_results_df[(compressed_results_df.training_data.isin(['me_27k', 'me_450k'])) &
-                                              (compressed_results_df.n_dims == 5000)]
+compressed_results_df = compressed_results_df[
+    (compressed_results_df.training_data.isin(['me_27k', 'me_450k'])) &
+    (compressed_results_df.n_dims == 5000)
+].copy()
 print(compressed_results_df.seed.unique())
 print(compressed_results_df.training_data.unique())
 print(compressed_results_df.n_dims.unique())
