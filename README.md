@@ -1,4 +1,4 @@
-# *mpmp*: *M*ultimodal *P*an-cancer *M*utation *P*rediction
+# *mpmp*: Multimodal Pan-cancer Mutation Prediction
 
 **Jake Crawford, Brock C. Christensen, Maria Chikina, Casey S. Greene**
 
@@ -7,12 +7,13 @@
 Manuscript (in progress) is located here: https://greenelab.github.io/mpmp-manuscript/
 
 In studies of cellular function in cancer, researchers are increasingly able to choose from many -omics assays as functional readouts.
-Choosing the correct readout for a given study can be difficult, and it is not always clear which layer of cellular function is most suitable to capture the relevant signal.
+Choosing the correct readout for a given study can be difficult, and it is not always clear which layer of cellular function is most suitable to capture signal that may be relevant.
 Here, we consider prediction of cancer mutation status (presence or absence) from functional -omics data in the TCGA Pan-Cancer Atlas as a representative problem.
+We focus on six different data types from TCGA -- RNA sequencing, DNA methylation arrays, reverse phase protein arrays (RPPA), microRNA, and somatic mutational signatures -- and compare their predictive ability for mutations in ~100 cancer-associated genes.
 
-Across a collection of cancer-associated genetic alterations (point mutations and CNVs), RNA sequencing and DNA methylation were the most effective predictors of alteration state.
-Surprisingly, we found that for most alterations, they were approximately equally effective predictors.
-The target gene was the primary driver of performance, rather than the data type, and there was little difference between the top data types for the majority of genes.
+Across our collection of cancer-associated genetic alterations (point mutations and CNVs), RNA sequencing and DNA methylation were the most effective predictors of alteration state.
+Surprisingly, we found that for most alterations, RNA-seq and DNA methylation were approximately equally effective predictors.
+Overall, the target gene was the primary driver of performance, rather than the data type, and there was little difference between the top data types for the majority of genes.
 We also found that combining data types into a single multi-omics model often provided little or no improvement in predictive ability over the best individual data type.
 Based on our results, for the design of studies focused on the functional outcomes of cancer mutations, we recommend focusing on gene expression or DNA methylation as first-line readouts.
 
@@ -31,9 +32,12 @@ mpmp
 |   `-- plot_all_results.ipynb: plot results of experiments comparing all data types (Figures 5 and 6)
 |-- 03_classify_cancer_type: cancer type classification scripts (not included in paper)
 |-- 04_predict_tumor_purity: tumor purity prediction scripts (not included in paper)
-`-- 05_classify_mutations_multimodal: multi-omics classification scripts (Figure 7 in paper)
-    |-- run_mutation_classification.py: predict mutation status from multiple data types
-    `-- plot_multimodal_results.ipynb: plot results of multi-omics experiments (Figure 7)
+|-- 05_classify_mutations_multimodal: multi-omics classification scripts (Figure 7 in paper)
+|   |-- run_mutation_classification.py: predict mutation status from multiple data types
+|   `-- plot_multimodal_results.ipynb: plot results of multi-omics experiments (Figure 7)
+|-- data: directory containing raw and preprocessed data
+|-- mpmp: modules for data loading and prediction
+`-- tests: unit tests and model regression tests
 ```
 
 ## Setup
