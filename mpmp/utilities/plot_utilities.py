@@ -34,10 +34,14 @@ def plot_volcano_baseline(results_df,
     # plot mutation prediction from expression, in a volcano-like plot
     for ix, training_data in enumerate(training_data_map.values()):
 
-        if axarr.ndim > 1:
-            ax = axarr[ix // axarr.shape[1], ix % axarr.shape[1]]
-        else:
-            ax = axarr[ix]
+        try:
+            if axarr.ndim > 1:
+                ax = axarr[ix // axarr.shape[1], ix % axarr.shape[1]]
+            else:
+                ax = axarr[ix]
+        except AttributeError:
+            # no axarr.ndim => only a single axis
+            ax = axarr
 
         data_results_df = results_df[results_df.training_data == training_data]
 
