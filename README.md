@@ -20,20 +20,20 @@ Based on our results, for the design of studies focused on the functional outcom
 
 ```
 mpmp
-|--00_download_data: scripts to download and preprocess TCGA data
-|--01_explore_data: exploratory data analysis (not included in paper)
-|--02_classify_mutations: single-omics classification scripts (Figures 2-6 in paper)
-|   |--run_mutation_classification.py: predict mutation status with raw features
-|   |--run_mutation_compressed.py: predict mutation status with compressed features
-|   |--plot_expression_gene_sets.ipynb: plot results of experiments comparing datasets (Figure 2)
-|   |--plot_methylation_results.ipynb: plot results of experiments comparing expression and methylation (Figure 3)
-|   |--plot_results_n_dims.ipynb: plot results of experiments comparing compression levels (Figure 4)
-|   `--plot_all_results.ipynb: plot results of experiments comparing all data types (Figures 5 and 6)
-|--03_classify_cancer_type: cancer type classification scripts (not included in paper)
-|--04_predict_tumor_purity: tumor purity prediction scripts (not included in paper)
-`--05_classify_mutations_multimodal: multi-omics classification scripts (Figure 7 in paper)
-    |--run_mutation_classification.py: predict mutation status from multiple data types
-    `--plot_multimodal_results.ipynb: plot results of multi-omics experiments (Figure 7)
+|-- 00_download_data: scripts to download and preprocess TCGA data
+|-- 01_explore_data: exploratory data analysis (not included in paper)
+|-- 02_classify_mutations: single-omics classification scripts (Figures 2-6 in paper)
+|   |-- run_mutation_classification.py: predict mutation status with raw features
+|   |-- run_mutation_compressed.py: predict mutation status with compressed features
+|   |-- plot_expression_gene_sets.ipynb: plot results of experiments comparing datasets (Figure 2)
+|   |-- plot_methylation_results.ipynb: plot results of experiments comparing expression and methylation (Figure 3)
+|   |-- plot_results_n_dims.ipynb: plot results of experiments comparing compression levels (Figure 4)
+|   `-- plot_all_results.ipynb: plot results of experiments comparing all data types (Figures 5 and 6)
+|-- 03_classify_cancer_type: cancer type classification scripts (not included in paper)
+|-- 04_predict_tumor_purity: tumor purity prediction scripts (not included in paper)
+`-- 05_classify_mutations_multimodal: multi-omics classification scripts (Figure 7 in paper)
+    |-- run_mutation_classification.py: predict mutation status from multiple data types
+    `-- plot_multimodal_results.ipynb: plot results of multi-omics experiments (Figure 7)
 ```
 
 ## Setup
