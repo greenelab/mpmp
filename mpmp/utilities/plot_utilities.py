@@ -313,7 +313,23 @@ def plot_heatmap(heatmap_df,
 
 
 def get_different_from_best(results_df, raw_results_df):
-    """TODO: document"""
+    """Identify best-performing data types for each gene.
+
+    As an alternative to just identifying the data type with the best average
+    performance, we want to also identify data types that are "statistically
+    equivalent" to the best performer. For each gene, we do the following:
+
+    1) get all data types that significantly outperform the permuted baseline
+       ("well-performing" data types)
+    2) do pairwise t-tests comparing the best performing data types with
+       other well-performing data types
+    3) apply an FDR correction for the total number of t-tests
+
+    In each case where the null hypothesis is accepted, we say both data types
+    are statistically equivalent. If the null is rejected, the relevant data
+    type does not provide statistically equivalent performance to the best
+    performing data type.
+    """
     from scipy.stats import ttest_rel
 
     comparison_pvals = []
