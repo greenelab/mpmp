@@ -243,7 +243,10 @@ def plot_boxes(results_df,
     plt.tight_layout()
 
 
-def plot_heatmap(heatmap_df, results_df):
+def plot_heatmap(heatmap_df,
+                 results_df,
+                 different_from_best=True,
+                 raw_results_df=None):
     """Plot heatmap comparing data types for each gene.
 
     Arguments
@@ -252,6 +255,8 @@ def plot_heatmap(heatmap_df, results_df):
                                genes, entries are mean AUPR differences
     results_df (pd.DataFrame): dataframe with processed results/p-values
     """
+    if different_from_best:
+        results_df = get_different_from_best(results_df, raw_results_df)
 
     ax = sns.heatmap(heatmap_df, cmap='Greens',
                      cbar_kws={'aspect': 10, 'fraction': 0.1, 'pad': 0.01})
@@ -268,33 +273,141 @@ def plot_heatmap(heatmap_df, results_df):
     cbar.outline.set_edgecolor('black')
     cbar.outline.set_linewidth(1)
 
+    ax = plt.gca()
+
     # add blue highlights to cells that are significant over baseline
     # add red highlights to cells that are significant and "best" predictor for that gene
-    ax = plt.gca()
-    for gene_ix, gene in enumerate(heatmap_df.columns):
-        best_data_type = heatmap_df.loc[:, gene].idxmax()
-        for data_ix, data_type in enumerate(heatmap_df.index):
-            if (best_data_type == data_type) and (
-                _check_gene_data_type(results_df, gene, data_type)):
-                ax.add_patch(
-                    Rectangle((gene_ix, data_ix), 1, 1, fill=False,
-                              edgecolor='red', lw=3, zorder=1.5)
-                )
-            elif _check_gene_data_type(results_df, gene, data_type):
-                ax.add_patch(
-                    Rectangle((gene_ix, data_ix), 1, 1, fill=False,
-                              edgecolor='blue', lw=3)
-                )
+    if different_from_best:
+        for gene_ix, gene in enumerate(heatmap_df.columns):
+            for data_ix, data_type in enumerate(heatmap_df.index):
+                if (_check_gene_data_type(results_df, gene, data_type) and
+                    _check_equal_to_best(results_df, gene, data_type)):
+                    ax.add_patch(
+                        Rectangle((gene_ix, data_ix), 1, 1, fill=False,
+                                  edgecolor='red', lw=3, zorder=1.5)
+                    )
+                elif _check_gene_data_type(results_df, gene, data_type):
+                    ax.add_patch(
+                        Rectangle((gene_ix, data_ix), 1, 1, fill=False,
+                                  edgecolor='blue', lw=3)
+                    )
+    else:
+        for gene_ix, gene in enumerate(heatmap_df.columns):
+            best_data_type = heatmap_df.loc[:, gene].idxmax()
+            for data_ix, data_type in enumerate(heatmap_df.index):
+                if (best_data_type == data_type) and (
+                    _check_gene_data_type(results_df, gene, data_type)):
+                    ax.add_patch(
+                        Rectangle((gene_ix, data_ix), 1, 1, fill=False,
+                                  edgecolor='red', lw=3, zorder=1.5)
+                    )
+                elif _check_gene_data_type(results_df, gene, data_type):
+                    ax.add_patch(
+                        Rectangle((gene_ix, data_ix), 1, 1, fill=False,
+                                  edgecolor='blue', lw=3)
+                    )
 
     plt.xlabel('Gene name')
     plt.ylabel('Training data type')
     plt.tight_layout()
 
 
+def get_different_from_best(results_df, raw_results_df):
+    """TODO: document"""
+    from scipy.stats import ttest_rel
+
+    comparison_pvals = []
+    for identifier in results_df.gene.unique():
+        # compare best with other data types that are significant from
+        # baseline, using pairwise t-tests
+        # null hypothesis = each pair of results distributions is the same
+
+        # get best data type
+        best_data_ix = (
+            results_df[results_df.gene == identifier]
+              .loc[:, 'delta_mean']
+              .idxmax()
+        )
+        best_data_type = results_df.iloc[best_data_ix, :].training_data
+
+        # get other significant data types
+        other_data_types = (
+            results_df[(results_df.gene == identifier) &
+                       (results_df.training_data != best_data_type) &
+                       (results_df.reject_null)]
+        )['training_data'].values
+
+        best_data_dist = (
+            raw_results_df[(raw_results_df.identifier == identifier) &
+                           (raw_results_df.training_data == best_data_type) &
+                           (raw_results_df.signal == 'signal') &
+                           (raw_results_df.data_type == 'test')]
+        ).sort_values(by=['seed', 'fold'])['aupr'].values
+
+        if len(other_data_types) == 0:
+            continue
+
+        for other_data_type in other_data_types:
+            # do pairwise t-tests
+            other_data_dist = (
+                raw_results_df[(raw_results_df.identifier == identifier) &
+                               (raw_results_df.training_data == other_data_type) &
+                               (raw_results_df.signal == 'signal') &
+                               (raw_results_df.data_type == 'test')]
+            ).sort_values(by=['seed', 'fold'])['aupr'].values
+
+            p_value = ttest_rel(best_data_dist, other_data_dist)[1]
+
+            best_id = '{}, {}'.format(identifier, best_data_type)
+            other_id = '{}, {}'.format(identifier, other_data_type)
+
+            comparison_pvals.append([identifier, best_data_type,
+                                     other_data_type, p_value])
+
+    comparison_df = pd.DataFrame(
+        comparison_pvals,
+        columns=['gene', 'best_data_type', 'other_data_type', 'p_value']
+    )
+
+    # apply multiple testing correction and identify significant similarities
+    from statsmodels.stats.multitest import multipletests
+    corr = multipletests(comparison_df['p_value'],
+                         alpha=0.05,
+                         method='fdr_bh')
+    comparison_df = comparison_df.assign(corr_pval=corr[1],
+                                         reject_null=corr[0])
+
+    # add column to results_df for statistically equal to best
+    equal_to_best = []
+    for _, vals in results_df.iterrows():
+        if not vals['reject_null']:
+            equal_to_best.append(False)
+        else:
+            comp_gene_df = comparison_df[comparison_df.gene == vals['gene']]
+            if vals['training_data'] in comp_gene_df.best_data_type.values:
+                equal_to_best.append(True)
+            elif vals['training_data'] in comp_gene_df.other_data_type.values:
+                equal_to_best.append(
+                    comp_gene_df[comp_gene_df.other_data_type == vals['training_data']]
+                      .reject_null.values[0]
+                )
+            else:
+                # this happens when the data type is the only significant one
+                equal_to_best.append(True)
+
+    results_df = results_df.assign(equal_to_best=equal_to_best)
+    return results_df
+
+
 def _check_gene_data_type(results_df, gene, data_type):
     return results_df[
         (results_df.gene == gene) &
         (results_df.training_data == data_type)].reject_null.values[0]
+
+def _check_equal_to_best(results_df, gene, data_type):
+    return results_df[
+        (results_df.gene == gene) &
+        (results_df.training_data == data_type)].equal_to_best.values[0]
 
 
 def _label_points(x, y, labels, ax, sig_alpha):
