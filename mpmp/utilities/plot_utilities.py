@@ -13,7 +13,8 @@ def plot_volcano_baseline(results_df,
                           sig_alpha,
                           xlim=None,
                           ylim=None,
-                          verbose=False):
+                          verbose=False,
+                          color_overlap=False):
     """Make a scatter plot comparing classifier results to shuffled baseline.
 
     Arguments
@@ -47,6 +48,13 @@ def plot_volcano_baseline(results_df,
 
         sns.scatterplot(data=data_results_df, x='delta_mean', y='nlog10_p', hue='reject_null',
                         hue_order=[False, True], ax=ax, legend=(ix == 0))
+
+        if color_overlap:
+            overlap_genes = _get_overlap_genes(results_df,
+                                               training_data)
+            overlap_df = data_results_df[data_results_df.gene.isin(overlap_genes)]
+            sns.scatterplot(data=overlap_df, x='delta_mean', y='nlog10_p',
+                            color='red', ax=ax, legend=False)
 
         # add vertical line at 0
         ax.axvline(x=0, linestyle='--', linewidth=1.25, color='black')
@@ -451,3 +459,25 @@ def _label_points_compare(x, y, labels, ax, sig_alpha):
             )
     return text_labels
 
+
+def _get_overlap_genes(results_df, gene_set, reference='Vogelstein et al.'):
+    # start with Vogelstein genes
+    vogelstein_genes = set(
+        results_df[results_df.training_data == reference]
+          .gene.unique()
+    )
+    if gene_set == reference:
+        # plot genes that are in vogelstein AND either of other datasets
+        other_genes = set(
+            results_df[results_df.training_data != reference]
+              .gene.unique()
+        )
+        overlap_genes = vogelstein_genes.intersection(other_genes)
+    else:
+        # plot genes that are in this dataset and vogelstein
+        other_genes = set(
+            results_df[results_df.training_data == gene_set]
+              .gene.unique()
+        )
+        overlap_genes = vogelstein_genes.intersection(other_genes)
+    return overlap_genes
