@@ -223,7 +223,7 @@ sample_info_dfs['expression'].head()
 
 # here, we specify these manually since the order matters
 # (i.e. order in data_types => order in which new data is "added")
-data_types = ['expression', 'me_27k', 'me_450k', 'mut_sigs', 'rppa']
+data_types = ['expression', 'me_27k', 'me_450k', 'mut_sigs', 'mirna', 'rppa']
 
 exp_cancer_types = (sample_info_dfs['expression']
     .groupby('cancer_type')
@@ -331,4 +331,11 @@ plt.legend(flip(h, 8), flip(l, 8), bbox_to_anchor=(-0.025, -0.55),
            loc='lower left', ncol=8, title='Cancer type')
 plt.title('Proportion of samples dropped when taking data type overlap, by cancer type')
 plt.ylabel('Proportion')
+
+if SAVE_FIGS:
+    images_dir = Path(cfg.images_dirs['data'])
+    images_dir.mkdir(exist_ok=True)
+    plt.savefig(images_dir / 'cancer_type_proportions.svg', bbox_inches='tight')
+    plt.savefig(images_dir / 'cancer_type_proportions.png',
+                dpi=300, bbox_inches='tight')
 

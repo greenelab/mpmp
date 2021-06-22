@@ -27,18 +27,25 @@ import mpmp.utilities.analysis_utilities as au
 # In[2]:
 
 
-# set results directory
-results_dir = Path(
-    # cfg.results_dirs['multimodal'],
-    # 'pilot_results',
-    '../04_classify_mutations_multimodal',
-    'results',
-    'pilot_results_all_feats',
-    'gene'
-).resolve()
-
 # if True, save figures to ./images directory
 SAVE_FIGS = True
+
+# if True, use raw feature results, else use compressed features
+RAW_FEATS = True
+
+# set results directory
+if RAW_FEATS:
+    results_dir = Path(
+        cfg.results_dirs['multimodal'],
+        'pilot_results_all_feats',
+        'gene'
+    ).resolve()
+else:
+    results_dir = Path(
+        cfg.results_dirs['multimodal'],
+        'pilot_results_all_compressed',
+        'gene'
+    ).resolve()
 
 
 # ### Compare raw results (signal and shuffled)
@@ -105,104 +112,67 @@ plt.legend(handles=handles, loc='lower right')
 
 
 # get results from unimodal prediction (individual data types) to compare with
-# these are spread across 3 different results directories
-# this is such a mess, I really need to clean up the results directories eventually
+if not RAW_FEATS:
+    unimodal_results_dir = Path(
+        cfg.results_dirs['mutation'],
+        'methylation_results',
+        'gene'
+    )
 
-# expression, seed 1
-unimodal_results_dir_1 = Path(
-    cfg.results_dirs['mutation'],
-    'bmiq_results',
-    'gene'
-)
+    # load expression and me_27k results
+    u_results_df = au.load_compressed_prediction_results(unimodal_results_dir, 'gene')
+    u_results_df = u_results_df[(u_results_df.n_dims == 5000)].copy()
+    u_results_df.drop(columns='n_dims', inplace=True)
 
-# expression, seed 2
-unimodal_results_dir_2 = Path(
-    cfg.results_dirs['mutation'],
-    'bmiq_results_2',
-    'gene'
-)
-
-# me_27k, both seeds
-unimodal_results_dir_3 = Path(
-    cfg.results_dirs['mutation'],
-    'bmiq_results_me_control',
-    'gene'
-)
-
-# me_450k, both seeds
-# use compressed data for this
-unimodal_results_dir_4 = Path(
-    cfg.results_dirs['mutation'],
-    'compressed_results',
-    'gene'
-)
+    # make sure data loaded matches our expectations
+    print(u_results_df.training_data.unique())
+    print(u_results_df.seed.unique())
 
 
 # In[6]:
 
 
-# load expression and me_27k results
-u_results_df_1 = au.load_stratified_prediction_results(unimodal_results_dir_1, 'gene')
-u_results_df_1 = u_results_df_1[(u_results_df_1.training_data == 'expression') &
-                                (u_results_df_1.seed == 1)].copy()
-u_results_df_2 = au.load_stratified_prediction_results(unimodal_results_dir_2, 'gene')
-u_results_df_2 = u_results_df_2[u_results_df_2.training_data == 'expression'].copy()
-u_results_df_3 = au.load_stratified_prediction_results(unimodal_results_dir_3, 'gene')
+# first, concatenate the unimodal results and the multimodal results
+if not RAW_FEATS:
+    all_results_df = pd.concat((results_df, u_results_df))
 
-# load me_450k results
-u_results_df_4 = au.load_compressed_prediction_results(unimodal_results_dir_4, 'gene',
-                                                       old_filenames=True)
-u_results_df_4 = u_results_df_4[(u_results_df_4.training_data == 'me_450k') &
-                                (u_results_df_4.n_dims == 5000)].copy()
-u_results_df_4.drop(columns='n_dims', inplace=True)
-
-# make sure data loaded matches our expectations
-print(u_results_df_1.training_data.unique())
-print(u_results_df_2.training_data.unique())
-print(u_results_df_3.training_data.unique())
-print(u_results_df_4.training_data.unique())
-print(u_results_df_1.seed.unique())
-print(u_results_df_2.seed.unique())
-print(u_results_df_3.seed.unique())
-print(u_results_df_4.seed.unique())
+    print(all_results_df.shape)
+    print(all_results_df.training_data.unique())
+    all_results_df.head()
 
 
 # In[7]:
 
 
-# first, take the unimodal results and the multimodal results,
-# and concatenate them into one giant results df
-all_results_df = pd.concat((results_df,
-                            u_results_df_1,
-                            u_results_df_2,
-                            u_results_df_3,
-                            u_results_df_4))
-
-print(all_results_df.shape)
-print(all_results_df.training_data.unique())
-all_results_df.head()
-
-
-# In[8]:
-
-
 # then, for each training data type, get the AUPR difference between signal and shuffled
 compare_df = pd.DataFrame()
-for training_data in all_results_df.training_data.unique():
-    data_compare_df = au.compare_control_ind(
-        all_results_df[all_results_df.training_data == training_data],
-        identifier='identifier',
-        metric='aupr',
-        verbose=True
-    )
-    data_compare_df['training_data'] = training_data
-    data_compare_df.rename(columns={'identifier': 'gene'}, inplace=True)
-    compare_df = pd.concat((compare_df, data_compare_df))
+if RAW_FEATS:
+    for training_data in results_df.training_data.unique():
+        data_compare_df = au.compare_control_ind(
+            results_df[results_df.training_data == training_data],
+            identifier='identifier',
+            metric='aupr',
+            verbose=True
+        )
+        data_compare_df['training_data'] = training_data
+        data_compare_df.rename(columns={'identifier': 'gene'}, inplace=True)
+        compare_df = pd.concat((compare_df, data_compare_df))
+else:
+    for training_data in all_results_df.training_data.unique():
+        data_compare_df = au.compare_control_ind(
+            all_results_df[all_results_df.training_data == training_data],
+            identifier='identifier',
+            metric='aupr',
+            verbose=True
+        )
+        data_compare_df['training_data'] = training_data
+        data_compare_df.rename(columns={'identifier': 'gene'}, inplace=True)
+        compare_df = pd.concat((compare_df, data_compare_df))
     
 compare_df.head(10)
 
 
-# In[9]:
+# In[8]:
 
 
 # each subplot will show results for one gene
@@ -253,16 +223,21 @@ plt.legend(title='Data types used to train model', handles=handles, loc='lower r
 plt.tight_layout()
 
 if SAVE_FIGS:
+    if RAW_FEATS:
+        svg_filename = 'multi_omics_boxes_raw_feats.svg'
+        png_filename = 'multi_omics_boxes_raw_feats.png'
+    else:
+        svg_filename = 'multi_omics_boxes.svg'
+        png_filename = 'multi_omics_boxes.png'
     images_dir = Path(cfg.images_dirs['multimodal'])
     images_dir.mkdir(exist_ok=True)
-    plt.savefig(images_dir / 'multi_omics_boxes.svg', bbox_inches='tight')
-    plt.savefig(images_dir / 'multi_omics_boxes.png',
-                dpi=300, bbox_inches='tight')
+    plt.savefig(images_dir / svg_filename, bbox_inches='tight')
+    plt.savefig(images_dir / png_filename, dpi=300, bbox_inches='tight')
 
 
 # ### Compare best-performing single-omics and multi-omics data types
 
-# In[10]:
+# In[9]:
 
 
 # for each data type, classify it as single-omics or multi-omics
@@ -273,7 +248,7 @@ print(compare_df.training_data.unique())
 compare_df[compare_df.gene == 'TP53'].head(10)
 
 
-# In[11]:
+# In[10]:
 
 
 sns.set({'figure.figsize': (13, 6)})
@@ -316,18 +291,21 @@ sns.boxplot(data=plot_df, x='gene', y='delta_aupr', hue='model_type')
 plt.title('Best performing single-omics vs. multi-omics data type, per gene', size=13)
 plt.xlabel('Target gene', size=13)
 plt.ylabel('AUPR(signal) - AUPR(shuffled)', size=13)
-plt.ylim(0.0, 0.6)
+if RAW_FEATS:
+    plt.ylim(0.0, 0.7)
+else:
+    plt.ylim(0.0, 0.6)
 plt.legend(title='Model type', loc='lower left', fontsize=12, title_fontsize=12)
 
 if SAVE_FIGS:
+    if RAW_FEATS:
+        svg_filename = 'multi_omics_best_model_raw_feats.svg'
+        png_filename = 'multi_omics_best_model_raw_feats.png'
+    else:
+        svg_filename = 'multi_omics_best_model.svg'
+        png_filename = 'multi_omics_best_model.png'
     images_dir = Path(cfg.images_dirs['multimodal'])
     images_dir.mkdir(exist_ok=True)
-    plt.savefig(images_dir / 'multi_omics_best_model.svg', bbox_inches='tight')
-    plt.savefig(images_dir / 'multi_omics_best_model.png',
-                dpi=300, bbox_inches='tight')
+    plt.savefig(images_dir / svg_filename, bbox_inches='tight')
+    plt.savefig(images_dir / png_filename, dpi=300, bbox_inches='tight')
 
-
-# Summary and interpretation:
-# 
-# * In this last figure, we can see that the difference in distributions between the best-performing single-omics and multi-omics model is visually quite small for all of the target genes, and none of the differences are statistically significant using a t-test over the 8 total CV folds.
-# * Looking at the other two figures, when we consider all data types the difference between single-omics and multi-omics models is still pretty minimal in general. There are some genes where adding expression data helps a lot (EGFR, PIK3CA, KRAS) and others where it doesn't really (IDH1, SETD2), but in general there's not a lot of added predictive ability when expression is combined with other data types, suggesting that methylation may be most useful in that it correlates with expression patterns (although more follow-up would be needed to really confirm this).

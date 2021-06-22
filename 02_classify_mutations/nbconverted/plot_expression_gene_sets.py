@@ -136,7 +136,8 @@ plu.plot_volcano_baseline(all_results_df,
                           axarr,
                           gene_set_map,
                           SIG_ALPHA,
-                          verbose=True)
+                          verbose=True,
+                          color_overlap=True)
 
 if SAVE_FIGS:
     images_dir = Path(cfg.images_dirs['mutation'])
@@ -149,7 +150,33 @@ if SAVE_FIGS:
 # In[8]:
 
 
-sns.set({'figure.figsize': (10, 6)})
+sns.set({'figure.figsize': (8, 6)})
+sns.set_style('whitegrid')
+fig, axarr = plt.subplots(1, 1)
+
+gene_set_map = {
+    'vogelstein': 'Vogelstein et al.'
+}
+all_results_df.training_data.replace(to_replace=gene_set_map, inplace=True)
+
+plu.plot_volcano_baseline(all_results_df,
+                          axarr,
+                          gene_set_map,
+                          SIG_ALPHA,
+                          verbose=True)
+
+if SAVE_FIGS:
+    images_dir = Path(cfg.images_dirs['mutation'])
+    images_dir.mkdir(exist_ok=True)
+    plt.savefig(images_dir / 'expression_vogelstein.svg', bbox_inches='tight')
+    plt.savefig(images_dir / 'expression_vogelstein.png',
+                dpi=300, bbox_inches='tight')
+
+
+# In[9]:
+
+
+sns.set({'figure.figsize': (10, 5)})
 sns.set_style('whitegrid')
 # we want these colors to be different than the expression/methylation ones
 sns.set_palette('Set2')
@@ -179,7 +206,7 @@ if SAVE_FIGS:
                 dpi=300, bbox_inches='tight')
 
 
-# In[9]:
+# In[10]:
 
 
 sns.set({'figure.figsize': (18, 6)})
@@ -215,7 +242,7 @@ ax.set_ylim(-0.2, max(all_results_df.delta_mean + 0.05))
 #  
 # Of the significantly predictable genes in the top/random gene sets, how many of them are in the Vogelstein gene set?
 
-# In[10]:
+# In[11]:
 
 
 from venn import venn
@@ -231,7 +258,7 @@ venn(genes_in_gene_set)
 plt.title('Gene overlap between all genes in gene set', size=14)
 
 
-# In[11]:
+# In[12]:
 
 
 # now look at overlap of significant genes
@@ -244,4 +271,10 @@ for gene_set in all_results_df.gene_set.unique():
 
 venn(genes_in_gene_set)
 plt.title('Gene overlap between significantly predictable genes in gene set', size=14)
+
+
+# In[13]:
+
+
+all_results_df[all_results_df.gene == 'KMT2C']
 
