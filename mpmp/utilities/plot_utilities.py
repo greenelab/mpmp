@@ -423,6 +423,109 @@ def get_different_from_best(results_df, raw_results_df):
     return results_df
 
 
+def plot_multi_omics_raw_results(results_df,
+                                 axarr,
+                                 data_order,
+                                 metric='aupr'):
+
+    max_val = results_df[metric].max()
+
+    data_order =['expression.me_27k',
+                 'expression.me_450k',
+                 'me_27k.me_450k',
+                 'expression.me_27k.me_450k']
+
+    # plot mean performance over all genes in Vogelstein dataset
+    for ix, gene in enumerate(results_df.identifier.unique()):
+
+        ax = axarr[ix // 3, ix % 3]
+
+        plot_df = results_df[(results_df.identifier == gene) &
+                             (results_df.data_type == 'test')]
+
+        sns.boxplot(data=plot_df, x='signal', y=metric, hue='training_data',
+                    hue_order=data_order, ax=ax)
+        ax.set_title('Prediction for {} mutation'.format(gene))
+        ax.set_xlabel('')
+        ax.set_ylabel(metric)
+        ax.set_ylim(-0.1, max_val)
+        ax.legend_.remove()
+
+
+def plot_multi_omics_results(results_df,
+                             axarr,
+                             data_names,
+                             colors,
+                             metric='delta_aupr'):
+
+    min_aupr = results_df[metric].min()
+    max_aupr = results_df[metric].max()
+
+    # plot mean performance over all genes in pilot experiment
+    for ix, gene in enumerate(results_df.gene.unique()):
+
+        ax = axarr[ix // 3, ix % 3]
+
+        plot_df = results_df[(results_df.gene == gene)].copy()
+        plot_df.training_data.replace(data_names, inplace=True)
+
+        sns.boxplot(data=plot_df, x='training_data', y=metric,
+                    order=list(data_names.values()), palette=colors, ax=ax)
+        ax.set_title('Prediction for {} mutation'.format(gene), size=13)
+        ax.set_xlabel('Training data type', size=13)
+        # hide x-axis tick text
+        ax.get_xaxis().set_ticklabels([])
+        ax.set_ylabel('AUPR(signal) - AUPR(shuffled)', size=13)
+        ax.set_ylim(-0.2, max_aupr)
+
+
+def plot_best_multi_omics_results(results_df,
+                                  ylim=(0, 0.7),
+                                  metric='delta_aupr'):
+
+    from scipy.stats import ttest_ind
+
+    # plot mean performance over all genes in pilot experiment
+    plot_df = pd.DataFrame()
+    for ix, gene in enumerate(results_df.gene.unique()):
+
+        plot_gene_df = results_df[(results_df.gene == gene)].reset_index(drop=True)
+
+        # get the best-performing data types from the single-omics and multi-omics models
+        max_single_data_type = (
+            plot_gene_df[plot_gene_df.model_type.str.contains('single-omics')]
+              .groupby('training_data')
+              .agg('mean')
+              .delta_aupr.idxmax()
+        )
+        max_multi_data_type = (
+            plot_gene_df[plot_gene_df.model_type.str.contains('multi-omics')]
+              .groupby('training_data')
+              .agg('mean')
+              .delta_aupr.idxmax()
+        )
+
+        # get samples with that data type
+        max_single_df = plot_gene_df[plot_gene_df.training_data == max_single_data_type]
+        max_multi_df = plot_gene_df[plot_gene_df.training_data == max_multi_data_type]
+
+        # calculate difference between means and t-test p-val for that data type
+        mean_diff = max_single_df.delta_aupr.mean() - max_multi_df.delta_aupr.mean()
+        _, p_val = ttest_ind(max_single_df.delta_aupr.values,
+                             max_multi_df.delta_aupr.values)
+        print('{} diff: {:.4f} (pval: {:.4f})'.format(gene, mean_diff, p_val))
+
+        plot_df = pd.concat((plot_df, max_single_df, max_multi_df))
+
+    colors = sns.color_palette('Set2')
+    sns.boxplot(data=plot_df, x='gene', y='delta_aupr', hue='model_type', palette=colors)
+    plt.title('Best performing single-omics vs. multi-omics data type, per gene', size=13)
+    plt.xlabel('Target gene', size=13)
+    plt.ylabel('AUPR(signal) - AUPR(shuffled)', size=13)
+    plt.ylim(ylim)
+    plt.legend(title='Model type', loc='lower left', fontsize=12, title_fontsize=12)
+
+
 def _check_gene_data_type(results_df, gene, data_type):
     return results_df[
         (results_df.gene == gene) &
