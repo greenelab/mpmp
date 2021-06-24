@@ -13,7 +13,8 @@ def plot_volcano_baseline(results_df,
                           sig_alpha,
                           xlim=None,
                           ylim=None,
-                          verbose=False):
+                          verbose=False,
+                          color_overlap=False):
     """Make a scatter plot comparing classifier results to shuffled baseline.
 
     Arguments
@@ -34,15 +35,26 @@ def plot_volcano_baseline(results_df,
     # plot mutation prediction from expression, in a volcano-like plot
     for ix, training_data in enumerate(training_data_map.values()):
 
-        if axarr.ndim > 1:
-            ax = axarr[ix // axarr.shape[1], ix % axarr.shape[1]]
-        else:
-            ax = axarr[ix]
+        try:
+            if axarr.ndim > 1:
+                ax = axarr[ix // axarr.shape[1], ix % axarr.shape[1]]
+            else:
+                ax = axarr[ix]
+        except AttributeError:
+            # no axarr.ndim => only a single axis
+            ax = axarr
 
         data_results_df = results_df[results_df.training_data == training_data]
 
         sns.scatterplot(data=data_results_df, x='delta_mean', y='nlog10_p', hue='reject_null',
                         hue_order=[False, True], ax=ax, legend=(ix == 0))
+
+        if color_overlap:
+            overlap_genes = _get_overlap_genes(results_df,
+                                               training_data)
+            overlap_df = data_results_df[data_results_df.gene.isin(overlap_genes)]
+            sns.scatterplot(data=overlap_df, x='delta_mean', y='nlog10_p',
+                            color='red', ax=ax, legend=False)
 
         # add vertical line at 0
         ax.axvline(x=0, linestyle='--', linewidth=1.25, color='black')
@@ -120,10 +132,14 @@ def plot_volcano_comparison(results_df,
 
     for ix, training_data in enumerate(data_types):
 
-        if axarr.ndim > 1:
-            ax = axarr[ix // axarr.shape[1], ix % axarr.shape[1]]
-        else:
-            ax = axarr[ix]
+        try:
+            if axarr.ndim > 1:
+                ax = axarr[ix // axarr.shape[1], ix % axarr.shape[1]]
+            else:
+                ax = axarr[ix]
+        except AttributeError:
+            # no axarr.ndim => only a single axis
+            ax = axarr
 
         data_results_df = results_df[results_df.training_data == training_data].copy()
         data_results_df.sort_values(by=['seed', 'fold'], inplace=True)
@@ -194,7 +210,8 @@ def plot_boxes(results_df,
                axarr,
                training_data_map,
                orientation='h',
-               verbose=False):
+               verbose=False,
+               plot_significant=True):
     """Make a box plot comparing classifier results between data types.
 
     Arguments
@@ -205,7 +222,11 @@ def plot_boxes(results_df,
     """
 
     # plot mean performance over all genes in Vogelstein dataset
-    ax = axarr[0]
+    try:
+        ax = axarr[0]
+    except TypeError:
+        # no axarr.ndim => only a single axis
+        ax = axarr
     sns.boxplot(data=results_df, x='training_data', y='delta_mean', notch=True,
                 ax=ax, order=list(training_data_map.values()))
     ax.set_title('Prediction for all genes, performance vs. data type', size=14)
@@ -219,27 +240,31 @@ def plot_boxes(results_df,
         tick.set_fontsize(12)
         tick.set_rotation(30)
 
-    # plot mean performance for genes that are significant for at least one data type
-    ax = axarr[1]
-    gene_list = results_df[results_df.reject_null == True].gene.unique()
-    if verbose:
-        print(gene_list.shape)
-        print(gene_list)
-    sns.boxplot(data=results_df[results_df.gene.isin(gene_list)],
-                x='training_data', y='delta_mean', notch=True, ax=ax,
-                order=list(training_data_map.values()))
-    ax.set_title('Prediction for significant genes only, performance vs. data type', size=14)
-    ax.set_xlabel('Data type', size=14)
-    ax.set_ylabel('AUPR(signal) - AUPR(shuffled)', size=14)
-    ax.set_ylim(-0.2, 0.7)
-    for tick in ax.get_xticklabels():
-        tick.set_fontsize(12)
-        tick.set_rotation(30)
+    if plot_significant:
+        # plot mean performance for genes that are significant for at least one data type
+        ax = axarr[1]
+        gene_list = results_df[results_df.reject_null == True].gene.unique()
+        if verbose:
+            print(gene_list.shape)
+            print(gene_list)
+        sns.boxplot(data=results_df[results_df.gene.isin(gene_list)],
+                    x='training_data', y='delta_mean', notch=True, ax=ax,
+                    order=list(training_data_map.values()))
+        ax.set_title('Prediction for significant genes only, performance vs. data type', size=14)
+        ax.set_xlabel('Data type', size=14)
+        ax.set_ylabel('AUPR(signal) - AUPR(shuffled)', size=14)
+        ax.set_ylim(-0.2, 0.7)
+        for tick in ax.get_xticklabels():
+            tick.set_fontsize(12)
+            tick.set_rotation(30)
 
     plt.tight_layout()
 
 
-def plot_heatmap(heatmap_df, results_df):
+def plot_heatmap(heatmap_df,
+                 results_df,
+                 different_from_best=True,
+                 raw_results_df=None):
     """Plot heatmap comparing data types for each gene.
 
     Arguments
@@ -248,6 +273,8 @@ def plot_heatmap(heatmap_df, results_df):
                                genes, entries are mean AUPR differences
     results_df (pd.DataFrame): dataframe with processed results/p-values
     """
+    if different_from_best:
+        results_df = get_different_from_best(results_df, raw_results_df)
 
     ax = sns.heatmap(heatmap_df, cmap='Greens',
                      cbar_kws={'aspect': 10, 'fraction': 0.1, 'pad': 0.01})
@@ -264,33 +291,260 @@ def plot_heatmap(heatmap_df, results_df):
     cbar.outline.set_edgecolor('black')
     cbar.outline.set_linewidth(1)
 
+    ax = plt.gca()
+
     # add blue highlights to cells that are significant over baseline
     # add red highlights to cells that are significant and "best" predictor for that gene
-    ax = plt.gca()
-    for gene_ix, gene in enumerate(heatmap_df.columns):
-        best_data_type = heatmap_df.loc[:, gene].idxmax()
-        for data_ix, data_type in enumerate(heatmap_df.index):
-            if (best_data_type == data_type) and (
-                _check_gene_data_type(results_df, gene, data_type)):
-                ax.add_patch(
-                    Rectangle((gene_ix, data_ix), 1, 1, fill=False,
-                              edgecolor='red', lw=3, zorder=1.5)
-                )
-            elif _check_gene_data_type(results_df, gene, data_type):
-                ax.add_patch(
-                    Rectangle((gene_ix, data_ix), 1, 1, fill=False,
-                              edgecolor='blue', lw=3)
-                )
+    if different_from_best:
+        for gene_ix, gene in enumerate(heatmap_df.columns):
+            for data_ix, data_type in enumerate(heatmap_df.index):
+                if (_check_gene_data_type(results_df, gene, data_type) and
+                    _check_equal_to_best(results_df, gene, data_type)):
+                    ax.add_patch(
+                        Rectangle((gene_ix, data_ix), 1, 1, fill=False,
+                                  edgecolor='red', lw=3, zorder=1.5)
+                    )
+                elif _check_gene_data_type(results_df, gene, data_type):
+                    ax.add_patch(
+                        Rectangle((gene_ix, data_ix), 1, 1, fill=False,
+                                  edgecolor='blue', lw=3)
+                    )
+    else:
+        for gene_ix, gene in enumerate(heatmap_df.columns):
+            best_data_type = heatmap_df.loc[:, gene].idxmax()
+            for data_ix, data_type in enumerate(heatmap_df.index):
+                if (best_data_type == data_type) and (
+                    _check_gene_data_type(results_df, gene, data_type)):
+                    ax.add_patch(
+                        Rectangle((gene_ix, data_ix), 1, 1, fill=False,
+                                  edgecolor='red', lw=3, zorder=1.5)
+                    )
+                elif _check_gene_data_type(results_df, gene, data_type):
+                    ax.add_patch(
+                        Rectangle((gene_ix, data_ix), 1, 1, fill=False,
+                                  edgecolor='blue', lw=3)
+                    )
 
     plt.xlabel('Gene name')
     plt.ylabel('Training data type')
     plt.tight_layout()
 
 
+def get_different_from_best(results_df, raw_results_df):
+    """Identify best-performing data types for each gene.
+
+    As an alternative to just identifying the data type with the best average
+    performance, we want to also identify data types that are "statistically
+    equivalent" to the best performer. For each gene, we do the following:
+
+    1) get all data types that significantly outperform the permuted baseline
+       ("well-performing" data types)
+    2) do pairwise t-tests comparing the best performing data types with
+       other well-performing data types
+    3) apply an FDR correction for the total number of t-tests
+
+    In each case where the null hypothesis is accepted, we say both data types
+    are statistically equivalent. If the null is rejected, the relevant data
+    type does not provide statistically equivalent performance to the best
+    performing data type.
+    """
+    from scipy.stats import ttest_rel
+
+    comparison_pvals = []
+    for identifier in results_df.gene.unique():
+        # compare best with other data types that are significant from
+        # baseline, using pairwise t-tests
+        # null hypothesis = each pair of results distributions is the same
+
+        # get best data type
+        best_data_ix = (
+            results_df[results_df.gene == identifier]
+              .loc[:, 'delta_mean']
+              .idxmax()
+        )
+        best_data_type = results_df.iloc[best_data_ix, :].training_data
+
+        # get other significant data types
+        other_data_types = (
+            results_df[(results_df.gene == identifier) &
+                       (results_df.training_data != best_data_type) &
+                       (results_df.reject_null)]
+        )['training_data'].values
+
+        best_data_dist = (
+            raw_results_df[(raw_results_df.identifier == identifier) &
+                           (raw_results_df.training_data == best_data_type) &
+                           (raw_results_df.signal == 'signal') &
+                           (raw_results_df.data_type == 'test')]
+        ).sort_values(by=['seed', 'fold'])['aupr'].values
+
+        if len(other_data_types) == 0:
+            continue
+
+        for other_data_type in other_data_types:
+            # do pairwise t-tests
+            other_data_dist = (
+                raw_results_df[(raw_results_df.identifier == identifier) &
+                               (raw_results_df.training_data == other_data_type) &
+                               (raw_results_df.signal == 'signal') &
+                               (raw_results_df.data_type == 'test')]
+            ).sort_values(by=['seed', 'fold'])['aupr'].values
+
+            p_value = ttest_rel(best_data_dist, other_data_dist)[1]
+
+            best_id = '{}, {}'.format(identifier, best_data_type)
+            other_id = '{}, {}'.format(identifier, other_data_type)
+
+            comparison_pvals.append([identifier, best_data_type,
+                                     other_data_type, p_value])
+
+    comparison_df = pd.DataFrame(
+        comparison_pvals,
+        columns=['gene', 'best_data_type', 'other_data_type', 'p_value']
+    )
+
+    # apply multiple testing correction and identify significant similarities
+    from statsmodels.stats.multitest import multipletests
+    corr = multipletests(comparison_df['p_value'],
+                         alpha=0.05,
+                         method='fdr_bh')
+    comparison_df = comparison_df.assign(corr_pval=corr[1],
+                                         reject_null=corr[0])
+
+    # add column to results_df for statistically equal to best
+    equal_to_best = []
+    for _, vals in results_df.iterrows():
+        if not vals['reject_null']:
+            equal_to_best.append(False)
+        else:
+            comp_gene_df = comparison_df[comparison_df.gene == vals['gene']]
+            if vals['training_data'] in comp_gene_df.best_data_type.values:
+                equal_to_best.append(True)
+            elif vals['training_data'] in comp_gene_df.other_data_type.values:
+                equal_to_best.append(
+                    comp_gene_df[comp_gene_df.other_data_type == vals['training_data']]
+                      .reject_null.values[0]
+                )
+            else:
+                # this happens when the data type is the only significant one
+                equal_to_best.append(True)
+
+    results_df = results_df.assign(equal_to_best=equal_to_best)
+    return results_df
+
+
+def plot_multi_omics_raw_results(results_df,
+                                 axarr,
+                                 data_order,
+                                 metric='aupr'):
+
+    max_val = results_df[metric].max()
+
+    data_order =['expression.me_27k',
+                 'expression.me_450k',
+                 'me_27k.me_450k',
+                 'expression.me_27k.me_450k']
+
+    # plot mean performance over all genes in Vogelstein dataset
+    for ix, gene in enumerate(results_df.identifier.unique()):
+
+        ax = axarr[ix // 3, ix % 3]
+
+        plot_df = results_df[(results_df.identifier == gene) &
+                             (results_df.data_type == 'test')]
+
+        sns.boxplot(data=plot_df, x='signal', y=metric, hue='training_data',
+                    hue_order=data_order, ax=ax)
+        ax.set_title('Prediction for {} mutation'.format(gene))
+        ax.set_xlabel('')
+        ax.set_ylabel(metric)
+        ax.set_ylim(-0.1, max_val)
+        ax.legend_.remove()
+
+
+def plot_multi_omics_results(results_df,
+                             axarr,
+                             data_names,
+                             colors,
+                             metric='delta_aupr'):
+
+    min_aupr = results_df[metric].min()
+    max_aupr = results_df[metric].max()
+
+    # plot mean performance over all genes in pilot experiment
+    for ix, gene in enumerate(results_df.gene.unique()):
+
+        ax = axarr[ix // 3, ix % 3]
+
+        plot_df = results_df[(results_df.gene == gene)].copy()
+        plot_df.training_data.replace(data_names, inplace=True)
+
+        sns.boxplot(data=plot_df, x='training_data', y=metric,
+                    order=list(data_names.values()), palette=colors, ax=ax)
+        ax.set_title('Prediction for {} mutation'.format(gene), size=13)
+        ax.set_xlabel('Training data type', size=13)
+        # hide x-axis tick text
+        ax.get_xaxis().set_ticklabels([])
+        ax.set_ylabel('AUPR(signal) - AUPR(shuffled)', size=13)
+        ax.set_ylim(-0.2, max_aupr)
+
+
+def plot_best_multi_omics_results(results_df,
+                                  ylim=(0, 0.7),
+                                  metric='delta_aupr'):
+
+    from scipy.stats import ttest_ind
+
+    # plot mean performance over all genes in pilot experiment
+    plot_df = pd.DataFrame()
+    for ix, gene in enumerate(results_df.gene.unique()):
+
+        plot_gene_df = results_df[(results_df.gene == gene)].reset_index(drop=True)
+
+        # get the best-performing data types from the single-omics and multi-omics models
+        max_single_data_type = (
+            plot_gene_df[plot_gene_df.model_type.str.contains('single-omics')]
+              .groupby('training_data')
+              .agg('mean')
+              .delta_aupr.idxmax()
+        )
+        max_multi_data_type = (
+            plot_gene_df[plot_gene_df.model_type.str.contains('multi-omics')]
+              .groupby('training_data')
+              .agg('mean')
+              .delta_aupr.idxmax()
+        )
+
+        # get samples with that data type
+        max_single_df = plot_gene_df[plot_gene_df.training_data == max_single_data_type]
+        max_multi_df = plot_gene_df[plot_gene_df.training_data == max_multi_data_type]
+
+        # calculate difference between means and t-test p-val for that data type
+        mean_diff = max_single_df.delta_aupr.mean() - max_multi_df.delta_aupr.mean()
+        _, p_val = ttest_ind(max_single_df.delta_aupr.values,
+                             max_multi_df.delta_aupr.values)
+        print('{} diff: {:.4f} (pval: {:.4f})'.format(gene, mean_diff, p_val))
+
+        plot_df = pd.concat((plot_df, max_single_df, max_multi_df))
+
+    colors = sns.color_palette('Set2')
+    sns.boxplot(data=plot_df, x='gene', y='delta_aupr', hue='model_type', palette=colors)
+    plt.title('Best performing single-omics vs. multi-omics data type, per gene', size=13)
+    plt.xlabel('Target gene', size=13)
+    plt.ylabel('AUPR(signal) - AUPR(shuffled)', size=13)
+    plt.ylim(ylim)
+    plt.legend(title='Model type', loc='lower left', fontsize=12, title_fontsize=12)
+
+
 def _check_gene_data_type(results_df, gene, data_type):
     return results_df[
         (results_df.gene == gene) &
         (results_df.training_data == data_type)].reject_null.values[0]
+
+def _check_equal_to_best(results_df, gene, data_type):
+    return results_df[
+        (results_df.gene == gene) &
+        (results_df.training_data == data_type)].equal_to_best.values[0]
 
 
 def _label_points(x, y, labels, ax, sig_alpha):
@@ -318,3 +572,25 @@ def _label_points_compare(x, y, labels, ax, sig_alpha):
             )
     return text_labels
 
+
+def _get_overlap_genes(results_df, gene_set, reference='Vogelstein et al.'):
+    # start with Vogelstein genes
+    vogelstein_genes = set(
+        results_df[results_df.training_data == reference]
+          .gene.unique()
+    )
+    if gene_set == reference:
+        # plot genes that are in vogelstein AND either of other datasets
+        other_genes = set(
+            results_df[results_df.training_data != reference]
+              .gene.unique()
+        )
+        overlap_genes = vogelstein_genes.intersection(other_genes)
+    else:
+        # plot genes that are in this dataset and vogelstein
+        other_genes = set(
+            results_df[results_df.training_data == gene_set]
+              .gene.unique()
+        )
+        overlap_genes = vogelstein_genes.intersection(other_genes)
+    return overlap_genes

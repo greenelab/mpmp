@@ -22,6 +22,9 @@ import mpmp.config as cfg
 import mpmp.utilities.analysis_utilities as au
 import mpmp.utilities.plot_utilities as plu
 
+get_ipython().run_line_magic('load_ext', 'autoreload')
+get_ipython().run_line_magic('autoreload', '2')
+
 
 # In[2]:
 
@@ -107,16 +110,27 @@ all_results_df.sort_values(by='p_value').head(10)
 # In[7]:
 
 
-sns.set({'figure.figsize': (24, 14)})
+sns.set({'figure.figsize': (22, 5)})
 sns.set_style('whitegrid')
 
-fig, axarr = plt.subplots(2, 3)
+fig, axarr = plt.subplots(1, 3)
+
+# plot mutation prediction from expression, in a volcano-like plot
+datasets = ['gene expression', '27k methylation', '450k methylation']
+filtered_data_map = {k: v for k, v in training_data_map.items() if v in datasets}
 
 plu.plot_volcano_baseline(all_results_df,
                           axarr,
-                          training_data_map,
+                          filtered_data_map,
                           SIG_ALPHA,
                           verbose=True)
+
+if SAVE_FIGS:
+    images_dir = Path(cfg.images_dirs['mutation'])
+    images_dir.mkdir(exist_ok=True)
+    plt.savefig(images_dir / 'all_vs_shuffled_extended.svg', bbox_inches='tight')
+    plt.savefig(images_dir / 'all_vs_shuffled_extended.png',
+                dpi=300, bbox_inches='tight')
 
 
 # In[8]:
@@ -150,18 +164,27 @@ if SAVE_FIGS:
 
 # compare expression against all other data modalities
 # could do all vs. all, but that would give us lots of plots
-sns.set({'figure.figsize': (20, 12)})
+sns.set({'figure.figsize': (16, 5)})
 sns.set_style('whitegrid')
 
-fig, axarr = plt.subplots(2, 3)
+fig, axarr = plt.subplots(1, 2)
+
+datasets = ['gene expression', '27k methylation', '450k methylation']
+filtered_data_map = {k: v for k, v in training_data_map.items() if v in datasets}
 
 plu.plot_volcano_comparison(results_df,
                             axarr,
-                            training_data_map,
+                            filtered_data_map,
                             SIG_ALPHA,
                             verbose=True)
     
-fig.delaxes(axarr[1, 2])
+
+if SAVE_FIGS:
+    images_dir = Path(cfg.images_dirs['mutation'])
+    images_dir.mkdir(exist_ok=True)
+    plt.savefig(images_dir / 'all_comparison_extended.svg', bbox_inches='tight')
+    plt.savefig(images_dir / 'all_comparison_extended.png',
+                dpi=300, bbox_inches='tight')
 
 
 # In[10]:
@@ -237,13 +260,17 @@ heatmap_df = (all_results_df
 heatmap_df.iloc[:, :5]
 
 
-# In[14]:
+# In[38]:
 
 
 sns.set({'figure.figsize': (28, 6)})
 sns.set_context('notebook', font_scale=1.5)
 
-ax = plu.plot_heatmap(heatmap_df, all_results_df)
+ax = plu.plot_heatmap(heatmap_df,
+                      all_results_df.reset_index(drop=True),
+                      different_from_best=True,
+                      raw_results_df=results_df)
+
 plt.title('Performance by data type for Vogelstein et al. genes, all data types', pad=15)
 
 if SAVE_FIGS:
