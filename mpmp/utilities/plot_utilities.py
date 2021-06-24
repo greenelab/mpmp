@@ -132,10 +132,14 @@ def plot_volcano_comparison(results_df,
 
     for ix, training_data in enumerate(data_types):
 
-        if axarr.ndim > 1:
-            ax = axarr[ix // axarr.shape[1], ix % axarr.shape[1]]
-        else:
-            ax = axarr[ix]
+        try:
+            if axarr.ndim > 1:
+                ax = axarr[ix // axarr.shape[1], ix % axarr.shape[1]]
+            else:
+                ax = axarr[ix]
+        except AttributeError:
+            # no axarr.ndim => only a single axis
+            ax = axarr
 
         data_results_df = results_df[results_df.training_data == training_data].copy()
         data_results_df.sort_values(by=['seed', 'fold'], inplace=True)
@@ -206,7 +210,8 @@ def plot_boxes(results_df,
                axarr,
                training_data_map,
                orientation='h',
-               verbose=False):
+               verbose=False,
+               plot_significant=True):
     """Make a box plot comparing classifier results between data types.
 
     Arguments
@@ -217,7 +222,11 @@ def plot_boxes(results_df,
     """
 
     # plot mean performance over all genes in Vogelstein dataset
-    ax = axarr[0]
+    try:
+        ax = axarr[0]
+    except TypeError:
+        # no axarr.ndim => only a single axis
+        ax = axarr
     sns.boxplot(data=results_df, x='training_data', y='delta_mean', notch=True,
                 ax=ax, order=list(training_data_map.values()))
     ax.set_title('Prediction for all genes, performance vs. data type', size=14)
@@ -231,22 +240,23 @@ def plot_boxes(results_df,
         tick.set_fontsize(12)
         tick.set_rotation(30)
 
-    # plot mean performance for genes that are significant for at least one data type
-    ax = axarr[1]
-    gene_list = results_df[results_df.reject_null == True].gene.unique()
-    if verbose:
-        print(gene_list.shape)
-        print(gene_list)
-    sns.boxplot(data=results_df[results_df.gene.isin(gene_list)],
-                x='training_data', y='delta_mean', notch=True, ax=ax,
-                order=list(training_data_map.values()))
-    ax.set_title('Prediction for significant genes only, performance vs. data type', size=14)
-    ax.set_xlabel('Data type', size=14)
-    ax.set_ylabel('AUPR(signal) - AUPR(shuffled)', size=14)
-    ax.set_ylim(-0.2, 0.7)
-    for tick in ax.get_xticklabels():
-        tick.set_fontsize(12)
-        tick.set_rotation(30)
+    if plot_significant:
+        # plot mean performance for genes that are significant for at least one data type
+        ax = axarr[1]
+        gene_list = results_df[results_df.reject_null == True].gene.unique()
+        if verbose:
+            print(gene_list.shape)
+            print(gene_list)
+        sns.boxplot(data=results_df[results_df.gene.isin(gene_list)],
+                    x='training_data', y='delta_mean', notch=True, ax=ax,
+                    order=list(training_data_map.values()))
+        ax.set_title('Prediction for significant genes only, performance vs. data type', size=14)
+        ax.set_xlabel('Data type', size=14)
+        ax.set_ylabel('AUPR(signal) - AUPR(shuffled)', size=14)
+        ax.set_ylim(-0.2, 0.7)
+        for tick in ax.get_xticklabels():
+            tick.set_fontsize(12)
+            tick.set_rotation(30)
 
     plt.tight_layout()
 
