@@ -14,6 +14,7 @@
 # 
 # Notebook parameters:
 # * SIG_ALPHA (float): significance cutoff (after FDR correction)
+# * PLOT_AUROC (bool): if True plot AUROC, else plot AUPR
 
 # In[1]:
 
@@ -50,6 +51,15 @@ SIG_ALPHA = 0.001
 
 # if True, save figures to ./images directory
 SAVE_FIGS = True
+
+# if True, plot AUROC instead of AUPR
+PLOT_AUROC = False
+if PLOT_AUROC:
+    plot_metric = 'auroc'
+    images_dir = Path(cfg.images_dirs['mutation'], 'auroc')
+else:
+    plot_metric = 'aupr'
+    images_dir = Path(cfg.images_dirs['mutation'])
 
 
 # In[3]:
@@ -112,7 +122,8 @@ results_df = (
 
 all_results_df = au.compare_all_data_types(results_df,
                                            SIG_ALPHA,
-                                           filter_genes=False)
+                                           filter_genes=False,
+                                           metric=plot_metric)
 
 all_results_df['nlog10_p'] = -np.log10(all_results_df.corr_pval)
 all_results_df.sort_values(by='p_value').head(10)
@@ -136,11 +147,11 @@ plu.plot_volcano_baseline(all_results_df,
                           axarr,
                           gene_set_map,
                           SIG_ALPHA,
+                          metric=plot_metric,
                           verbose=True,
                           color_overlap=True)
 
 if SAVE_FIGS:
-    images_dir = Path(cfg.images_dirs['mutation'])
     images_dir.mkdir(exist_ok=True)
     plt.savefig(images_dir / 'expression_vs_shuffled.svg', bbox_inches='tight')
     plt.savefig(images_dir / 'expression_vs_shuffled.png',
@@ -163,10 +174,10 @@ plu.plot_volcano_baseline(all_results_df,
                           axarr,
                           gene_set_map,
                           SIG_ALPHA,
+                          metric=plot_metric,
                           verbose=True)
 
 if SAVE_FIGS:
-    images_dir = Path(cfg.images_dirs['mutation'])
     images_dir.mkdir(exist_ok=True)
     plt.savefig(images_dir / 'expression_vogelstein.svg', bbox_inches='tight')
     plt.savefig(images_dir / 'expression_vogelstein.png',
@@ -193,7 +204,9 @@ sns.boxplot(data=all_results_df, x='gene_set', y='delta_mean',
             notch=True, ax=ax)
 ax.set_title('Performance distribution for all genes in each gene set, gene expression only', size=14)
 ax.set_xlabel('Target gene set', size=13)
-ax.set_ylabel('AUPR(signal) - AUPR(shuffled)', size=13)
+ax.set_ylabel('{}(signal) - {}(shuffled)'.format(
+                  plot_metric.upper(), plot_metric.upper()),
+              size=13)
 ax.set_ylim(-0.2, max(all_results_df.delta_mean + 0.05))
 for tick in ax.get_xticklabels():
     tick.set_fontsize(13)
@@ -222,7 +235,8 @@ ax = axarr[0]
 sns.stripplot(data=all_results_df, x='gene_set', y='delta_mean', ax=ax)
 ax.set_title('Prediction for all genes, performance vs. gene set')
 ax.set_xlabel('Target gene set')
-ax.set_ylabel('AUPR(signal) - AUPR(shuffled)')
+ax.set_ylabel('{}(signal) - {}(shuffled)'.format(
+                  plot_metric.upper(), plot_metric.upper()))
 ax.set_ylim(-0.2, max(all_results_df.delta_mean + 0.05))
 
 # plot mean performance for genes that are significant for at least one data type
@@ -234,7 +248,8 @@ sns.stripplot(data=all_results_df[all_results_df.gene.isin(gene_list)],
               x='gene_set', y='delta_mean', ax=ax)
 ax.set_title('Prediction for significant genes, performance vs. gene set')
 ax.set_xlabel('Target gene set')
-ax.set_ylabel('AUPR(signal) - AUPR(shuffled)')
+ax.set_ylabel('{}(signal) - {}(shuffled)'.format(
+                  plot_metric.upper(), plot_metric.upper()))
 ax.set_ylim(-0.2, max(all_results_df.delta_mean + 0.05))
 
 
@@ -271,10 +286,4 @@ for gene_set in all_results_df.gene_set.unique():
 
 venn(genes_in_gene_set)
 plt.title('Gene overlap between significantly predictable genes in gene set', size=14)
-
-
-# In[13]:
-
-
-all_results_df[all_results_df.gene == 'KMT2C']
 

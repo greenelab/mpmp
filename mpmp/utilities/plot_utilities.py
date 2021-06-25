@@ -11,6 +11,7 @@ def plot_volcano_baseline(results_df,
                           axarr,
                           training_data_map,
                           sig_alpha,
+                          metric='aupr',
                           xlim=None,
                           ylim=None,
                           verbose=False,
@@ -70,7 +71,9 @@ def plot_volcano_baseline(results_df,
                 backgroundcolor=ax.get_facecolor())
 
         # label axes and set axis limits
-        ax.set_xlabel('AUPR(signal) - AUPR(shuffled)', size=14)
+        ax.set_xlabel('{}(signal) - {}(shuffled)'.format(
+                          metric.upper(), metric.upper()),
+                      size=14)
         ax.set_ylabel(r'$-\log_{10}($adjusted $p$-value$)$', size=14)
         ax.set_xlim(xlim)
         ax.set_ylim(ylim)
