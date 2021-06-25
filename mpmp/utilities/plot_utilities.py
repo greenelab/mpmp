@@ -482,10 +482,12 @@ def plot_multi_omics_results(results_df,
                              axarr,
                              data_names,
                              colors,
-                             metric='delta_aupr'):
+                             metric='aupr'):
 
-    min_aupr = results_df[metric].min()
-    max_aupr = results_df[metric].max()
+    delta_metric = 'delta_{}'.format(metric)
+
+    min_aupr = results_df[delta_metric].min()
+    max_aupr = results_df[delta_metric].max()
 
     # plot mean performance over all genes in pilot experiment
     for ix, gene in enumerate(results_df.gene.unique()):
@@ -495,19 +497,23 @@ def plot_multi_omics_results(results_df,
         plot_df = results_df[(results_df.gene == gene)].copy()
         plot_df.training_data.replace(data_names, inplace=True)
 
-        sns.boxplot(data=plot_df, x='training_data', y=metric,
+        sns.boxplot(data=plot_df, x='training_data', y=delta_metric,
                     order=list(data_names.values()), palette=colors, ax=ax)
         ax.set_title('Prediction for {} mutation'.format(gene), size=13)
         ax.set_xlabel('Training data type', size=13)
         # hide x-axis tick text
         ax.get_xaxis().set_ticklabels([])
-        ax.set_ylabel('AUPR(signal) - AUPR(shuffled)', size=13)
+        ax.set_ylabel('{}(signal) - {}(shuffled)'.format(
+                          metric.upper(), metric.upper()),
+                      size=13)
         ax.set_ylim(-0.2, max_aupr)
 
 
 def plot_best_multi_omics_results(results_df,
                                   ylim=(0, 0.7),
-                                  metric='delta_aupr'):
+                                  metric='aupr'):
+
+    delta_metric = 'delta_{}'.format(metric)
 
     from scipy.stats import ttest_ind
 
@@ -522,13 +528,13 @@ def plot_best_multi_omics_results(results_df,
             plot_gene_df[plot_gene_df.model_type.str.contains('single-omics')]
               .groupby('training_data')
               .agg('mean')
-              .delta_aupr.idxmax()
+              [delta_metric].idxmax()
         )
         max_multi_data_type = (
             plot_gene_df[plot_gene_df.model_type.str.contains('multi-omics')]
               .groupby('training_data')
               .agg('mean')
-              .delta_aupr.idxmax()
+              [delta_metric].idxmax()
         )
 
         # get samples with that data type
@@ -536,18 +542,20 @@ def plot_best_multi_omics_results(results_df,
         max_multi_df = plot_gene_df[plot_gene_df.training_data == max_multi_data_type]
 
         # calculate difference between means and t-test p-val for that data type
-        mean_diff = max_single_df.delta_aupr.mean() - max_multi_df.delta_aupr.mean()
-        _, p_val = ttest_ind(max_single_df.delta_aupr.values,
-                             max_multi_df.delta_aupr.values)
+        mean_diff = max_single_df[delta_metric].mean() - max_multi_df[delta_metric].mean()
+        _, p_val = ttest_ind(max_single_df[delta_metric].values,
+                             max_multi_df[delta_metric].values)
         print('{} diff: {:.4f} (pval: {:.4f})'.format(gene, mean_diff, p_val))
 
         plot_df = pd.concat((plot_df, max_single_df, max_multi_df))
 
     colors = sns.color_palette('Set2')
-    sns.boxplot(data=plot_df, x='gene', y='delta_aupr', hue='model_type', palette=colors)
+    sns.boxplot(data=plot_df, x='gene', y=delta_metric, hue='model_type', palette=colors)
     plt.title('Best performing single-omics vs. multi-omics data type, per gene', size=13)
     plt.xlabel('Target gene', size=13)
-    plt.ylabel('AUPR(signal) - AUPR(shuffled)', size=13)
+    plt.ylabel('{}(signal) - {}(shuffled)'.format(
+                   metric.upper(), metric.upper()),
+               size=13)
     plt.ylim(ylim)
     plt.legend(title='Model type', loc='lower left', fontsize=12, title_fontsize=12)
 
