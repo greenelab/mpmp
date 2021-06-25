@@ -109,6 +109,7 @@ def plot_volcano_comparison(results_df,
                             axarr,
                             training_data_map,
                             sig_alpha,
+                            metric='aupr',
                             xlim=None,
                             ylim=None,
                             verbose=False):
@@ -149,7 +150,7 @@ def plot_volcano_comparison(results_df,
         compare_results_df = au.compare_results(exp_results_df,
                                                 condition_2_df=data_results_df,
                                                 identifier='identifier',
-                                                metric='aupr',
+                                                metric=metric,
                                                 correction=True,
                                                 correction_method='fdr_bh',
                                                 correction_alpha=sig_alpha,
@@ -175,7 +176,9 @@ def plot_volcano_comparison(results_df,
                 backgroundcolor=ax.get_facecolor())
 
         # label axes and set axis limits
-        ax.set_xlabel('AUPR({}) - AUPR(expression)'.format(training_data), size=14)
+        ax.set_xlabel('{}({}) - {}(expression)'.format(
+                          metric.upper(), training_data, metric.upper()),
+                      size=14)
         ax.set_ylabel(r'$-\log_{10}($adjusted $p$-value$)$', size=14)
         ax.set_xlim(xlim)
         ax.set_ylim(ylim)
@@ -212,6 +215,7 @@ def plot_volcano_comparison(results_df,
 def plot_boxes(results_df,
                axarr,
                training_data_map,
+               metric='aupr',
                orientation='h',
                verbose=False,
                plot_significant=True):
@@ -237,7 +241,9 @@ def plot_boxes(results_df,
         ax.set_xlabel('')
     else:
         ax.set_xlabel('Data type', size=14)
-    ax.set_ylabel('AUPR(signal) - AUPR(shuffled)', size=14)
+    ax.set_ylabel('{}(signal) - {}(shuffled)'.format(
+                      metric.upper(), metric.upper()),
+                  size=14)
     ax.set_ylim(-0.2, 0.7)
     for tick in ax.get_xticklabels():
         tick.set_fontsize(12)
@@ -255,7 +261,9 @@ def plot_boxes(results_df,
                     order=list(training_data_map.values()))
         ax.set_title('Prediction for significant genes only, performance vs. data type', size=14)
         ax.set_xlabel('Data type', size=14)
-        ax.set_ylabel('AUPR(signal) - AUPR(shuffled)', size=14)
+        ax.set_ylabel('{}(signal) - {}(shuffled)'.format(
+                          metric.upper(), metric.upper()),
+                      size=14)
         ax.set_ylim(-0.2, 0.7)
         for tick in ax.get_xticklabels():
             tick.set_fontsize(12)
@@ -267,7 +275,8 @@ def plot_boxes(results_df,
 def plot_heatmap(heatmap_df,
                  results_df,
                  different_from_best=True,
-                 raw_results_df=None):
+                 raw_results_df=None,
+                 metric='aupr'):
     """Plot heatmap comparing data types for each gene.
 
     Arguments
@@ -277,7 +286,9 @@ def plot_heatmap(heatmap_df,
     results_df (pd.DataFrame): dataframe with processed results/p-values
     """
     if different_from_best:
-        results_df = get_different_from_best(results_df, raw_results_df)
+        results_df = get_different_from_best(results_df,
+                                             raw_results_df,
+                                             metric=metric)
 
     ax = sns.heatmap(heatmap_df, cmap='Greens',
                      cbar_kws={'aspect': 10, 'fraction': 0.1, 'pad': 0.01})
@@ -290,7 +301,9 @@ def plot_heatmap(heatmap_df,
 
     # outline around colorbar
     cbar = ax.collections[0].colorbar
-    cbar.set_label('AUPR(signal) - AUPR(shuffled)', labelpad=15)
+    cbar.set_label('{}(signal) - {}(shuffled)'.format(
+                       metric.upper(), metric.upper()),
+                   labelpad=15)
     cbar.outline.set_edgecolor('black')
     cbar.outline.set_linewidth(1)
 
@@ -333,7 +346,7 @@ def plot_heatmap(heatmap_df,
     plt.tight_layout()
 
 
-def get_different_from_best(results_df, raw_results_df):
+def get_different_from_best(results_df, raw_results_df, metric='aupr'):
     """Identify best-performing data types for each gene.
 
     As an alternative to just identifying the data type with the best average
@@ -379,7 +392,7 @@ def get_different_from_best(results_df, raw_results_df):
                            (raw_results_df.training_data == best_data_type) &
                            (raw_results_df.signal == 'signal') &
                            (raw_results_df.data_type == 'test')]
-        ).sort_values(by=['seed', 'fold'])['aupr'].values
+        ).sort_values(by=['seed', 'fold'])[metric].values
 
         if len(other_data_types) == 0:
             continue
@@ -391,7 +404,7 @@ def get_different_from_best(results_df, raw_results_df):
                                (raw_results_df.training_data == other_data_type) &
                                (raw_results_df.signal == 'signal') &
                                (raw_results_df.data_type == 'test')]
-            ).sort_values(by=['seed', 'fold'])['aupr'].values
+            ).sort_values(by=['seed', 'fold'])[metric].values
 
             p_value = ttest_rel(best_data_dist, other_data_dist)[1]
 

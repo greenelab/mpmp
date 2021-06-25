@@ -7,6 +7,7 @@
 # 
 # Notebook parameters:
 # * SIG_ALPHA (float): significance cutoff (after FDR correction)
+# * PLOT_AUROC (bool): if True plot AUROC, else plot AUPR
 
 # In[1]:
 
@@ -22,9 +23,6 @@ import mpmp.config as cfg
 import mpmp.utilities.analysis_utilities as au
 import mpmp.utilities.plot_utilities as plu
 
-get_ipython().run_line_magic('load_ext', 'autoreload')
-get_ipython().run_line_magic('autoreload', '2')
-
 
 # In[2]:
 
@@ -39,6 +37,15 @@ SIG_ALPHA = 0.001
 
 # if True, save figures to ./images directory
 SAVE_FIGS = True
+
+# if True, plot AUROC instead of AUPR
+PLOT_AUROC = False
+if PLOT_AUROC:
+    plot_metric = 'auroc'
+    images_dir = Path(cfg.images_dirs['mutation'], 'auroc')
+else:
+    plot_metric = 'aupr'
+    images_dir = Path(cfg.images_dirs['mutation'])
 
 
 # In[3]:
@@ -102,7 +109,9 @@ results_df.head()
 # In[6]:
 
 
-all_results_df = au.compare_all_data_types(results_df, SIG_ALPHA)
+all_results_df = au.compare_all_data_types(results_df,
+                                           SIG_ALPHA,
+                                           metric=plot_metric)
 
 all_results_df.sort_values(by='p_value').head(10)
 
@@ -123,6 +132,7 @@ plu.plot_volcano_baseline(all_results_df,
                           axarr,
                           filtered_data_map,
                           SIG_ALPHA,
+                          metric=plot_metric,
                           verbose=True)
 
 if SAVE_FIGS:
@@ -149,6 +159,7 @@ plu.plot_volcano_baseline(all_results_df,
                           axarr,
                           filtered_data_map,
                           SIG_ALPHA,
+                          metric=plot_metric,
                           verbose=True)
     
 if SAVE_FIGS:
@@ -176,8 +187,8 @@ plu.plot_volcano_comparison(results_df,
                             axarr,
                             filtered_data_map,
                             SIG_ALPHA,
+                            metric=plot_metric,
                             verbose=True)
-    
 
 if SAVE_FIGS:
     images_dir = Path(cfg.images_dirs['mutation'])
@@ -204,6 +215,7 @@ plu.plot_volcano_comparison(results_df,
                             axarr,
                             filtered_data_map,
                             SIG_ALPHA,
+                            metric=plot_metric,
                             verbose=True)
 
 if SAVE_FIGS:
@@ -225,6 +237,7 @@ fig, axarr = plt.subplots(2, 1)
 plu.plot_boxes(all_results_df,
                axarr,
                training_data_map,
+               metric=plot_metric,
                orientation='v',
                verbose=True)
 
@@ -247,6 +260,7 @@ fig, axarr = plt.subplots(1, 2)
 plu.plot_boxes(all_results_df,
                axarr,
                training_data_map,
+               metric=plot_metric,
                verbose=True)
 
 
@@ -260,7 +274,7 @@ heatmap_df = (all_results_df
 heatmap_df.iloc[:, :5]
 
 
-# In[38]:
+# In[14]:
 
 
 sns.set({'figure.figsize': (28, 6)})
@@ -269,7 +283,8 @@ sns.set_context('notebook', font_scale=1.5)
 ax = plu.plot_heatmap(heatmap_df,
                       all_results_df.reset_index(drop=True),
                       different_from_best=True,
-                      raw_results_df=results_df)
+                      raw_results_df=results_df,
+                      metric=plot_metric)
 
 plt.title('Performance by data type for Vogelstein et al. genes, all data types', pad=15)
 
