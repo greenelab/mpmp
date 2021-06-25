@@ -136,7 +136,6 @@ plu.plot_volcano_baseline(all_results_df,
                           verbose=True)
 
 if SAVE_FIGS:
-    images_dir = Path(cfg.images_dirs['mutation'])
     images_dir.mkdir(exist_ok=True)
     plt.savefig(images_dir / 'all_vs_shuffled_extended.svg', bbox_inches='tight')
     plt.savefig(images_dir / 'all_vs_shuffled_extended.png',
@@ -163,8 +162,6 @@ plu.plot_volcano_baseline(all_results_df,
                           verbose=True)
     
 if SAVE_FIGS:
-    images_dir = Path(cfg.images_dirs['mutation'])
-    images_dir.mkdir(exist_ok=True)
     plt.savefig(images_dir / 'all_vs_shuffled.svg', bbox_inches='tight')
     plt.savefig(images_dir / 'all_vs_shuffled.png',
                 dpi=300, bbox_inches='tight')
@@ -191,8 +188,6 @@ plu.plot_volcano_comparison(results_df,
                             verbose=True)
 
 if SAVE_FIGS:
-    images_dir = Path(cfg.images_dirs['mutation'])
-    images_dir.mkdir(exist_ok=True)
     plt.savefig(images_dir / 'all_comparison_extended.svg', bbox_inches='tight')
     plt.savefig(images_dir / 'all_comparison_extended.png',
                 dpi=300, bbox_inches='tight')
@@ -219,8 +214,6 @@ plu.plot_volcano_comparison(results_df,
                             verbose=True)
 
 if SAVE_FIGS:
-    images_dir = Path(cfg.images_dirs['mutation'])
-    images_dir.mkdir(exist_ok=True)
     plt.savefig(images_dir / 'all_comparison.svg', bbox_inches='tight')
     plt.savefig(images_dir / 'all_comparison.png',
                 dpi=300, bbox_inches='tight')
@@ -242,8 +235,6 @@ plu.plot_boxes(all_results_df,
                verbose=True)
 
 if SAVE_FIGS:
-    images_dir = Path(cfg.images_dirs['mutation'])
-    images_dir.mkdir(exist_ok=True)
     plt.savefig(images_dir / 'all_boxes.svg', bbox_inches='tight')
     plt.savefig(images_dir / 'all_boxes.png',
                 dpi=300, bbox_inches='tight')
@@ -289,7 +280,6 @@ ax = plu.plot_heatmap(heatmap_df,
 plt.title('Performance by data type for Vogelstein et al. genes, all data types', pad=15)
 
 if SAVE_FIGS:
-    images_dir = Path(cfg.images_dirs['mutation'])
     plt.savefig(images_dir / 'all_heatmap.svg', bbox_inches='tight')
     plt.savefig(images_dir / 'all_heatmap.png',
                 dpi=300, bbox_inches='tight')
