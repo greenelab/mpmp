@@ -23,21 +23,27 @@ import mpmp.config as cfg
 import mpmp.utilities.analysis_utilities as au
 import mpmp.utilities.plot_utilities as plu
 
-get_ipython().run_line_magic('load_ext', 'autoreload')
-get_ipython().run_line_magic('autoreload', '2')
-
 
 # In[2]:
 
-
-# if True, save figures to ./images directory
-SAVE_FIGS = True
 
 results_dir = Path(
     cfg.results_dirs['multimodal'],
     'pilot_results_all_compressed',
     'gene'
 ).resolve()
+
+# if True, save figures to ./images directory
+SAVE_FIGS = True
+
+# if True, plot AUROC instead of AUPR
+PLOT_AUROC = False
+if PLOT_AUROC:
+    plot_metric = 'auroc'
+    images_dir = Path(cfg.images_dirs['multimodal'], 'auroc')
+else:
+    plot_metric = 'aupr'
+    images_dir = Path(cfg.images_dirs['multimodal'])
 
 
 # ## Results with compressed features (figures in main paper)
@@ -78,7 +84,8 @@ data_order =['expression.me_27k',
 
 plu.plot_multi_omics_raw_results(results_df,
                                  axarr,
-                                 data_order)
+                                 data_order,
+                                 metric=plot_metric)
 
 handles = []
 for ix, data in enumerate(data_order):
@@ -130,7 +137,7 @@ for training_data in all_results_df.training_data.unique():
     data_compare_df = au.compare_control_ind(
         all_results_df[all_results_df.training_data == training_data],
         identifier='identifier',
-        metric='aupr',
+        metric=plot_metric,
         verbose=True
     )
     data_compare_df['training_data'] = training_data
@@ -171,7 +178,8 @@ colors = sns.color_palette()[:3] + sns.color_palette('Dark2')[:4]
 plu.plot_multi_omics_results(compare_df,
                              axarr,
                              data_names,
-                             colors)
+                             colors,
+                             metric=plot_metric)
 
 handles = []
 for ix, data in enumerate(list(data_names.values())):
@@ -184,7 +192,6 @@ plt.tight_layout()
 if SAVE_FIGS:
     svg_filename = 'multi_omics_boxes.svg'
     png_filename = 'multi_omics_boxes.png'
-    images_dir = Path(cfg.images_dirs['multimodal'])
     images_dir.mkdir(exist_ok=True)
     plt.savefig(images_dir / svg_filename, bbox_inches='tight')
     plt.savefig(images_dir / png_filename, dpi=300, bbox_inches='tight')
@@ -211,13 +218,12 @@ sns.set_style('whitegrid')
 sns.set_palette('Set2')
 
 plu.plot_best_multi_omics_results(compare_df,
-                                  ylim=(0.0, 0.6))
+                                  ylim=(0.0, 0.6),
+                                  metric=plot_metric)
 
 if SAVE_FIGS:
     svg_filename = 'multi_omics_best_model.svg'
     png_filename = 'multi_omics_best_model.png'
-    images_dir = Path(cfg.images_dirs['multimodal'])
-    images_dir.mkdir(exist_ok=True)
     plt.savefig(images_dir / svg_filename, bbox_inches='tight')
     plt.savefig(images_dir / png_filename, dpi=300, bbox_inches='tight')
 
@@ -268,7 +274,8 @@ data_order =['expression.me_27k',
 
 plu.plot_multi_omics_raw_results(results_df,
                                  axarr,
-                                 data_order)
+                                 data_order,
+                                 metric=plot_metric)
 
 handles = []
 for ix, data in enumerate(data_order):
@@ -289,7 +296,7 @@ for training_data in results_df.training_data.unique():
     data_compare_df = au.compare_control_ind(
         results_df[results_df.training_data == training_data],
         identifier='identifier',
-        metric='aupr',
+        metric=plot_metric,
         verbose=True
     )
     data_compare_df['training_data'] = training_data
@@ -330,7 +337,8 @@ colors = sns.color_palette()[:3] + sns.color_palette('Dark2')[:4]
 plu.plot_multi_omics_results(compare_df,
                              axarr,
                              data_names,
-                             colors)
+                             colors,
+                             metric=plot_metric)
 
 handles = []
 for ix, data in enumerate(list(data_names.values())):
@@ -343,8 +351,6 @@ plt.tight_layout()
 if SAVE_FIGS:
     svg_filename = 'multi_omics_boxes_raw_feats.svg'
     png_filename = 'multi_omics_boxes_raw_feats.png'
-    images_dir = Path(cfg.images_dirs['multimodal'])
-    images_dir.mkdir(exist_ok=True)
     plt.savefig(images_dir / svg_filename, bbox_inches='tight')
     plt.savefig(images_dir / png_filename, dpi=300, bbox_inches='tight')
 
@@ -362,7 +368,7 @@ print(compare_df.training_data.unique())
 compare_df[compare_df.gene == 'TP53'].head(10)
 
 
-# In[18]:
+# In[17]:
 
 
 sns.set({'figure.figsize': (13, 6)})
@@ -370,12 +376,12 @@ sns.set_style('whitegrid')
 sns.set_palette('Set2')
 
 plu.plot_best_multi_omics_results(compare_df,
-                                  ylim=(0.0, 0.7))
+                                  ylim=(0.0, 0.7),
+                                  metric=plot_metric)
 
 if SAVE_FIGS:
     svg_filename = 'multi_omics_best_model_raw_feats.svg'
     png_filename = 'multi_omics_best_model_raw_feats.png'
-    images_dir = Path(cfg.images_dirs['multimodal'])
     images_dir.mkdir(exist_ok=True)
     plt.savefig(images_dir / svg_filename, bbox_inches='tight')
     plt.savefig(images_dir / png_filename, dpi=300, bbox_inches='tight')

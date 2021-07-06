@@ -7,6 +7,7 @@
 # 
 # Notebook parameters:
 # * SIG_ALPHA (float): significance cutoff (after FDR correction)
+# * PLOT_AUROC (bool): if True plot AUROC, else plot AUPR
 
 # In[1]:
 
@@ -37,6 +38,15 @@ SIG_ALPHA = 0.001
 
 # if True, save figures to ./images directory
 SAVE_FIGS = True
+
+# if True, plot AUROC instead of AUPR
+PLOT_AUROC = False
+if PLOT_AUROC:
+    plot_metric = 'auroc'
+    images_dir = Path(cfg.images_dirs['mutation'], 'auroc')
+else:
+    plot_metric = 'aupr'
+    images_dir = Path(cfg.images_dirs['mutation'])
 
 
 # In[3]:
@@ -95,7 +105,9 @@ results_df.head()
 # In[6]:
 
 
-all_results_df = au.compare_all_data_types(results_df, SIG_ALPHA)
+all_results_df = au.compare_all_data_types(results_df,
+                                           SIG_ALPHA,
+                                           metric=plot_metric)
 
 all_results_df.sort_values(by='p_value').head(10)
 
@@ -112,10 +124,10 @@ plu.plot_volcano_baseline(all_results_df,
                           axarr,
                           training_data_map,
                           SIG_ALPHA,
+                          metric=plot_metric,
                           verbose=True)
     
 if SAVE_FIGS:
-    images_dir = Path(cfg.images_dirs['mutation'])
     images_dir.mkdir(exist_ok=True)
     plt.savefig(images_dir / 'methylation_vs_shuffled.svg', bbox_inches='tight')
     plt.savefig(images_dir / 'methylation_vs_shuffled.png',
@@ -136,11 +148,11 @@ plu.plot_volcano_comparison(results_df,
                             axarr,
                             training_data_map,
                             SIG_ALPHA,
+                            metric=plot_metric,
                             xlim=(-0.6, 0.6),
                             verbose=True)
 
 if SAVE_FIGS:
-    images_dir = Path(cfg.images_dirs['mutation'])
     plt.savefig(images_dir / 'methylation_comparison.svg', bbox_inches='tight')
     plt.savefig(images_dir / 'methylation_comparison.png',
                 dpi=300, bbox_inches='tight')
@@ -157,10 +169,10 @@ fig, axarr = plt.subplots(1, 2)
 plu.plot_boxes(all_results_df,
                axarr,
                training_data_map,
+               metric=plot_metric,
                verbose=True)
 
 if SAVE_FIGS:
-    images_dir = Path(cfg.images_dirs['mutation'])
     plt.savefig(images_dir / 'methylation_best_boxes.svg', bbox_inches='tight')
     plt.savefig(images_dir / 'methylation_best_boxes.png',
                 dpi=300, bbox_inches='tight')
@@ -176,7 +188,7 @@ heatmap_df = (all_results_df
 heatmap_df.iloc[:, :5]
 
 
-# In[12]:
+# In[11]:
 
 
 sns.set({'figure.figsize': (32, 5)})
@@ -185,12 +197,12 @@ sns.set_context('notebook', font_scale=1.5)
 ax = plu.plot_heatmap(heatmap_df,
                       all_results_df.reset_index(drop=True),
                       different_from_best=True,
-                      raw_results_df=results_df)
+                      raw_results_df=results_df,
+                      metric=plot_metric)
 
 plt.title('Performance by data type for Vogelstein et al. genes, expression vs. methylation', pad=15)
 
 if SAVE_FIGS:
-    images_dir = Path(cfg.images_dirs['mutation'])
     plt.savefig(images_dir / 'methylation_heatmap.svg', bbox_inches='tight')
     plt.savefig(images_dir / 'methylation_heatmap.png',
                 dpi=300, bbox_inches='tight')

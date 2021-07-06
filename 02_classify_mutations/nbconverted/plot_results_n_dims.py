@@ -7,6 +7,7 @@
 # 
 # Notebook parameters:
 # * SIG_ALPHA (float): significance cutoff after FDR correction
+# * PLOT_AUROC (bool): if True plot AUROC, else plot AUPR
 
 # In[1]:
 
@@ -27,13 +28,24 @@ import mpmp.utilities.analysis_utilities as au
 
 
 # set results directories
-results_dir = Path(cfg.results_dirs['mutation'], 'methylation_results_new', 'gene').resolve()
+results_dir = Path(cfg.results_dirs['mutation'],
+                   'methylation_results',
+                   'gene').resolve()
 
 # set significance cutoff after FDR correction
 SIG_ALPHA = 0.001
 
 # if True, save figures to ./images directory
 SAVE_FIGS = True
+
+# if True, plot AUROC instead of AUPR
+PLOT_AUROC = False
+if PLOT_AUROC:
+    plot_metric = 'auroc'
+    images_dir = Path(cfg.images_dirs['mutation'], 'auroc')
+else:
+    plot_metric = 'aupr'
+    images_dir = Path(cfg.images_dirs['mutation'])
 
 
 # In[3]:
@@ -98,7 +110,7 @@ for row_ix, n_dims in enumerate(compressed_results_df.n_dims.unique()):
         compare_df = au.compare_results(raw_data_df,
                                         compressed_data_df,
                                         identifier='identifier',
-                                        metric='aupr',
+                                        metric=plot_metric,
                                         correction=True,
                                         correction_method='fdr_bh',
                                         correction_alpha=SIG_ALPHA,
@@ -120,7 +132,8 @@ for row_ix, n_dims in enumerate(compressed_results_df.n_dims.unique()):
                 va='center', ha='center', color=l.get_color(),
                 backgroundcolor=ax.get_facecolor())
         # NOTE compare_results function takes df2 - df1, so we have to invert them here
-        ax.set_xlabel('AUPR(compressed) - AUPR(raw)')
+        ax.set_xlabel('{}(compressed) - {}(raw)'.format(
+                          plot_metric.upper(), plot_metric.upper()))
         ax.set_ylabel(r'$-\log_{10}($adjusted $p$-value$)$')
         ax.set_xlim((-0.75, 0.75))
         ax.set_ylim((0, 5))
@@ -157,7 +170,8 @@ plt.subplots_adjust(top=0.94)
 raw_compare_df = au.compare_all_data_types(raw_results_df,
                                            SIG_ALPHA,
                                            filter_genes=False,
-                                           compare_ind=True)
+                                           compare_ind=True,
+                                           metric=plot_metric)
 
 raw_compare_df.sort_values(by=['training_data'], inplace=True)
 raw_compare_df.head(5)
@@ -168,7 +182,8 @@ raw_compare_df.head(5)
 
 raw_compare_all_df = au.compare_all_data_types(raw_results_df,
                                                SIG_ALPHA,
-                                               filter_genes=False)
+                                               filter_genes=False,
+                                               metric=plot_metric)
 
 raw_compare_all_df.sort_values(by=['nlog10_p'], inplace=True)
 raw_compare_all_df.head(5)
@@ -180,7 +195,8 @@ raw_compare_all_df.head(5)
 cmp_compare_df = au.compare_data_types_and_dims(compressed_results_df,
                                                 SIG_ALPHA,
                                                 filter_genes=False,
-                                                compare_ind=True)
+                                                compare_ind=True,
+                                                metric=plot_metric)
 
 cmp_compare_df.sort_values(by=['training_data', 'n_dims'], inplace=True)
 cmp_compare_df.head(5)
@@ -191,6 +207,7 @@ cmp_compare_df.head(5)
 
 cmp_compare_all_df = au.compare_data_types_and_dims(compressed_results_df,
                                                     SIG_ALPHA,
+                                                    metric=plot_metric,
                                                     filter_genes=False)
 
 cmp_compare_all_df.sort_values(by=['nlog10_p'], inplace=True)
@@ -210,11 +227,13 @@ sns.set({'figure.figsize': (21, 10)})
 sns.set_style('whitegrid')
 fig, axarr = plt.subplots(2, 3)
 
+delta_metric = 'delta_{}'.format(plot_metric)
+
 for ix, gene in enumerate(genes):
     ax = axarr[ix // 3, ix % 3]
     cmp_gene_df = cmp_compare_df[cmp_compare_df.gene == gene].copy()
     cmp_gene_df.training_data.replace(to_replace=train_names, inplace=True)
-    g = sns.pointplot(data=cmp_gene_df, x='n_dims', y='delta_aupr',
+    g = sns.pointplot(data=cmp_gene_df, x='n_dims', y=delta_metric,
                       hue='training_data', ax=ax, legend=False)
     if ix != 0:
         ax.get_legend().remove()
@@ -225,7 +244,7 @@ for ix, gene in enumerate(genes):
     for color_ix, train_data in enumerate(raw_compare_df.training_data.unique()):
         raw_vals = raw_compare_df[
             (raw_compare_df.gene == gene) &
-            (raw_compare_df.training_data == train_data)].delta_aupr.values
+            (raw_compare_df.training_data == train_data)][delta_metric].values
         
         # get mean and plot as dotted line
         raw_mean = np.mean(raw_vals)
@@ -281,14 +300,15 @@ for ix, gene in enumerate(genes):
         
     ax.set_title('{} mutation prediction, performance vs. PCA components'.format(gene), size=14)
     ax.set_xlabel('Number of PCA components', size=14)
-    ax.set_ylabel('AUPR(signal) - AUPR(shuffled)', size=14)
+    ax.set_ylabel('{}(signal) - {}(shuffled)'.format(
+                      plot_metric.upper(), plot_metric.upper()),
+                  size=14)
     raw_gene_df = raw_compare_df[raw_compare_df.gene == gene]
     ax.set_ylim(-0.05, 0.7)
     
 plt.tight_layout()
 
 if SAVE_FIGS:
-    images_dir = Path(cfg.images_dirs['mutation'])
     images_dir.mkdir(exist_ok=True)
     plt.savefig(images_dir / 'methylation_genes.svg', bbox_inches='tight')
     plt.savefig(images_dir / 'methylation_genes.png',
@@ -319,7 +339,8 @@ ax = axarr[0, 0]
 sns.boxplot(data=compare_df, x='n_dims', y='delta_mean', hue='training_data', ax=ax)
 ax.set_title('Prediction for all genes, performance vs. PCA components')
 ax.set_xlabel('Number of PCA components')
-ax.set_ylabel('AUPR(signal) - AUPR(shuffled)')
+ax.set_ylabel('{}(signal) - {}(shuffled)'.format(
+                  plot_metric.upper(), plot_metric.upper()))
 ax.set_ylim(-0.3, max(compare_df.delta_mean + 0.05))
 
 
@@ -331,14 +352,16 @@ print(gene_list)
 sns.boxplot(data=compare_df[compare_df.gene.isin(gene_list)], x='n_dims', y='delta_mean', hue='training_data', ax=ax)
 ax.set_title('Prediction for sig genes only, performance vs. PCA components')
 ax.set_xlabel('Number of PCA components')
-ax.set_ylabel('AUPR(signal) - AUPR(shuffled)')
+ax.set_ylabel('{}(signal) - {}(shuffled)'.format(
+                  plot_metric.upper(), plot_metric.upper()))
 ax.set_ylim(-0.2, max(compare_df.delta_mean + 0.05))
 
 ax = axarr[1, 0]
 sns.stripplot(data=compare_df, x='n_dims', y='delta_mean', hue='training_data', dodge=True, ax=ax)
 ax.set_title('Prediction for all genes, performance vs. PCA components')
 ax.set_xlabel('Number of PCA components')
-ax.set_ylabel('AUPR(signal) - AUPR(shuffled)')
+ax.set_ylabel('{}(signal) - {}(shuffled)'.format(
+                  plot_metric.upper(), plot_metric.upper()))
 ax.set_ylim(-0.3, max(compare_df.delta_mean + 0.05))
 
 ax = axarr[1, 1]
@@ -346,7 +369,8 @@ sns.stripplot(data=compare_df[compare_df.gene.isin(gene_list)], x='n_dims', y='d
               hue='training_data', dodge=True, ax=ax)
 ax.set_title('Prediction for sig genes only, performance vs. PCA components')
 ax.set_xlabel('Number of PCA components')
-ax.set_ylabel('AUPR(signal) - AUPR(shuffled)')
+ax.set_ylabel('{}(signal) - {}(shuffled)'.format(
+                  plot_metric.upper(), plot_metric.upper()))
 ax.set_ylim(-0.2, max(compare_df.delta_mean + 0.05))
 
 
@@ -365,7 +389,8 @@ sns.boxplot(data=compare_df, x='n_dims', y='delta_mean', hue='training_data', no
 ax.get_legend().remove()
 ax.set_title('Prediction for all genes, performance vs. PCA components', size=13)
 ax.set_xlabel('Number of PCA components', size=13)
-ax.set_ylabel('AUPR(signal) - AUPR(shuffled)', size=13)
+ax.set_ylabel('{}(signal) - {}(shuffled)'.format(
+                  plot_metric.upper(), plot_metric.upper()))
 ax.set_ylim(-0.2, 0.7)
 
 
@@ -380,12 +405,11 @@ ax.legend(title='Training data', fontsize=12, title_fontsize=12,
           loc='lower left')
 ax.set_title('Prediction for sig genes only, performance vs. PCA components', size=13)
 ax.set_xlabel('Number of PCA components', size=13)
-ax.set_ylabel('AUPR(signal) - AUPR(shuffled)', size=13)
+ax.set_ylabel('{}(signal) - {}(shuffled)'.format(
+                  plot_metric.upper(), plot_metric.upper()))
 ax.set_ylim(-0.2, 0.7)
 
 if SAVE_FIGS:
-    images_dir = Path(cfg.images_dirs['mutation'])
-    images_dir.mkdir(exist_ok=True)
     plt.savefig(images_dir / 'methylation_compress_boxes.svg', bbox_inches='tight')
     plt.savefig(images_dir / 'methylation_compress_boxes.png',
                 dpi=300, bbox_inches='tight')
