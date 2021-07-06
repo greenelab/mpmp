@@ -11,6 +11,7 @@ def plot_volcano_baseline(results_df,
                           axarr,
                           training_data_map,
                           sig_alpha,
+                          sig_alphas=[0.05, 0.01, 0.001],
                           metric='aupr',
                           xlim=None,
                           ylim=None,
@@ -60,15 +61,17 @@ def plot_volcano_baseline(results_df,
         # add vertical line at 0
         ax.axvline(x=0, linestyle='--', linewidth=1.25, color='black')
 
-        # add horizontal line at statistical significance threshold
-        l = ax.axhline(y=-np.log10(sig_alpha), linestyle='--', linewidth=1.25)
+        for alpha in sig_alphas:
 
-        # label horizontal line with significance threshold
-        # (matplotlib makes this fairly difficult, sadly)
-        ax.text(0.9, -np.log10(sig_alpha)+0.02,
-                r'$\mathbf{{\alpha = {}}}$'.format(sig_alpha),
-                va='center', ha='center', color=l.get_color(),
-                backgroundcolor=ax.get_facecolor())
+            # add horizontal line at statistical significance threshold
+            l = ax.axhline(y=-np.log10(alpha), linestyle='--', linewidth=1.25)
+
+            # label horizontal line with significance threshold
+            # (matplotlib makes this fairly difficult, sadly)
+            ax.text(0.875, -np.log10(alpha)+0.02,
+                    r'$\mathbf{{\alpha = {}}}$'.format(alpha),
+                    va='center', ha='center', color=l.get_color(),
+                    backgroundcolor=ax.get_facecolor())
 
         # label axes and set axis limits
         ax.set_xlabel('{}(signal) - {}(shuffled)'.format(
@@ -109,6 +112,7 @@ def plot_volcano_comparison(results_df,
                             axarr,
                             training_data_map,
                             sig_alpha,
+                            sig_alphas=[0.05, 0.01, 0.001],
                             metric='aupr',
                             xlim=None,
                             ylim=None,
@@ -165,15 +169,17 @@ def plot_volcano_comparison(results_df,
         # add vertical line at 0
         ax.axvline(x=0, linestyle='--', linewidth=1.25, color='black')
 
-        # add horizontal line at statistical significance threshold
-        l = ax.axhline(y=-np.log10(sig_alpha), linestyle='--', linewidth=1.25)
+        for alpha in sig_alphas:
 
-        # label horizontal line with significance threshold
-        # (matplotlib makes this fairly difficult, sadly)
-        ax.text(0.5, -np.log10(sig_alpha)+0.01,
-                r'$\mathbf{{\alpha = {}}}$'.format(sig_alpha),
-                va='center', ha='center', color=l.get_color(),
-                backgroundcolor=ax.get_facecolor())
+            # add horizontal line at statistical significance threshold
+            l = ax.axhline(y=-np.log10(alpha), linestyle='--', linewidth=1.25)
+
+            # label horizontal line with significance threshold
+            # (matplotlib makes this fairly difficult, sadly)
+            ax.text(0.5, -np.log10(alpha)+0.01,
+                    r'$\mathbf{{\alpha = {}}}$'.format(alpha),
+                    va='center', ha='center', color=l.get_color(),
+                    backgroundcolor=ax.get_facecolor())
 
         # label axes and set axis limits
         ax.set_xlabel('{}({}) - {}(expression)'.format(
