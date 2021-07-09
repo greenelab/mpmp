@@ -23,6 +23,9 @@ import mpmp.config as cfg
 import mpmp.utilities.analysis_utilities as au
 import mpmp.utilities.plot_utilities as plu
 
+get_ipython().run_line_magic('load_ext', 'autoreload')
+get_ipython().run_line_magic('autoreload', '2')
+
 
 # In[2]:
 

@@ -580,7 +580,7 @@ def plot_best_multi_omics_results(results_df,
 
     delta_metric = 'delta_{}'.format(metric)
 
-    from scipy.stats import ttest_ind
+    from scipy.stats import wilcoxon
 
     # plot mean performance over all genes in pilot experiment
     plot_df = pd.DataFrame()
@@ -608,8 +608,8 @@ def plot_best_multi_omics_results(results_df,
 
         # calculate difference between means and t-test p-val for that data type
         mean_diff = max_single_df[delta_metric].mean() - max_multi_df[delta_metric].mean()
-        _, p_val = ttest_ind(max_single_df[delta_metric].values,
-                             max_multi_df[delta_metric].values)
+        _, p_val = wilcoxon(max_single_df.sort_values(['seed', 'fold'])[delta_metric].values,
+                            max_multi_df.sort_values(['seed', 'fold'])[delta_metric].values)
         print('{} diff: {:.4f} (pval: {:.4f})'.format(gene, mean_diff, p_val))
 
         plot_df = pd.concat((plot_df, max_single_df, max_multi_df))
