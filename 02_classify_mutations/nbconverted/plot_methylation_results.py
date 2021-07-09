@@ -161,16 +161,20 @@ if SAVE_FIGS:
 # In[9]:
 
 
-sns.set({'figure.figsize': (15, 6)})
+sns.set({'figure.figsize': (13, 6)})
 sns.set_style('whitegrid')
 
 fig, axarr = plt.subplots(1, 2)
 
-plu.plot_boxes(all_results_df,
-               axarr,
-               training_data_map,
-               metric=plot_metric,
-               verbose=True)
+tests_df = plu.plot_boxes(all_results_df,
+                          axarr,
+                          training_data_map,
+                          metric=plot_metric,
+                          verbose=True,
+                          pairwise_tests=True,
+                          pairwise_box_pairs=[('gene expression', '27k methylation'),
+                                              ('27k methylation', '450k methylation'),
+                                              ('gene expression', '450k methylation')])
 
 if SAVE_FIGS:
     plt.savefig(images_dir / 'methylation_best_boxes.svg', bbox_inches='tight')
@@ -181,6 +185,14 @@ if SAVE_FIGS:
 # In[10]:
 
 
+# pairwise rank sum tests comparing results distributions
+# H0: results distributions are the same between the data types
+tests_df.sort_values(['gene_set', 'p_value'])
+
+
+# In[11]:
+
+
 heatmap_df = (all_results_df
     .pivot(index='training_data', columns='gene', values='delta_mean')
     .reindex(training_data_map.values())
@@ -188,7 +200,7 @@ heatmap_df = (all_results_df
 heatmap_df.iloc[:, :5]
 
 
-# In[11]:
+# In[12]:
 
 
 sns.set({'figure.figsize': (32, 5)})

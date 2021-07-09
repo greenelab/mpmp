@@ -23,6 +23,9 @@ import mpmp.config as cfg
 import mpmp.utilities.analysis_utilities as au
 import mpmp.utilities.plot_utilities as plu
 
+get_ipython().run_line_magic('load_ext', 'autoreload')
+get_ipython().run_line_magic('autoreload', '2')
+
 
 # In[2]:
 
@@ -227,12 +230,18 @@ sns.set_style('whitegrid')
 
 fig, axarr = plt.subplots(2, 1)
 
-plu.plot_boxes(all_results_df,
-               axarr,
-               training_data_map,
-               metric=plot_metric,
-               orientation='v',
-               verbose=True)
+tests_df = plu.plot_boxes(all_results_df,
+                          axarr,
+                          training_data_map,
+                          metric=plot_metric,
+                          orientation='v',
+                          verbose=True,
+                          pairwise_tests=True,
+                          pairwise_box_pairs=[('gene expression', '27k methylation'),
+                                              ('27k methylation', '450k methylation'),
+                                              ('450k methylation', 'RPPA'),
+                                              ('RPPA', 'microRNA'),
+                                              ('microRNA', 'mutational signatures')])
 
 if SAVE_FIGS:
     plt.savefig(images_dir / 'all_boxes.svg', bbox_inches='tight')
@@ -241,6 +250,14 @@ if SAVE_FIGS:
 
 
 # In[12]:
+
+
+# pairwise rank sum tests comparing results distributions
+# H0: results distributions are the same between the data types
+tests_df.sort_values(['gene_set', 'p_value'])
+
+
+# In[13]:
 
 
 sns.set({'figure.figsize': (15, 6)})
@@ -255,7 +272,7 @@ plu.plot_boxes(all_results_df,
                verbose=True)
 
 
-# In[13]:
+# In[14]:
 
 
 heatmap_df = (all_results_df
@@ -265,7 +282,7 @@ heatmap_df = (all_results_df
 heatmap_df.iloc[:, :5]
 
 
-# In[14]:
+# In[15]:
 
 
 sns.set({'figure.figsize': (28, 6)})
