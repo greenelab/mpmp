@@ -242,7 +242,7 @@ def plot_boxes(results_df,
     except TypeError:
         # no axarr.ndim => only a single axis
         ax_all = axarr
-    sns.boxplot(data=results_df, x='training_data', y='delta_mean', notch=True,
+    sns.boxplot(data=results_df, x='training_data', y='delta_mean',
                 ax=ax_all, order=list(training_data_map.values()))
     ax_all.set_title('Prediction for all genes, performance vs. data type', size=14)
     if orientation == 'v':
@@ -265,7 +265,7 @@ def plot_boxes(results_df,
             print(gene_list.shape)
             print(gene_list)
         sns.boxplot(data=results_df[results_df.gene.isin(gene_list)],
-                    x='training_data', y='delta_mean', notch=True, ax=ax_sig,
+                    x='training_data', y='delta_mean', ax=ax_sig,
                     order=list(training_data_map.values()))
         ax_sig.set_title('Prediction for significant genes only, performance vs. data type', size=14)
         ax_sig.set_xlabel('Data type', size=14)
@@ -327,7 +327,8 @@ def add_annotation(ax, results_df, all_pairs, metric, box_pairs):
                             pvalues=box_pvals,
                             text_format='star',
                             loc='inside',
-                            verbose=0)
+                            verbose=0,
+                            fontsize=16)
 
     return pairwise_tests_df
 
