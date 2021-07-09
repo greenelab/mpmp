@@ -301,6 +301,7 @@ def plot_boxes(results_df,
 
 
 def add_annotation(ax, results_df, all_pairs, metric, box_pairs):
+    """Add annotation for pairwise statistical tests to box plots."""
     import itertools as it
     from statannot import add_stat_annotation
 
@@ -316,7 +317,6 @@ def add_annotation(ax, results_df, all_pairs, metric, box_pairs):
     ).corr_pval.values
 
     # only display nearby pairs
-    # TODO: confidence intervals?
     _ = add_stat_annotation(ax,
                             data=results_df.sort_values(by='gene'),
                             x='training_data',
