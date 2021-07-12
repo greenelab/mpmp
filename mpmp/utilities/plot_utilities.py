@@ -11,6 +11,7 @@ def plot_volcano_baseline(results_df,
                           axarr,
                           training_data_map,
                           sig_alpha,
+                          sig_alphas=[0.05, 0.01, 0.001],
                           metric='aupr',
                           xlim=None,
                           ylim=None,
@@ -60,15 +61,17 @@ def plot_volcano_baseline(results_df,
         # add vertical line at 0
         ax.axvline(x=0, linestyle='--', linewidth=1.25, color='black')
 
-        # add horizontal line at statistical significance threshold
-        l = ax.axhline(y=-np.log10(sig_alpha), linestyle='--', linewidth=1.25)
+        for alpha in sig_alphas:
 
-        # label horizontal line with significance threshold
-        # (matplotlib makes this fairly difficult, sadly)
-        ax.text(0.9, -np.log10(sig_alpha)+0.02,
-                r'$\mathbf{{\alpha = {}}}$'.format(sig_alpha),
-                va='center', ha='center', color=l.get_color(),
-                backgroundcolor=ax.get_facecolor())
+            # add horizontal line at statistical significance threshold
+            l = ax.axhline(y=-np.log10(alpha), linestyle='--', linewidth=1.25)
+
+            # label horizontal line with significance threshold
+            # (matplotlib makes this fairly difficult, sadly)
+            ax.text(0.875, -np.log10(alpha)+0.02,
+                    r'$\mathbf{{\alpha = {}}}$'.format(alpha),
+                    va='center', ha='center', color=l.get_color(),
+                    backgroundcolor=ax.get_facecolor())
 
         # label axes and set axis limits
         ax.set_xlabel('{}(signal) - {}(shuffled)'.format(
@@ -109,6 +112,7 @@ def plot_volcano_comparison(results_df,
                             axarr,
                             training_data_map,
                             sig_alpha,
+                            sig_alphas=[0.05, 0.01, 0.001],
                             metric='aupr',
                             xlim=None,
                             ylim=None,
@@ -165,15 +169,17 @@ def plot_volcano_comparison(results_df,
         # add vertical line at 0
         ax.axvline(x=0, linestyle='--', linewidth=1.25, color='black')
 
-        # add horizontal line at statistical significance threshold
-        l = ax.axhline(y=-np.log10(sig_alpha), linestyle='--', linewidth=1.25)
+        for alpha in sig_alphas:
 
-        # label horizontal line with significance threshold
-        # (matplotlib makes this fairly difficult, sadly)
-        ax.text(0.5, -np.log10(sig_alpha)+0.01,
-                r'$\mathbf{{\alpha = {}}}$'.format(sig_alpha),
-                va='center', ha='center', color=l.get_color(),
-                backgroundcolor=ax.get_facecolor())
+            # add horizontal line at statistical significance threshold
+            l = ax.axhline(y=-np.log10(alpha), linestyle='--', linewidth=1.25)
+
+            # label horizontal line with significance threshold
+            # (matplotlib makes this fairly difficult, sadly)
+            ax.text(0.5, -np.log10(alpha)+0.01,
+                    r'$\mathbf{{\alpha = {}}}$'.format(alpha),
+                    va='center', ha='center', color=l.get_color(),
+                    backgroundcolor=ax.get_facecolor())
 
         # label axes and set axis limits
         ax.set_xlabel('{}({}) - {}(expression)'.format(
@@ -218,6 +224,8 @@ def plot_boxes(results_df,
                metric='aupr',
                orientation='h',
                verbose=False,
+               pairwise_tests=False,
+               pairwise_box_pairs=None,
                plot_significant=True):
     """Make a box plot comparing classifier results between data types.
 
@@ -230,46 +238,103 @@ def plot_boxes(results_df,
 
     # plot mean performance over all genes in Vogelstein dataset
     try:
-        ax = axarr[0]
+        ax_all = axarr[0]
     except TypeError:
         # no axarr.ndim => only a single axis
-        ax = axarr
-    sns.boxplot(data=results_df, x='training_data', y='delta_mean', notch=True,
-                ax=ax, order=list(training_data_map.values()))
-    ax.set_title('Prediction for all genes, performance vs. data type', size=14)
+        ax_all = axarr
+    sns.boxplot(data=results_df, x='training_data', y='delta_mean',
+                ax=ax_all, order=list(training_data_map.values()))
+    ax_all.set_title('Prediction for all genes, performance vs. data type', size=14)
     if orientation == 'v':
-        ax.set_xlabel('')
+        ax_all.set_xlabel('')
     else:
-        ax.set_xlabel('Data type', size=14)
-    ax.set_ylabel('{}(signal) - {}(shuffled)'.format(
+        ax_all.set_xlabel('Data type', size=14)
+    ax_all.set_ylabel('{}(signal) - {}(shuffled)'.format(
                       metric.upper(), metric.upper()),
                   size=14)
-    ax.set_ylim(-0.2, 0.7)
-    for tick in ax.get_xticklabels():
+    ax_all.set_ylim(-0.2, 0.7)
+    for tick in ax_all.get_xticklabels():
         tick.set_fontsize(12)
         tick.set_rotation(30)
 
     if plot_significant:
         # plot mean performance for genes that are significant for at least one data type
-        ax = axarr[1]
+        ax_sig = axarr[1]
         gene_list = results_df[results_df.reject_null == True].gene.unique()
         if verbose:
             print(gene_list.shape)
             print(gene_list)
         sns.boxplot(data=results_df[results_df.gene.isin(gene_list)],
-                    x='training_data', y='delta_mean', notch=True, ax=ax,
+                    x='training_data', y='delta_mean', ax=ax_sig,
                     order=list(training_data_map.values()))
-        ax.set_title('Prediction for significant genes only, performance vs. data type', size=14)
-        ax.set_xlabel('Data type', size=14)
-        ax.set_ylabel('{}(signal) - {}(shuffled)'.format(
+        ax_sig.set_title('Prediction for significant genes only, performance vs. data type', size=14)
+        ax_sig.set_xlabel('Data type', size=14)
+        ax_sig.set_ylabel('{}(signal) - {}(shuffled)'.format(
                           metric.upper(), metric.upper()),
                       size=14)
-        ax.set_ylim(-0.2, 0.7)
-        for tick in ax.get_xticklabels():
+        ax_sig.set_ylim(-0.2, 0.7)
+        for tick in ax_sig.get_xticklabels():
             tick.set_fontsize(12)
             tick.set_rotation(30)
 
     plt.tight_layout()
+
+    if pairwise_tests:
+        tests_1_df = add_annotation(ax_all,
+                                    results_df,
+                                    list(training_data_map.values()),
+                                    metric,
+                                    pairwise_box_pairs)
+        tests_1_df['gene_set'] = 'all'
+
+        if plot_significant:
+            tests_2_df = add_annotation(ax_sig,
+                                        results_df[results_df.gene.isin(gene_list)],
+                                        list(training_data_map.values()),
+                                        metric,
+                                        pairwise_box_pairs)
+            tests_2_df['gene_set'] = 'significant'
+        else:
+            tests_2_df = pd.DataFrame()
+
+        return pd.concat((tests_1_df, tests_2_df))
+
+
+def add_annotation(ax, results_df, all_pairs, metric, box_pairs):
+    """Add annotation for pairwise statistical tests to box plots."""
+    import itertools as it
+    from statannot import add_stat_annotation
+
+    # do rank-based tests for all pairs, with Bonferroni correction
+    pairwise_tests_df = _pairwise_compare(results_df,
+                                          all_pairs,
+                                          metric)
+
+    # specify statistical tests to plot
+    box_pvals = (pairwise_tests_df
+        .set_index(['data_type_1', 'data_type_2'])
+        .loc[box_pairs, :]
+    ).corr_pval.values
+
+    # only display nearby pairs
+    _ = add_stat_annotation(ax,
+                            data=results_df.sort_values(by='gene'),
+                            x='training_data',
+                            y='delta_mean',
+                            order=all_pairs,
+                            box_pairs=box_pairs,
+                            perform_stat_test=False,
+                            pvalues=box_pvals,
+                            pvalue_thresholds=[(1e-3, '***'),
+                                               (1e-2, '**'),
+                                               (0.05, '*'),
+                                               (1, 'ns')],
+                            text_format='star',
+                            loc='inside',
+                            verbose=0,
+                            fontsize=16)
+
+    return pairwise_tests_df
 
 
 def plot_heatmap(heatmap_df,
@@ -515,7 +580,7 @@ def plot_best_multi_omics_results(results_df,
 
     delta_metric = 'delta_{}'.format(metric)
 
-    from scipy.stats import ttest_ind
+    from scipy.stats import wilcoxon
 
     # plot mean performance over all genes in pilot experiment
     plot_df = pd.DataFrame()
@@ -543,8 +608,8 @@ def plot_best_multi_omics_results(results_df,
 
         # calculate difference between means and t-test p-val for that data type
         mean_diff = max_single_df[delta_metric].mean() - max_multi_df[delta_metric].mean()
-        _, p_val = ttest_ind(max_single_df[delta_metric].values,
-                             max_multi_df[delta_metric].values)
+        _, p_val = wilcoxon(max_single_df.sort_values(['seed', 'fold'])[delta_metric].values,
+                            max_multi_df.sort_values(['seed', 'fold'])[delta_metric].values)
         print('{} diff: {:.4f} (pval: {:.4f})'.format(gene, mean_diff, p_val))
 
         plot_df = pd.concat((plot_df, max_single_df, max_multi_df))
@@ -618,3 +683,29 @@ def _get_overlap_genes(results_df, gene_set, reference='Vogelstein et al.'):
         )
         overlap_genes = vogelstein_genes.intersection(other_genes)
     return overlap_genes
+
+
+def _pairwise_compare(results_df,
+                      data_types,
+                      metric,
+                      correction=True,
+                      correction_alpha=0.05,
+                      correction_method='bonferroni'):
+
+    import itertools as it
+    from scipy.stats import wilcoxon
+    p_vals = []
+    for dt1, dt2 in it.combinations(data_types, 2):
+        r1 = results_df[results_df.training_data == dt1].delta_mean.values
+        r2 = results_df[results_df.training_data == dt2].delta_mean.values
+        _, p_val = wilcoxon(r1, r2)
+        p_vals.append([dt1, dt2, p_val])
+    tests_df = pd.DataFrame(p_vals, columns=['data_type_1', 'data_type_2', 'p_value'])
+    if correction:
+        from statsmodels.stats.multitest import multipletests
+        corr = multipletests(tests_df['p_value'],
+                             alpha=correction_alpha,
+                             method=correction_method)
+        tests_df = tests_df.assign(corr_pval=corr[1], reject_null=corr[0])
+    return tests_df
+
