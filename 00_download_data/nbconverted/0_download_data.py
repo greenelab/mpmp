@@ -172,3 +172,26 @@ md5_sum = get_ipython().getoutput('md5sum $purity_filepath')
 print(md5_sum[0])
 assert md5_sum[0].split(' ')[0] == manifest_df.loc['purity'].md5
 
+
+# ### Download clinical data for survival analysis
+
+# In[15]:
+
+
+clinical_id, clinical_filename = manifest_df.loc['clinical'].id, manifest_df.loc['clinical'].filename
+url = 'http://api.gdc.cancer.gov/data/{}'.format(clinical_id)
+clinical_filepath = os.path.join(cfg.raw_data_dir, clinical_filename)
+
+if not os.path.exists(clinical_filepath):
+    urlretrieve(url, clinical_filepath)
+else:
+    print('Downloaded data file already exists, skipping download')
+
+
+# In[16]:
+
+
+md5_sum = get_ipython().getoutput('md5sum $clinical_filepath')
+print(md5_sum[0])
+assert md5_sum[0].split(' ')[0] == manifest_df.loc['clinical'].md5
+
