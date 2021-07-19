@@ -159,7 +159,6 @@ def run_cv_stratified(data_model,
             signal=signal,
             seed=data_model.seed,
             name=predictor
-
         )
         coef_df = coef_df.assign(identifier=identifier)
         if isinstance(training_data, str):
@@ -170,7 +169,7 @@ def run_cv_stratified(data_model,
         results['{}_coef'.format(exp_string)].append(coef_df)
 
         # get relevant metrics
-        if classify:
+        if predictor == 'classify':
             try:
                 metric_df, auc_df, aupr_df = clf.get_metrics(
                     y_train_df, y_test_df, y_cv_df, y_pred_train,
@@ -224,8 +223,6 @@ def run_cv_stratified(data_model,
 
         if output_preds:
             if predictor == 'survival':
-                # survival predicts a function for each sample
-                # not sure how to serialize
                 raise NotImplementedError
             get_preds = clf.get_preds if classify else reg.get_preds
             results['{}_preds'.format(exp_string)].append(
@@ -309,12 +306,17 @@ def extract_coefficients(cv_pipeline,
     final_pipeline = cv_pipeline.best_estimator_
     final_classifier = final_pipeline.named_steps[name]
 
+    if name == 'survival':
+        weights = final_classifier.coef_.flatten()
+    else:
+        weights = final_classifier.coef_[0]
+
     coef_df = pd.DataFrame.from_dict(
-        {"feature": feature_names, "weight": final_classifier.coef_[0]}
+        {"feature": feature_names, "weight": weights}
     )
 
-    coef_df = (
-        coef_df.assign(abs=coef_df["weight"].abs())
+    coef_df = (coef_df
+        .assign(abs=coef_df["weight"].abs())
         .sort_values("abs", ascending=False)
         .reset_index(drop=True)
         .assign(signal=signal, seed=seed)

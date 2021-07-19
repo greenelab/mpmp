@@ -41,21 +41,17 @@ def train_survival(X_train,
     The full pipeline sklearn object and y matrix predictions for training, testing,
     and cross validation
     """
-    print(X_train.shape)
-    print(X_test.shape)
-    print(y_train.head())
-    exit()
 
     # set up the cross-validation parameters
     surv_parameters = {
-        "coxnetsurvivalanalysis__alphas": [[a] for a in alphas],
-        "coxnetsurvivalanalysis__l1_ratio": l1_ratios,
+        "survival__alphas": [[a] for a in alphas],
+        "survival__l1_ratio": l1_ratios,
     }
 
     estimator = Pipeline(
         steps=[
             (
-                "predict",
+                "survival",
                 CoxnetSurvivalAnalysis(
                     max_iter=max_iter,
                     tol=1e-3,
@@ -75,23 +71,22 @@ def train_survival(X_train,
 
     # fit the model
     cv_pipeline.fit(X=X_train,
-                    y=y_train.loc[:, ['status', 'time_in_days']].values)
+                    y=_y_df_to_struct(y_train))
 
     # Obtain cross validation results
     y_cv = cross_val_predict(
-        cv_pipeline.best_estimator_,
-        X=X_train,
-        y=y_train.loc[:, ['status', 'time_in_days']].values,
-        cv=n_folds,
-        method="score",
+       cv_pipeline.best_estimator_,
+       X=X_train,
+       y=_y_df_to_struct(y_train),
+       cv=n_folds,
+       method="predict",
     )
 
-    # in this function we don't return the "predictions" since the decision
-    # function isn't really meaningful to us on its own
-    # we'll calculate survival metrics (concordance index, etc) outside of
-    # this function
+    # get predictions
+    y_predict_train = cv_pipeline.predict(X_train)
+    y_predict_test = cv_pipeline.predict(X_test)
 
-    return cv_pipeline, y_cv
+    return cv_pipeline, y_predict_train, y_predict_test, y_cv
 
 
 def get_metrics(cv_pipeline,
@@ -105,7 +100,7 @@ def get_metrics(cv_pipeline,
     """Get survival metric values for fit model/CV pipeline."""
 
     train_metrics = get_survival_metrics(cv_pipeline, X_train_df, y_train_df)
-    cv_metrics = get_survival_metrics(cv_pipeline, X_cv_df, y_cv_df)
+    cv_metrics = get_survival_metrics(cv_pipeline, X_cv_df, y_train_df)
     test_metrics = get_survival_metrics(cv_pipeline, X_test_df, y_test_df)
 
     columns = list(train_metrics.keys()) + ['data_type'] + list(kwargs.keys())
@@ -118,7 +113,14 @@ def get_metrics(cv_pipeline,
 
 
 def get_survival_metrics(cv_pipeline, X_df, y_df):
-    cindex = cv_pipeline.score(X_df, y_df.loc[:, ['status', 'time_in_days']].values)
+    cindex = cv_pipeline.score(X_df, _y_df_to_struct(y_df))
     # TODO add more?
     return {'cindex': cindex}
 
+
+def _y_df_to_struct(y_df):
+    return np.core.records.fromarrays(
+               y_df.loc[:, ['status', 'time_in_days']].values.T,
+               names='status, time_in_days',
+               formats='?, <f8'
+           )

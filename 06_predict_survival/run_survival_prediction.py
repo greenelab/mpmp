@@ -146,7 +146,8 @@ if __name__ == '__main__':
     # - for true labels and shuffled labels
     #   (shuffled labels acts as our lower baseline)
     # - for all cancer types provided
-    for shuffle_labels in (False, True):
+    # for shuffle_labels in (False, True):
+    for shuffle_labels in (True, False):
 
         print('shuffle_labels: {}'.format(shuffle_labels))
 
@@ -191,13 +192,14 @@ if __name__ == '__main__':
                                             shuffle_labels,
                                             standardize_columns)
                 # only save results if no exceptions
-                # fu.save_results(gene_dir,
-                #                 check_file,
-                #                 results,
-                #                 'cancer_type',
-                #                 cancer_type,
-                #                 shuffle_labels,
-                #                 model_options)
+                fu.save_results(experiment_dir,
+                                check_file,
+                                results,
+                                'survival',
+                                cancer_type,
+                                shuffle_labels,
+                                model_options,
+                                classify=False)
             except NoTrainSamplesError:
                 if io_args.verbose:
                     print('Skipping due to no train samples: cancer type {}'.format(
