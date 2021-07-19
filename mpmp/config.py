@@ -9,6 +9,7 @@ results_dirs = {
     'cancer_type': repo_root / '03_classify_cancer_type' / 'results',
     'purity': repo_root / '04_predict_tumor_purity' / 'results',
     'multimodal': repo_root / '05_classify_mutations_multimodal' / 'results',
+    'survival': repo_root / '06_predict_survival' / 'results',
 }
 images_dirs = {
     'data': repo_root / '00_download_data' / 'images',
@@ -16,6 +17,7 @@ images_dirs = {
     'cancer_type': repo_root / '03_classify_cancer_type' / 'images',
     'purity': repo_root / '04_predict_tumor_purity' / 'images',
     'multimodal': repo_root / '05_classify_mutations_multimodal' / 'images',
+    'survival': repo_root / '06_predict_survival' / 'images',
 }
 paper_figures_dir = repo_root / 'figures'
 
@@ -87,6 +89,17 @@ subsampled_data_types = {
 
 # location of tumor purity data
 tumor_purity_data = data_dir / 'raw' / 'TCGA_mastercalls.abs_tables_JSedit.fixed.txt'
+
+# location of clinical data from TCGA
+clinical_data = data_dir / 'raw' / 'TCGA-CDR-SupplementalTableS1.xlsx'
+
+# cancer types where we want to use PFI as the clinical endpoint
+# rather than OS
+# see Table 1 of https://doi.org/10.1101/2021.06.01.446243
+pfi_cancer_types = [
+    'BRCA', 'DLBC', 'LGG', 'PCPG', 'PRAD',
+    'READ', 'TGCT', 'THCA', 'THYM'
+]
 
 # default seed for random number generator
 default_seed = 42

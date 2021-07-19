@@ -331,6 +331,85 @@ def load_purity(mut_burden_df,
     return purity_df.loc[:, ['status', 'DISEASE', 'log10_mut']]
 
 
+def load_survival_labels(cancer_type,
+                         mut_burden_df,
+                         sample_info_df,
+                         verbose=False):
+    """Load data relevant to survival prediction.
+
+    Arguments
+    ---------
+    mut_burden_df (pd.DataFrame): dataframe with sample mutation burden info
+    sample_info_df (pd.DataFrame): dataframe with sample cancer type info
+    verbose (bool): if True, print verbose output
+
+    Returns
+    -------
+    survival_df (pd.DataFrame): dataframe where the "status" attribute is
+                                the relevant survival duration
+    """
+
+    if verbose:
+        print('Loading survival info and covariates...', file=sys.stderr)
+
+    # TODO: drop relevant NA columns later
+    clinical_df = (
+        pd.read_excel(cfg.clinical_data,
+                      sheet_name='TCGA-CDR',
+                      index_col='bcr_patient_barcode',
+                      engine='openpyxl')
+    )
+    clinical_df.index.rename('sample_id', inplace=True)
+
+    # drop numeric index column
+    clinical_df.drop(labels=['Unnamed: 0'], axis=1, inplace=True)
+
+    # we want to use age as a covariate
+    clinical_df.rename(columns={'age_at_initial_pathologic_diagnosis': 'age'},
+                       inplace=True)
+
+    # join mutation burden information and cancer type information
+    # these are necessary to generate non-gene covariates later on
+    covariate_df = (mut_burden_df
+        .merge(sample_info_df, left_index=True, right_index=True)
+        .rename(columns={'cancer_type': 'DISEASE'})
+    )
+    # clinical data omits the tumor information ('-01', etc) at the end
+    # of the sample identifier
+    covariate_df['clinical_id'] = covariate_df.index.str[:-3]
+    clinical_df = (clinical_df
+        .merge(covariate_df, left_index=True, right_on='clinical_id')
+    )
+
+    assert clinical_df.clinical_id.duplicated().sum() == 0
+
+    # we want to use overall survival as the target variable except for
+    # certain cancer types where progression-free intervals are typically
+    # used (since very few deaths are observed)
+    # this is recommended in https://doi.org/10.1016/j.cell.2018.02.052
+    clinical_df['status'] = clinical_df['OS.time']
+    clinical_df['censored'] = clinical_df['OS']
+    pfi_samples = clinical_df.DISEASE.isin(cfg.pfi_cancer_types)
+    clinical_df.loc[pfi_samples, 'status'] = clinical_df[pfi_samples]['PFI.time']
+    clinical_df.loc[pfi_samples, 'censored'] = clinical_df[pfi_samples]['PFI']
+
+    # clean up columns and drop samples with NA survival times
+    # TODO: NA age values?
+    na_survival_times = (clinical_df['status'].isna())
+    cols_to_keep = ['status', 'censored', 'age', 'DISEASE', 'log10_mut']
+    clinical_df = clinical_df.loc[~na_survival_times, cols_to_keep].copy()
+
+    print(clinical_df.shape)
+    print(clinical_df.isna().sum())
+    exit()
+
+    if cancer_type == 'pancancer':
+        return clinical_df
+    else:
+        cancer_type_samples = (clinical_df.DISEASE == cancer_type)
+        return clinical_df.loc[cancer_type_samples, :]
+
+
 def split_argument_groups(args, parser):
     """Split argparse script arguments into argument groups.
 

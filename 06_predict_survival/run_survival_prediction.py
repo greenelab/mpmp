@@ -43,7 +43,7 @@ def process_args():
                     help='cancer types to run, default is all')
     io.add_argument('--log_file', default=None,
                     help='name of file to log skipped genes to')
-    io.add_argument('--results_dir', default=cfg.results_dirs['mutation'],
+    io.add_argument('--results_dir', default=cfg.results_dirs['survival'],
                     help='where to write results to')
     io.add_argument('--verbose', action='store_true')
 
@@ -112,13 +112,9 @@ if __name__ == '__main__':
 
     # process command line arguments
     io_args, model_options, sample_info_df = process_args()
-    print(io_args)
-    print(model_options)
-    print(sample_info_df.head())
-    exit()
 
     # create results dir and subdir for experiment if they don't exist
-    experiment_dir = Path(io_args.results_dir, 'gene').resolve()
+    experiment_dir = Path(io_args.results_dir).resolve()
     experiment_dir.mkdir(parents=True, exist_ok=True)
 
     # save model options for this experiment
@@ -127,7 +123,7 @@ if __name__ == '__main__':
 
     # create empty log file if it doesn't exist
     log_columns = [
-        'gene',
+        'cancer_type',
         'training_data',
         'shuffle_labels',
         'skip_reason'
@@ -145,56 +141,38 @@ if __name__ == '__main__':
                               sample_info_df=sample_info_df,
                               verbose=io_args.verbose,
                               debug=model_options.debug)
-    genes_df = tcga_data.load_gene_set(io_args.gene_set)
 
-    # we want to run mutation prediction experiments:
+    # we want to run survival prediction experiments:
     # - for true labels and shuffled labels
     #   (shuffled labels acts as our lower baseline)
-    # - for all genes in the given gene set
+    # - for all cancer types provided
     for shuffle_labels in (False, True):
 
         print('shuffle_labels: {}'.format(shuffle_labels))
 
-        progress = tqdm(genes_df.iterrows(),
-                        total=genes_df.shape[0],
+        progress = tqdm(io_args.cancer_types,
+                        total=len(io_args.cancer_types),
                         ncols=100,
                         file=sys.stdout)
 
-        for gene_idx, gene_series in progress:
-            log_df = None
-            gene = gene_series.gene
-            classification = gene_series.classification
-            progress.set_description('gene: {}'.format(gene))
+        for cancer_type in progress:
 
             try:
-                gene_dir = fu.make_output_dir(experiment_dir, gene)
-                check_file = fu.check_output_file(gene_dir,
-                                                  gene,
+                check_file = fu.check_output_file(experiment_dir,
+                                                  cancer_type,
                                                   shuffle_labels,
                                                   model_options)
-                tcga_data.process_data_for_gene(gene,
-                                                classification,
-                                                gene_dir)
+                tcga_data.process_survival_data(experiment_dir,
+                                                cancer_type)
             except ResultsFileExistsError:
-                # this happens if cross-validation for this gene has already been
+                # this happens if cross-validation for this cancer type has already been
                 # run (i.e. the results file already exists)
                 if io_args.verbose:
-                    print('Skipping because results file exists already: gene {}'.format(
-                        gene), file=sys.stderr)
+                    print('Skipping because results file exists already: cancer type {}'.format(
+                        cancer_type), file=sys.stderr)
                 log_df = fu.generate_log_df(
                     log_columns,
-                    [gene, model_options.training_data, shuffle_labels, 'file_exists']
-                )
-                fu.write_log_file(log_df, io_args.log_file)
-                continue
-            except KeyError:
-                # this might happen if the given gene isn't in the mutation data
-                # (or has a different alias, TODO we could check for this later)
-                print('Gene {} not found in mutation data, skipping'.format(gene),
-                      file=sys.stderr)
-                log_df = fu.generate_log_df(
-                    log_columns,
-                    [gene, model_options.training_data, shuffle_labels, 'gene_not_found']
+                    [cancer_type, model_options.training_data, shuffle_labels, 'file_exists']
                 )
                 fu.write_log_file(log_df, io_args.log_file)
                 continue
@@ -203,38 +181,30 @@ if __name__ == '__main__':
                 # for now, don't standardize methylation data
                 standardize_columns = (model_options.training_data in
                                        cfg.standardize_data_types)
-                results = run_cv_stratified(tcga_data,
-                                            'gene',
-                                            gene,
-                                            model_options.training_data,
-                                            sample_info_df,
-                                            model_options.num_folds,
-                                            True,
-                                            shuffle_labels,
-                                            standardize_columns)
+                # results = run_cv_stratified(tcga_data,
+                #                            'gene',
+                #                            cancer_type,
+                #                            model_options.training_data,
+                #                            sample_info_df,
+                #                            model_options.num_folds,
+                #                            True,
+                #                            shuffle_labels,
+                #                            standardize_columns)
                 # only save results if no exceptions
-                fu.save_results(gene_dir,
-                                check_file,
-                                results,
-                                'gene',
-                                gene,
-                                shuffle_labels,
-                                model_options)
+                # fu.save_results(gene_dir,
+                #                 check_file,
+                #                 results,
+                #                 'cancer_type',
+                #                 cancer_type,
+                #                 shuffle_labels,
+                #                 model_options)
             except NoTrainSamplesError:
                 if io_args.verbose:
-                    print('Skipping due to no train samples: gene {}'.format(
-                        gene), file=sys.stderr)
+                    print('Skipping due to no train samples: cancer type {}'.format(
+                        cancer_type), file=sys.stderr)
                 log_df = fu.generate_log_df(
                     log_columns,
-                    [gene, model_options.training_data, shuffle_labels, 'no_train_samples']
-                )
-            except OneClassError:
-                if io_args.verbose:
-                    print('Skipping due to one holdout class: gene {}'.format(
-                        gene), file=sys.stderr)
-                log_df = fu.generate_log_df(
-                    log_columns,
-                    [gene, model_options.training_data, shuffle_labels, 'one_class']
+                    [cancer_type, model_options.training_data, shuffle_labels, 'no_train_samples']
                 )
 
             if log_df is not None:
