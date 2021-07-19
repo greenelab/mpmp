@@ -443,55 +443,6 @@ def standardize_multi_gene_features(X_df, standardize_columns, gene_features, da
     return pd.concat(datasets, axis=1)
 
 
-def subsample_to_smallest_cancer_type(X_df,
-                                      y_df,
-                                      sample_info_df,
-                                      seed):
-    """Subsample data to the size of the smallest cancer type in dataset.
-
-    Use sample_info_df, filtered to samples in X_df, to calculate the number of
-    samples present for each cancer type. Then randomly subsample each cancer
-    type to the smallest one, returning subsampled data and labels.
-    """
-    # group train samples by cancer type
-    grouped_samples_df = (
-        sample_info_df.reindex(X_df.index)
-                      .groupby('cancer_type')
-    )
-
-    # get count of each sample type in given dataset
-    counts_df = (
-        grouped_samples_df.count()
-                          .drop(columns=['id_for_stratification'])
-                          .rename(columns={'sample_type': 'disease_count'})
-                          .sort_values(by='disease_count', ascending=True)
-    )
-
-    # get fewest samples in train set
-    smallest_count = counts_df.iloc[0, 0]
-
-    # subsample all cancer types in train set to smallest count
-    ss_ixs = np.array(
-        [np.random.choice(x, size=smallest_count)
-             for x in grouped_samples_df.groups.values()]).flatten()
-    X_ss_df = X_df.loc[ss_ixs, :]
-    y_ss_df = y_df.loc[ss_ixs, :]
-
-    # check that all cancer type counts are now the same
-    grouped_ss_df = (
-        sample_info_df.reindex(X_ss_df.index)
-                      .groupby('cancer_type')
-                      .count()
-                      .drop(columns=['id_for_stratification'])
-                      .rename(columns={'sample_type': 'disease_count'})
-                      .sort_values(by='disease_count', ascending=True)
-    )
-    assert min(grouped_ss_df.disease_count) == max(grouped_ss_df.disease_count)
-
-    # return subsampled data and labels
-    return X_ss_df, y_ss_df
-
-
 def get_all_data_types(use_subsampled=False, compressed_data=False):
     """Get all possible data types (that we have data for)."""
     if use_subsampled:

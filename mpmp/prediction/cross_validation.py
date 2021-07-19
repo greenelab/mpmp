@@ -17,6 +17,7 @@ from mpmp.exceptions import (
 )
 import mpmp.prediction.classification as clf
 import mpmp.prediction.regression as reg
+import mpmp.prediction.survival as surv
 import mpmp.utilities.tcga_utilities as tu
 
 def run_cv_stratified(data_model,
@@ -25,7 +26,7 @@ def run_cv_stratified(data_model,
                       training_data,
                       sample_info,
                       num_folds,
-                      classify=True,
+                      predictor='classify',
                       shuffle_labels=False,
                       standardize_columns=False,
                       output_preds=False):
@@ -42,6 +43,7 @@ def run_cv_stratified(data_model,
     training_data (str): what type of data is being used to train model
     sample_info (pd.DataFrame): df with TCGA sample information
     num_folds (int): number of cross-validation folds to run
+    predictor (str): one of 'classify', 'regress', 'survival'
     classify (bool): if True predict binary labels, else do regression
     shuffle_labels (bool): whether or not to shuffle labels (negative control)
     standardize_columns (bool): whether or not to standardize predictors
@@ -51,7 +53,7 @@ def run_cv_stratified(data_model,
     -------
     results (dict): maps results metrics to values across CV folds
     """
-    if classify:
+    if predictor == 'classify':
         results = {
             '{}_metrics'.format(exp_string): [],
             '{}_auc'.format(exp_string): [],
@@ -118,24 +120,22 @@ def run_cv_stratified(data_model,
                                                        standardize_columns,
                                                        data_model.subset_mad_genes)
 
-        if cfg.subsample_to_smallest:
-            sample_counts_df = pd.read_csv(cfg.sample_counts, sep='\t')
-            X_train_df, y_train_df = tu.subsample_to_smallest_cancer_type(
-                    X_train_df, y_train_df, sample_info, data_model.seed)
-            X_test_df, y_test_df = tu.subsample_to_smallest_cancer_type(
-                    X_test_df, y_test_df, sample_info, data_model.seed)
-
-        train_model = clf.train_classifier if classify else reg.train_regressor
+        models_list = {
+            'classify': clf.train_classifier,
+            'regress': reg.train_regressor,
+            'survival': surv.train_survival
+        }
+        train_model = models_list[predictor]
         try:
             model_results = train_model(
                 X_train=X_train_df,
                 X_test=X_test_df,
                 y_train=y_train_df,
-                alphas=(cfg.alphas if classify else cfg.reg_alphas),
-                l1_ratios=(cfg.l1_ratios if classify else cfg.reg_l1_ratios),
+                alphas=(cfg.reg_alphas if predictor == 'regress' else cfg.alphas),
+                l1_ratios=(cfg.reg_l1_ratios if predictor == 'regress' else cfg.reg_l1_ratios),
                 seed=data_model.seed,
                 n_folds=cfg.folds,
-                max_iter=(cfg.max_iter if classify else cfg.reg_max_iter)
+                max_iter=(cfg.reg_max_iter if predictor == 'regress' else cfg.reg_max_iter)
             )
         except ValueError as e:
             if ('Only one class' in str(e)) or ('got 1 class' in str(e)):
@@ -158,7 +158,7 @@ def run_cv_stratified(data_model,
             feature_names=X_train_df.columns,
             signal=signal,
             seed=data_model.seed,
-            name=('classify' if classify else 'regress')
+            name=predictor
 
         )
         coef_df = coef_df.assign(identifier=identifier)
@@ -192,21 +192,41 @@ def run_cv_stratified(data_model,
             results['{}_aupr'.format(exp_string)].append(aupr_df)
 
         else:
-            metric_df = reg.get_metrics(
-                y_train_df,
-                y_test_df,
-                y_cv_df,
-                y_pred_train,
-                y_pred_test,
-                identifier=identifier,
-                training_data=training_data,
-                signal=signal,
-                seed=data_model.seed,
-                fold_no=fold_no
-            )
+            if predictor == 'survival':
+                metric_df = surv.get_metrics(
+                    cv_pipeline,
+                    X_train_df,
+                    X_test_df,
+                    X_train_df,
+                    y_train_df,
+                    y_test_df,
+                    y_cv_df,
+                    identifier=identifier,
+                    training_data=training_data,
+                    signal=signal,
+                    seed=data_model.seed,
+                    fold_no=fold_no
+                )
+            else:
+                metric_df = reg.get_metrics(
+                    y_train_df,
+                    y_test_df,
+                    y_cv_df,
+                    y_pred_train,
+                    y_pred_test,
+                    identifier=identifier,
+                    training_data=training_data,
+                    signal=signal,
+                    seed=data_model.seed,
+                    fold_no=fold_no
+                )
             results['{}_metrics'.format(exp_string)].append(metric_df)
 
         if output_preds:
+            if predictor == 'survival':
+                # survival predicts a function for each sample
+                # not sure how to serialize
+                raise NotImplementedError
             get_preds = clf.get_preds if classify else reg.get_preds
             results['{}_preds'.format(exp_string)].append(
                 get_preds(X_test_df, y_test_df, cv_pipeline, fold_no)

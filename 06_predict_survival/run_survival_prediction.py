@@ -164,9 +164,6 @@ if __name__ == '__main__':
                                                   model_options)
                 tcga_data.process_survival_data(experiment_dir,
                                                 cancer_type)
-                print(tcga_data.X_df.iloc[:5, -5:])
-                print(tcga_data.y_df.head())
-                exit()
             except ResultsFileExistsError:
                 # this happens if cross-validation for this cancer type has already been
                 # run (i.e. the results file already exists)
@@ -184,15 +181,15 @@ if __name__ == '__main__':
                 # for now, don't standardize methylation data
                 standardize_columns = (model_options.training_data in
                                        cfg.standardize_data_types)
-                # results = run_cv_stratified(tcga_data,
-                #                            'gene',
-                #                            cancer_type,
-                #                            model_options.training_data,
-                #                            sample_info_df,
-                #                            model_options.num_folds,
-                #                            True,
-                #                            shuffle_labels,
-                #                            standardize_columns)
+                results = run_cv_stratified(tcga_data,
+                                            'survival',
+                                            cancer_type,
+                                            model_options.training_data,
+                                            sample_info_df,
+                                            model_options.num_folds,
+                                            'survival',
+                                            shuffle_labels,
+                                            standardize_columns)
                 # only save results if no exceptions
                 # fu.save_results(gene_dir,
                 #                 check_file,
