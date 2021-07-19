@@ -164,6 +164,9 @@ if __name__ == '__main__':
                                                   model_options)
                 tcga_data.process_survival_data(experiment_dir,
                                                 cancer_type)
+                print(tcga_data.X_df.iloc[:5, -5:])
+                print(tcga_data.y_df.head())
+                exit()
             except ResultsFileExistsError:
                 # this happens if cross-validation for this cancer type has already been
                 # run (i.e. the results file already exists)

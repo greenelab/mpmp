@@ -134,14 +134,13 @@ class TCGADataModel():
         )
         train_filtered_df, y_filtered_df, gene_features = filtered_data
 
-        if cfg.use_only_cross_data_samples:
-            train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
-                train_filtered_df,
-                y_filtered_df,
-                data_types=self.overlap_data_types,
-                use_subsampled=(self.debug or self.test),
-                verbose=self.verbose
-            )
+        train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
+            train_filtered_df,
+            y_filtered_df,
+            data_types=self.overlap_data_types,
+            use_subsampled=(self.debug or self.test),
+            verbose=self.verbose
+        )
 
         self.X_df = train_filtered_df
         self.y_df = y_filtered_df
@@ -232,20 +231,19 @@ class TCGADataModel():
         )
         train_filtered_df, y_filtered_df, gene_features = filtered_data
 
-        if cfg.use_only_cross_data_samples:
-            train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
-                train_filtered_df,
-                y_filtered_df,
-                data_types=self.overlap_data_types,
-                # if this option is True, use only samples for which we have
-                # compressed data. if False, take overlap of samples for which
-                # we have non-compressed data (generally a subset of compressed
-                # data samples)
-                compressed_data_only=compressed_only,
-                n_dim=self.n_dim,
-                use_subsampled=(self.debug or self.test),
-                verbose=self.verbose
-            )
+        train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
+            train_filtered_df,
+            y_filtered_df,
+            data_types=self.overlap_data_types,
+            # if this option is True, use only samples for which we have
+            # compressed data. if False, take overlap of samples for which
+            # we have non-compressed data (generally a subset of compressed
+            # data samples)
+            compressed_data_only=compressed_only,
+            n_dim=self.n_dim,
+            use_subsampled=(self.debug or self.test),
+            verbose=self.verbose
+        )
 
         # filter to samples in common between training data and tumor purity
         self.X_df = train_filtered_df
@@ -270,29 +268,29 @@ class TCGADataModel():
                                            self.mut_burden_df,
                                            self.sample_info_df,
                                            verbose=self.verbose)
-        exit()
 
         filtered_data = self._filter_data(
             self.data_df,
             y_df_raw,
-            add_cancertype_covariate=True
+            # add cancer type covariate only in pan-cancer prediction case
+            add_cancertype_covariate=(cancer_type == 'pancancer'),
+            add_age_covariate=True
         )
         train_filtered_df, y_filtered_df, gene_features = filtered_data
 
-        if cfg.use_only_cross_data_samples:
-            train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
-                train_filtered_df,
-                y_filtered_df,
-                data_types=self.overlap_data_types,
-                # if this option is True, use only samples for which we have
-                # compressed data. if False, take overlap of samples for which
-                # we have non-compressed data (generally a subset of compressed
-                # data samples)
-                compressed_data_only=compressed_only,
-                n_dim=self.n_dim,
-                use_subsampled=(self.debug or self.test),
-                verbose=self.verbose
-            )
+        train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
+            train_filtered_df,
+            y_filtered_df,
+            data_types=self.overlap_data_types,
+            # if this option is True, use only samples for which we have
+            # compressed data. if False, take overlap of samples for which
+            # we have non-compressed data (generally a subset of compressed
+            # data samples)
+            compressed_data_only=compressed_only,
+            n_dim=self.n_dim,
+            use_subsampled=(self.debug or self.test),
+            verbose=self.verbose
+        )
 
         # filter to samples in common between training data and tumor purity
         self.X_df = train_filtered_df
@@ -410,12 +408,14 @@ class TCGADataModel():
     def _filter_data(self,
                      data_df,
                      y_df,
-                     add_cancertype_covariate=False):
+                     add_cancertype_covariate=False,
+                     add_age_covariate=False):
         use_samples, data_df, y_df, gene_features = align_matrices(
             x_file_or_df=data_df,
             y=y_df,
             add_cancertype_covariate=add_cancertype_covariate,
-            add_mutation_covariate=True
+            add_mutation_covariate=True,
+            add_age_covariate=add_age_covariate
         )
         return data_df, y_df, gene_features
 

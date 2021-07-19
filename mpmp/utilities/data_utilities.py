@@ -387,27 +387,26 @@ def load_survival_labels(cancer_type,
     # certain cancer types where progression-free intervals are typically
     # used (since very few deaths are observed)
     # this is recommended in https://doi.org/10.1016/j.cell.2018.02.052
-    clinical_df['status'] = clinical_df['OS.time']
-    clinical_df['censored'] = clinical_df['OS']
+    clinical_df['time_in_days'] = clinical_df['OS.time']
+    clinical_df['status'] = clinical_df['OS'].astype('bool')
     pfi_samples = clinical_df.DISEASE.isin(cfg.pfi_cancer_types)
-    clinical_df.loc[pfi_samples, 'status'] = clinical_df[pfi_samples]['PFI.time']
-    clinical_df.loc[pfi_samples, 'censored'] = clinical_df[pfi_samples]['PFI']
+    clinical_df.loc[pfi_samples, 'time_in_days'] = clinical_df[pfi_samples]['PFI.time']
+    clinical_df.loc[pfi_samples, 'status'] = clinical_df[pfi_samples]['PFI'].astype('bool')
 
     # clean up columns and drop samples with NA survival times
-    # TODO: NA age values?
-    na_survival_times = (clinical_df['status'].isna())
-    cols_to_keep = ['status', 'censored', 'age', 'DISEASE', 'log10_mut']
+    na_survival_times = (clinical_df['time_in_days'].isna())
+    cols_to_keep = ['status', 'time_in_days', 'age', 'DISEASE', 'log10_mut']
     clinical_df = clinical_df.loc[~na_survival_times, cols_to_keep].copy()
 
-    print(clinical_df.shape)
-    print(clinical_df.isna().sum())
-    exit()
+    # mean impute missing age values for now
+    # TODO: should we do this by cancer type?
+    clinical_df.age.fillna(clinical_df.age.mean(), inplace=True)
 
     if cancer_type == 'pancancer':
         return clinical_df
     else:
         cancer_type_samples = (clinical_df.DISEASE == cancer_type)
-        return clinical_df.loc[cancer_type_samples, :]
+        return clinical_df.loc[cancer_type_samples, :].copy()
 
 
 def split_argument_groups(args, parser):

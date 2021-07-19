@@ -149,7 +149,8 @@ def process_y_matrix_cancertype(acronym,
 def align_matrices(x_file_or_df,
                    y,
                    add_cancertype_covariate=True,
-                   add_mutation_covariate=True):
+                   add_mutation_covariate=True,
+                   add_age_covariate=False):
     """
     Process the x matrix for the given input file and align x and y together
 
@@ -187,8 +188,13 @@ def align_matrices(x_file_or_df,
 
     if add_mutation_covariate:
         # add covariate for mutation burden
-        mutation_covariate_df = pd.DataFrame(y.loc[:, "log10_mut"], index=y.index)
+        mutation_covariate_df = pd.DataFrame(y.loc[:, 'log10_mut'], index=y.index)
         x_df = x_df.merge(mutation_covariate_df, left_index=True, right_index=True)
+
+    if add_age_covariate:
+        # add covariate for patient age, used for survival prediction
+        age_covariate_df = pd.DataFrame(y.loc[:, 'age'], index=y.index)
+        x_df = x_df.merge(age_covariate_df, left_index=True, right_index=True)
 
     num_added_features = x_df.shape[1] - gene_features.shape[0]
     if num_added_features > 0:
