@@ -70,6 +70,7 @@ def train_survival(X_train,
     )
 
     # fit the model
+    # TODO: catch warnings?
     cv_pipeline.fit(X=X_train,
                     y=_y_df_to_struct(y_train))
 

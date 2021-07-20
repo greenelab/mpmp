@@ -119,7 +119,7 @@ if __name__ == '__main__':
 
     # save model options for this experiment
     # (hyperparameters, preprocessing info, etc)
-    fu.save_model_options(experiment_dir, model_options)
+    fu.save_model_options(experiment_dir, model_options, 'survival')
 
     # create empty log file if it doesn't exist
     log_columns = [
@@ -146,8 +146,7 @@ if __name__ == '__main__':
     # - for true labels and shuffled labels
     #   (shuffled labels acts as our lower baseline)
     # - for all cancer types provided
-    # for shuffle_labels in (False, True):
-    for shuffle_labels in (True, False):
+    for shuffle_labels in (False, True):
 
         print('shuffle_labels: {}'.format(shuffle_labels))
 
@@ -162,7 +161,8 @@ if __name__ == '__main__':
                 check_file = fu.check_output_file(experiment_dir,
                                                   cancer_type,
                                                   shuffle_labels,
-                                                  model_options)
+                                                  model_options,
+                                                  'survival')
                 tcga_data.process_survival_data(experiment_dir,
                                                 cancer_type)
             except ResultsFileExistsError:
@@ -199,7 +199,7 @@ if __name__ == '__main__':
                                 cancer_type,
                                 shuffle_labels,
                                 model_options,
-                                classify=False)
+                                'survival')
             except NoTrainSamplesError:
                 if io_args.verbose:
                     print('Skipping due to no train samples: cancer type {}'.format(
@@ -208,6 +208,17 @@ if __name__ == '__main__':
                     log_columns,
                     [cancer_type, model_options.training_data, shuffle_labels, 'no_train_samples']
                 )
+            except ArithmeticError:
+                # happens when model fit fails
+                # TODO explore parameter ranges when this happens
+                if io_args.verbose:
+                    print('Skipping due to failed model fit: cancer type {}'.format(
+                        cancer_type), file=sys.stderr)
+                log_df = fu.generate_log_df(
+                    log_columns,
+                    [cancer_type, model_options.training_data, shuffle_labels, 'arithmetic_error']
+                )
+
 
             if log_df is not None:
                 fu.write_log_file(log_df, io_args.log_file)
