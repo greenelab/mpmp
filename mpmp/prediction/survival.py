@@ -12,6 +12,7 @@ from sklearn.model_selection import (
 from sksurv.linear_model import CoxnetSurvivalAnalysis
 
 import mpmp.config as cfg
+from mpmp.exceptions import OneClassError
 
 def train_survival(X_train,
                    X_test,
@@ -71,8 +72,12 @@ def train_survival(X_train,
 
     # fit the model
     # TODO: catch warnings?
-    cv_pipeline.fit(X=X_train,
-                    y=_y_df_to_struct(y_train))
+    try:
+        cv_pipeline.fit(X=X_train,
+                        y=_y_df_to_struct(y_train))
+    except ValueError:
+        # this happens when all samples are censored
+        raise OneClassError
 
     # Obtain cross validation results
     y_cv = cross_val_predict(

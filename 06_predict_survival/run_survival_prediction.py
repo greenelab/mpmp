@@ -208,6 +208,14 @@ if __name__ == '__main__':
                     log_columns,
                     [cancer_type, model_options.training_data, shuffle_labels, 'no_train_samples']
                 )
+            except OneClassError:
+                if io_args.verbose:
+                    print('Skipping because all samples are censored: cancer type {}'.format(
+                        cancer_type), file=sys.stderr)
+                log_df = fu.generate_log_df(
+                    log_columns,
+                    [cancer_type, model_options.training_data, shuffle_labels, 'all_censored']
+                )
             except ArithmeticError:
                 # happens when model fit fails
                 # TODO explore parameter ranges when this happens
