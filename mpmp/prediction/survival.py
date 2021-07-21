@@ -119,7 +119,10 @@ def get_metrics(cv_pipeline,
 
 
 def get_survival_metrics(cv_pipeline, X_df, y_df):
-    cindex = cv_pipeline.score(X_df, _y_df_to_struct(y_df))
+    try:
+        cindex = cv_pipeline.score(X_df, _y_df_to_struct(y_df))
+    except ValueError: # all samples are censored
+        cindex = 0.0
     # TODO add more?
     return {'cindex': cindex}
 
