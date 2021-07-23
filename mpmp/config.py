@@ -127,6 +127,29 @@ reg_max_iter = 500
 reg_alphas = [0.001, 0.01, 0.1, 0.5, 1]
 reg_l1_ratios = [0.1, 0.5, 0.7, 0.9, 0.95, 0.99, 1.0]
 
+# hyperparameters for survival experiments
+# cox regression is a bit more finicky than logistic/linear regression,
+# so we need to use slightly larger ranges to make sure the models converge
+survival_max_iter = 1000
+survival_alphas = [1e-4, 5e-4, 0.001, 0.005, 0.01, 0.05, 0.1, 1, 10]
+survival_l1_ratios = [0.01, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0]
+
+max_iter_map = {
+    'classify': max_iter,
+    'regress': reg_max_iter,
+    'survival': survival_max_iter
+}
+alphas_map = {
+    'classify': alphas,
+    'regress': reg_alphas,
+    'survival': survival_alphas
+}
+l1_ratios_map = {
+    'classify': l1_ratios,
+    'regress': reg_l1_ratios,
+    'survival': survival_l1_ratios
+}
+
 # repo/commit information to retrieve precomputed cancer gene information
 # this is used in data_utilities.py
 top50_base_url = "https://github.com/greenelab/BioBombe/raw"

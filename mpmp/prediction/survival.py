@@ -2,6 +2,8 @@
 Functions for training survival prediction models on TCGA data.
 
 """
+import warnings
+
 import numpy as np
 import pandas as pd
 from sklearn.pipeline import Pipeline
@@ -9,6 +11,7 @@ from sklearn.model_selection import (
     cross_val_predict,
     GridSearchCV,
 )
+from sklearn.exceptions import ConvergenceWarning
 from sksurv.linear_model import CoxnetSurvivalAnalysis
 
 import mpmp.config as cfg
@@ -21,7 +24,8 @@ def train_survival(X_train,
                    l1_ratios,
                    seed,
                    n_folds=4,
-                   max_iter=1000):
+                   max_iter=1000,
+                   debug_info=None):
     """
     Build the logic and sklearn pipelines to predict survival info y from dataset x,
     using elastic net Cox regression
@@ -42,6 +46,10 @@ def train_survival(X_train,
     The full pipeline sklearn object and y matrix predictions for training, testing,
     and cross validation
     """
+
+    # TODO: does this help?
+    X_train.age = (X_train.age - X_train.age.mean()) / X_train.age.std()
+    X_test.age = (X_test.age - X_test.age.mean()) / X_test.age.std()
 
     # set up the cross-validation parameters
     surv_parameters = {
@@ -69,6 +77,44 @@ def train_survival(X_train,
         error_score=0.5,
         return_train_score=True,
     )
+
+
+    if debug_info is not None:
+        # TODO: does this need to be done separately from standard grid?
+        grid_results = []
+        for i, alpha in enumerate(alphas):
+            grid_results.append([])
+            for l1_ratio in l1_ratios:
+                fit = 'fit'
+                print('alpha: {}, l1_ratio: {}'.format(alpha, l1_ratio))
+                # catch convergence warnings
+                with warnings.catch_warnings():
+                    warnings.simplefilter('error')
+                    try:
+                        cox = CoxnetSurvivalAnalysis(max_iter=max_iter,
+                                                     tol=1e-6,
+                                                     alphas=[alpha],
+                                                     l1_ratio=l1_ratio)
+                        cox.fit(X_train, _y_df_to_struct(y_train))
+                    except UserWarning:
+                        fit = 'too small'
+                        print('fit failed, all coefficients are zero')
+                    except ArithmeticError:
+                        fit = 'too large'
+                        print('fit failed, coefficients are too large')
+                    except ConvergenceWarning:
+                        print('convergence warning')
+                    grid_results[i].append(fit)
+
+        grid_results_df = pd.DataFrame(grid_results,
+                                       index=alphas,
+                                       columns=l1_ratios)
+        grid_results_df.index.name = 'alphas'
+        grid_results_df.columns.name = 'alphas'
+        grid_results_df.to_csv('{}_{}_fold{}_grid.tsv'.format(debug_info['prefix'],
+                                                              debug_info['signal'],
+                                                              debug_info['fold_no']),
+                                sep='\t')
 
     # fit the model
     # TODO: catch warnings?

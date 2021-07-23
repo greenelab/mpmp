@@ -190,7 +190,11 @@ if __name__ == '__main__':
                                             model_options.num_folds,
                                             'survival',
                                             shuffle_labels,
-                                            standardize_columns)
+                                            standardize_columns,
+                                            # don't stratify if we're predicting survival for
+                                            # a single cancer type
+                                            stratify=(cancer_type == 'pancancer'),
+                                            results_dir=experiment_dir)
                 # only save results if no exceptions
                 fu.save_results(experiment_dir,
                                 check_file,

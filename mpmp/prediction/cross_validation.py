@@ -7,7 +7,7 @@ import contextlib
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import KFold, StratifiedKFold
 
 import mpmp.config as cfg
 from mpmp.exceptions import (
@@ -29,7 +29,9 @@ def run_cv_stratified(data_model,
                       predictor='classify',
                       shuffle_labels=False,
                       standardize_columns=False,
-                      output_preds=False):
+                      output_preds=False,
+                      stratify=True,
+                      results_dir=None):
     """
     Run stratified cross-validation experiments for a given dataset, then write
     the results to files in the results directory. If the relevant files already
@@ -82,7 +84,7 @@ def run_cv_stratified(data_model,
                                         message='The least populated class in y')
                 X_train_raw_df, X_test_raw_df, _ = split_stratified(
                    data_model.X_df, sample_info, num_folds=num_folds,
-                   fold_no=fold_no, seed=data_model.seed)
+                   fold_no=fold_no, seed=data_model.seed, stratify=stratify)
         except ValueError:
             if data_model.X_df.shape[0] == 0:
                 raise NoTrainSamplesError(
@@ -126,16 +128,30 @@ def run_cv_stratified(data_model,
             'survival': surv.train_survival
         }
         train_model = models_list[predictor]
+
+        # save model results for survival prediction
+        if predictor == 'survival':
+            debug_info = {
+                'fold_no': fold_no,
+                'prefix': '{}/{}_{}'.format(
+                    results_dir, identifier, predictor
+                ),
+                'signal': signal
+            }
+        else:
+            debug_info = None
+
         try:
             model_results = train_model(
                 X_train=X_train_df,
                 X_test=X_test_df,
                 y_train=y_train_df,
-                alphas=(cfg.reg_alphas if predictor == 'regress' else cfg.alphas),
-                l1_ratios=(cfg.reg_l1_ratios if predictor == 'regress' else cfg.reg_l1_ratios),
+                alphas=cfg.alphas_map[predictor],
+                l1_ratios=cfg.l1_ratios_map[predictor],
                 seed=data_model.seed,
                 n_folds=cfg.folds,
-                max_iter=(cfg.reg_max_iter if predictor == 'regress' else cfg.reg_max_iter)
+                max_iter=cfg.max_iter_map[predictor],
+                debug_info = debug_info
             )
         except ValueError as e:
             if ('Only one class' in str(e)) or ('got 1 class' in str(e)):
@@ -236,7 +252,8 @@ def split_stratified(data_df,
                      sample_info_df,
                      num_folds=4,
                      fold_no=1,
-                     seed=cfg.default_seed):
+                     seed=cfg.default_seed,
+                     stratify=True):
     """Split expression data into train and test sets.
 
     The train and test sets will both contain data from all cancer types,
@@ -278,12 +295,20 @@ def split_stratified(data_df,
     ] = 'other'
 
     # now do stratified CV splitting and return the desired fold
-    kf = StratifiedKFold(n_splits=num_folds, shuffle=True, random_state=seed)
-    for fold, (train_ixs, test_ixs) in enumerate(
-            kf.split(data_df, sample_info_df.id_for_stratification)):
-        if fold == fold_no:
-            train_df = data_df.iloc[train_ixs]
-            test_df = data_df.iloc[test_ixs]
+    if stratify: # TODO this is a mess, clean up
+        kf = StratifiedKFold(n_splits=num_folds, shuffle=True, random_state=seed)
+        for fold, (train_ixs, test_ixs) in enumerate(
+                kf.split(data_df, sample_info_df.id_for_stratification)):
+            if fold == fold_no:
+                train_df = data_df.iloc[train_ixs]
+                test_df = data_df.iloc[test_ixs]
+    else:
+        kf = KFold(n_splits=num_folds, shuffle=True, random_state=seed)
+        for fold, (train_ixs, test_ixs) in enumerate(kf.split(data_df)):
+            if fold == fold_no:
+                train_df = data_df.iloc[train_ixs]
+                test_df = data_df.iloc[test_ixs]
+
     return train_df, test_df, sample_info_df
 
 
