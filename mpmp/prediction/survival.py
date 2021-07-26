@@ -47,11 +47,14 @@ def train_survival(X_train,
     and cross validation
     """
 
-    # TODO: does this help?
-    X_train.age = (X_train.age - X_train.age.mean()) / X_train.age.std()
-    X_test.age = (X_test.age - X_test.age.mean()) / X_test.age.std()
-
     # set up the cross-validation parameters
+    # for now we're going to ignore the passed-in range and use sksurv
+    # to compute it
+    # TODO clean this up if we end up using this code
+    cox = CoxnetSurvivalAnalysis(alpha_min_ratio=0.01, n_alphas=100)
+    cox.fit(X_train, _y_df_to_struct(y_train))
+    alphas = cox.alphas_
+
     surv_parameters = {
         "survival__alphas": [[a] for a in alphas],
         "survival__l1_ratio": l1_ratios,
@@ -63,7 +66,10 @@ def train_survival(X_train,
                 "survival",
                 CoxnetSurvivalAnalysis(
                     max_iter=max_iter,
-                    tol=1e-3,
+                    tol=1e-5,
+                    # normalize input features
+                    # TODO could do this using StandardScaler pipeline
+                    normalize=True,
                 ),
             )
         ]
@@ -79,51 +85,57 @@ def train_survival(X_train,
     )
 
 
-    if debug_info is not None:
-        # TODO: does this need to be done separately from standard grid?
-        grid_results = []
-        for i, alpha in enumerate(alphas):
-            grid_results.append([])
-            for l1_ratio in l1_ratios:
-                fit = 'fit'
-                print('alpha: {}, l1_ratio: {}'.format(alpha, l1_ratio))
-                # catch convergence warnings
-                with warnings.catch_warnings():
-                    warnings.simplefilter('error')
-                    try:
-                        cox = CoxnetSurvivalAnalysis(max_iter=max_iter,
-                                                     tol=1e-6,
-                                                     alphas=[alpha],
-                                                     l1_ratio=l1_ratio)
-                        cox.fit(X_train, _y_df_to_struct(y_train))
-                    except UserWarning:
-                        fit = 'too small'
-                        print('fit failed, all coefficients are zero')
-                    except ArithmeticError:
-                        fit = 'too large'
-                        print('fit failed, coefficients are too large')
-                    except ConvergenceWarning:
-                        print('convergence warning')
-                    grid_results[i].append(fit)
+    # if debug_info is not None:
+    #     # TODO: does this need to be done separately from standard grid?
+    #     grid_results = []
+    #     for i, alpha in enumerate(alphas):
+    #         grid_results.append([])
+    #         for l1_ratio in l1_ratios:
+    #             fit = 'fit'
+    #             # print('alpha: {}, l1_ratio: {}'.format(alpha, l1_ratio))
+    #             # catch convergence warnings
+    #             with warnings.catch_warnings():
+    #                 warnings.simplefilter('error')
+    #                 try:
+    #                     cox = CoxnetSurvivalAnalysis(max_iter=max_iter,
+    #                                                  tol=1e-6,
+    #                                                  alphas=[alpha],
+    #                                                  l1_ratio=l1_ratio)
+    #                     cox.fit(X_train, _y_df_to_struct(y_train))
+    #                 except UserWarning:
+    #                     fit = 'too small'
+    #                     # print('fit failed, all coefficients are zero')
+    #                 except ArithmeticError:
+    #                     fit = 'too large'
+    #                     # print('fit failed, coefficients are too large')
+    #                 except ConvergenceWarning:
+    #                     # print('convergence warning')
+    #                     pass
+    #                 grid_results[i].append(fit)
 
-        grid_results_df = pd.DataFrame(grid_results,
-                                       index=alphas,
-                                       columns=l1_ratios)
-        grid_results_df.index.name = 'alphas'
-        grid_results_df.columns.name = 'alphas'
-        grid_results_df.to_csv('{}_{}_fold{}_grid.tsv'.format(debug_info['prefix'],
-                                                              debug_info['signal'],
-                                                              debug_info['fold_no']),
-                                sep='\t')
+    #     grid_results_df = pd.DataFrame(grid_results,
+    #                                    index=alphas,
+    #                                    columns=l1_ratios)
+    #     grid_results_df.index.name = 'alphas'
+    #     grid_results_df.columns.name = 'l1_ratios'
+    #     grid_results_df.to_csv('{}_{}_fold{}_grid.tsv'.format(debug_info['prefix'],
+    #                                                           debug_info['signal'],
+    #                                                           debug_info['fold_no']),
+    #                             sep='\t')
 
     # fit the model
-    # TODO: catch warnings?
-    try:
-        cv_pipeline.fit(X=X_train,
-                        y=_y_df_to_struct(y_train))
-    except ValueError:
-        # this happens when all samples are censored
-        raise OneClassError
+    cv_pipeline.fit(X=X_train,
+                    y=_y_df_to_struct(y_train))
+
+    # grid_mean_df = pd.DataFrame(
+    #     cv_pipeline.cv_results_['mean_test_score'].reshape(len(alphas), -1),
+    #     columns=l1_ratios,
+    #     index=alphas
+    # )
+    # grid_mean_df.to_csv('{}_{}_fold{}_grid.tsv'.format(debug_info['prefix'],
+    #                                                    debug_info['signal'],
+    #                                                    debug_info['fold_no']),
+    #                     sep='\t')
 
     # Obtain cross validation results
     y_cv = cross_val_predict(

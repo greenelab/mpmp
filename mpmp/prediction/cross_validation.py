@@ -159,6 +159,11 @@ def run_cv_stratified(data_model,
                     'Only one class present in test set for identifier: '
                     '{}'.format(identifier)
                 )
+            elif ('All samples are censored' in str(e)):
+                raise OneClassError(
+                    'All samples are censored in test set for identifier:'
+                    '{}'.format(identifier)
+                )
             else:
                 # if not only one class error, just re-raise
                 raise e
