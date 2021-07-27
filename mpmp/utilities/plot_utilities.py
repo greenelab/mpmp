@@ -354,7 +354,8 @@ def plot_heatmap(heatmap_df,
     if different_from_best:
         results_df = get_different_from_best(results_df,
                                              raw_results_df,
-                                             metric=metric)
+                                             metric=metric,
+                                             id_name=id_name)
 
     ax = sns.heatmap(heatmap_df, cmap='Greens',
                      cbar_kws={'aspect': 10, 'fraction': 0.1, 'pad': 0.01})
@@ -412,7 +413,10 @@ def plot_heatmap(heatmap_df,
     plt.tight_layout()
 
 
-def get_different_from_best(results_df, raw_results_df, metric='aupr'):
+def get_different_from_best(results_df,
+                            raw_results_df,
+                            metric='aupr',
+                            id_name='gene'):
     """Identify best-performing data types for each gene.
 
     As an alternative to just identifying the data type with the best average
@@ -433,14 +437,14 @@ def get_different_from_best(results_df, raw_results_df, metric='aupr'):
     from scipy.stats import ttest_rel
 
     comparison_pvals = []
-    for identifier in results_df.gene.unique():
+    for identifier in results_df[id_name].unique():
         # compare best with other data types that are significant from
         # baseline, using pairwise t-tests
         # null hypothesis = each pair of results distributions is the same
 
         # get best data type
         best_data_ix = (
-            results_df[results_df.gene == identifier]
+            results_df[results_df[id_name] == identifier]
               .loc[:, 'delta_mean']
               .idxmax()
         )
@@ -448,7 +452,7 @@ def get_different_from_best(results_df, raw_results_df, metric='aupr'):
 
         # get other significant data types
         other_data_types = (
-            results_df[(results_df.gene == identifier) &
+            results_df[(results_df[id_name] == identifier) &
                        (results_df.training_data != best_data_type) &
                        (results_df.reject_null)]
         )['training_data'].values
@@ -482,7 +486,7 @@ def get_different_from_best(results_df, raw_results_df, metric='aupr'):
 
     comparison_df = pd.DataFrame(
         comparison_pvals,
-        columns=['gene', 'best_data_type', 'other_data_type', 'p_value']
+        columns=[id_name, 'best_data_type', 'other_data_type', 'p_value']
     )
 
     # apply multiple testing correction and identify significant similarities
@@ -491,7 +495,7 @@ def get_different_from_best(results_df, raw_results_df, metric='aupr'):
                          alpha=0.05,
                          method='fdr_bh')
     comparison_df = comparison_df.assign(corr_pval=corr[1],
-                                         reject_null=corr[0])
+                                         accept_null=~corr[0])
 
     # add column to results_df for statistically equal to best
     equal_to_best = []
@@ -499,13 +503,17 @@ def get_different_from_best(results_df, raw_results_df, metric='aupr'):
         if not vals['reject_null']:
             equal_to_best.append(False)
         else:
-            comp_gene_df = comparison_df[comparison_df.gene == vals['gene']]
+            comp_gene_df = comparison_df[comparison_df[id_name] == vals[id_name]]
             if vals['training_data'] in comp_gene_df.best_data_type.values:
                 equal_to_best.append(True)
             elif vals['training_data'] in comp_gene_df.other_data_type.values:
+                # reject null = means are significantly different
+                # accept null = means are statistically the same
+                # so accept null = alternate data type is statistically the
+                # same as the best data type
                 equal_to_best.append(
                     comp_gene_df[comp_gene_df.other_data_type == vals['training_data']]
-                      .reject_null.values[0]
+                      .accept_null.values[0]
                 )
             else:
                 # this happens when the data type is the only significant one
