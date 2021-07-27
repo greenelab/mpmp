@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+from sksurv.exceptions import NoComparablePairException
 
 import mpmp.config as cfg
 from mpmp.data_models.tcga_data_model import TCGADataModel
@@ -229,6 +230,14 @@ if __name__ == '__main__':
                 log_df = fu.generate_log_df(
                     log_columns,
                     [cancer_type, model_options.training_data, shuffle_labels, 'arithmetic_error']
+                )
+            except NoComparablePairException:
+                if io_args.verbose:
+                    print('Skipping due to no comparable pairs: cancer type {}'.format(
+                        cancer_type), file=sys.stderr)
+                log_df = fu.generate_log_df(
+                    log_columns,
+                    [cancer_type, model_options.training_data, shuffle_labels, 'no_comparable_pairs']
                 )
 
 
