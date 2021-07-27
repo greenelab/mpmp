@@ -341,7 +341,8 @@ def plot_heatmap(heatmap_df,
                  results_df,
                  different_from_best=True,
                  raw_results_df=None,
-                 metric='aupr'):
+                 metric='aupr',
+                 id_name='gene'):
     """Plot heatmap comparing data types for each gene.
 
     Arguments
@@ -377,36 +378,36 @@ def plot_heatmap(heatmap_df,
     # add blue highlights to cells that are significant over baseline
     # add red highlights to cells that are significant and "best" predictor for that gene
     if different_from_best:
-        for gene_ix, gene in enumerate(heatmap_df.columns):
+        for id_ix, identifier in enumerate(heatmap_df.columns):
             for data_ix, data_type in enumerate(heatmap_df.index):
-                if (_check_gene_data_type(results_df, gene, data_type) and
-                    _check_equal_to_best(results_df, gene, data_type)):
+                if (_check_data_type(results_df, identifier, data_type, id_name) and
+                    _check_equal_to_best(results_df, identifier, data_type, id_name)):
                     ax.add_patch(
-                        Rectangle((gene_ix, data_ix), 1, 1, fill=False,
+                        Rectangle((id_ix, data_ix), 1, 1, fill=False,
                                   edgecolor='red', lw=3, zorder=1.5)
                     )
-                elif _check_gene_data_type(results_df, gene, data_type):
+                elif _check_data_type(results_df, identifier, data_type, id_name):
                     ax.add_patch(
-                        Rectangle((gene_ix, data_ix), 1, 1, fill=False,
+                        Rectangle((id_ix, data_ix), 1, 1, fill=False,
                                   edgecolor='blue', lw=3)
                     )
     else:
-        for gene_ix, gene in enumerate(heatmap_df.columns):
-            best_data_type = heatmap_df.loc[:, gene].idxmax()
+        for id_ix, identifier in enumerate(heatmap_df.columns):
+            best_data_type = heatmap_df.loc[:, identifier].idxmax()
             for data_ix, data_type in enumerate(heatmap_df.index):
                 if (best_data_type == data_type) and (
-                    _check_gene_data_type(results_df, gene, data_type)):
+                    _check_data_type(results_df, identifier, data_type, id_name)):
                     ax.add_patch(
-                        Rectangle((gene_ix, data_ix), 1, 1, fill=False,
+                        Rectangle((id_ix, data_ix), 1, 1, fill=False,
                                   edgecolor='red', lw=3, zorder=1.5)
                     )
-                elif _check_gene_data_type(results_df, gene, data_type):
+                elif _check_data_type(results_df, identifier, data_type, id_name):
                     ax.add_patch(
-                        Rectangle((gene_ix, data_ix), 1, 1, fill=False,
+                        Rectangle((id_ix, data_ix), 1, 1, fill=False,
                                   edgecolor='blue', lw=3)
                     )
 
-    plt.xlabel('Gene name')
+    plt.xlabel('{} name'.format(id_name.capitalize().replace('_', ' ')))
     plt.ylabel('Training data type')
     plt.tight_layout()
 
@@ -625,14 +626,14 @@ def plot_best_multi_omics_results(results_df,
     plt.legend(title='Model type', loc='lower left', fontsize=12, title_fontsize=12)
 
 
-def _check_gene_data_type(results_df, gene, data_type):
+def _check_data_type(results_df, identifier, data_type, id_name):
     return results_df[
-        (results_df.gene == gene) &
+        (results_df[id_name] == identifier) &
         (results_df.training_data == data_type)].reject_null.values[0]
 
-def _check_equal_to_best(results_df, gene, data_type):
+def _check_equal_to_best(results_df, identifier, data_type, id_name):
     return results_df[
-        (results_df.gene == gene) &
+        (results_df[id_name] == identifier) &
         (results_df.training_data == data_type)].equal_to_best.values[0]
 
 
