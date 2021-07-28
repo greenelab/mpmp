@@ -2,6 +2,7 @@ name: mpmp
 channels:
   - conda-forge
   - defaults
+  - sebp
 dependencies:
   - jupyter_client=6.1.7
   - jupyter_core=4.7.0
