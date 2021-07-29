@@ -624,3 +624,57 @@ def get_and_save_sample_info(tcga_df,
 
     return tcga_id
 
+
+def get_compress_output_prefix(data_type,
+                               n_dim,
+                               seed,
+                               standardize_input=True):
+    output_prefix = '{}_pc{}_s{}'.format(data_type, n_dim, seed)
+    if standardize_input:
+        output_prefix += '_std'
+    return output_prefix
+
+
+def compress_and_save_data(data_type,
+                           input_data_df,
+                           output_dir,
+                           n_dim,
+                           standardize_input,
+                           seed=cfg.default_seed,
+                           save_variance_explained=False):
+
+    from sklearn.decomposition import PCA
+    from sklearn.preprocessing import StandardScaler
+
+    # standardize first for some data types
+    if standardize_input:
+        input_data_df = pd.DataFrame(
+            StandardScaler().fit_transform(input_data_df),
+            index=input_data_df.index.copy(),
+            columns=input_data_df.columns.copy()
+        )
+
+    output_prefix = get_compress_output_prefix(data_type,
+                                               n_dim,
+                                               seed,
+                                               standardize_input)
+
+    # calculate PCA and save compressed data matrix
+    pca = PCA(n_components=n_dim, random_state=seed)
+    transformed_data_df = pd.DataFrame(
+        pca.fit_transform(input_data_df),
+        index=input_data_df.index,
+        columns=['PC{}'.format(i) for i in range(n_dim)]
+    )
+    transformed_data_df.to_csv(
+        os.path.join(output_dir, '{}.tsv.gz'.format(output_prefix)),
+        sep='\t', float_format='%.3g')
+
+    if save_variance_explained:
+        np.savetxt(os.path.join(output_dir, '{}_ve.tsv.gz'.format(output_prefix)),
+                   pca.variance_explained_ratio_)
+
+    return transformed_data_df
+
+
+

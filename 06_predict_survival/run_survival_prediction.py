@@ -59,6 +59,10 @@ def process_args():
                                      'experiment metadata ')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
+    opts.add_argument('--n_dim', type=int, default=None,
+                      choices=[None, 100, 1000, 5000], # TODO more flexibility
+                      help='number of compressed components/dimensions to use, '
+                           'None to use raw features')
     opts.add_argument('--num_folds', type=int, default=4,
                       help='number of folds of cross-validation to run')
     opts.add_argument('--overlap_data_types', nargs='*',
@@ -101,7 +105,6 @@ def process_args():
 
     # add some additional hyperparameters/ranges from config file to model options
     # these shouldn't be changed by the user, so they aren't added as arguments
-    model_options.n_dim = None
     model_options.alphas = cfg.alphas
     model_options.l1_ratios = cfg.l1_ratios
     model_options.standardize_data_types = cfg.standardize_data_types
@@ -139,9 +142,18 @@ if __name__ == '__main__':
                               subset_mad_genes=model_options.subset_mad_genes,
                               training_data=model_options.training_data,
                               overlap_data_types=model_options.overlap_data_types,
+                              load_compressed_data=(model_options.n_dim is not None),
+                              standardize_input=(model_options.n_dim is not None and
+                                                 model_options.training_data in
+                                                 cfg.standardize_data_types),
+                              n_dim=model_options.n_dim,
                               sample_info_df=sample_info_df,
                               verbose=io_args.verbose,
                               debug=model_options.debug)
+
+    print(model_options)
+    print(tcga_data.data_df.iloc[:5, :5])
+    exit()
 
     # we want to run survival prediction experiments:
     # - for true labels and shuffled labels
@@ -181,8 +193,12 @@ if __name__ == '__main__':
 
             try:
                 # for now, don't standardize methylation data
-                standardize_columns = (model_options.training_data in
-                                       cfg.standardize_data_types)
+                # also don't standardize PCA components, they should already be
+                # in a reasonable range
+                standardize_columns = (
+                    (model_options.n_dim is None) and
+                    (model_options.training_data in cfg.standardize_data_types)
+                )
                 results = run_cv_stratified(tcga_data,
                                             'survival',
                                             cancer_type,

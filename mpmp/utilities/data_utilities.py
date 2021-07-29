@@ -13,6 +13,10 @@ from sklearn.model_selection import KFold, StratifiedKFold
 from sklearn.preprocessing import MinMaxScaler
 
 import mpmp.config as cfg
+from mpmp.utilities.tcga_utilities import (
+    compress_and_save_data,
+    get_compress_output_prefix
+)
 
 def load_raw_data(train_data_type, verbose=False, load_subset=False):
     """Load and preprocess saved TCGA data.
@@ -55,7 +59,11 @@ def load_raw_data(train_data_type, verbose=False, load_subset=False):
     return data_df
 
 
-def load_compressed_data(data_type, n_dim, verbose=False, load_subset=False):
+def load_compressed_data(data_type,
+                         n_dim,
+                         verbose=False,
+                         standardize_input=False,
+                         load_subset=False):
     """Load compressed data for the given data type and compressed dimensions.
 
     Arguments
@@ -72,15 +80,27 @@ def load_compressed_data(data_type, n_dim, verbose=False, load_subset=False):
     if load_subset:
         raise NotImplementedError('no subsampled compressed data')
     try:
+        output_prefix = get_compress_output_prefix(data_type,
+                                                   n_dim,
+                                                   cfg.default_seed,
+                                                   standardize_input)
         data_df = pd.read_csv(
-            str(cfg.compressed_data_types[data_type]).format(n_dim),
+            os.path.join(cfg.compressed_data_dir, '{}.tsv.gz'.format(output_prefix)),
             index_col=0, sep='\t'
         )
     except OSError:
-        # compressed data does not exist for given n_dim
-        raise NotImplementedError(
-            'no compressed data for data_type {}, n_dim {}'.format(
-                data_type, n_dim)
+        # file doesn't exist so we have to create it
+        if verbose:
+            print('PCA compressing data type: {}, n_dims: {}'.format(
+                data_type, n_dim))
+        # TODO: calculate correct PCA dimension for small datasets
+        #       and print warning
+        data_df = compress_and_save_data(
+            data_type,
+            load_raw_data(data_type),
+            cfg.compressed_data_dir,
+            n_dim,
+            standardize_input
         )
     return data_df
 

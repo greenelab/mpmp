@@ -28,6 +28,7 @@ class TCGADataModel():
                  training_data='expression',
                  overlap_data_types=None,
                  load_compressed_data=False,
+                 standardize_input=False,
                  n_dim=None,
                  sample_info_df=None,
                  verbose=False,
@@ -64,6 +65,7 @@ class TCGADataModel():
         # load and store data in memory
         self._load_data(train_data_type=training_data,
                         compressed_data=load_compressed_data,
+                        standardize_input=standardize_input,
                         n_dim=n_dim,
                         sample_info_df=sample_info_df,
                         debug=debug,
@@ -303,6 +305,7 @@ class TCGADataModel():
     def _load_data(self,
                    train_data_type,
                    compressed_data=False,
+                   standardize_input=False,
                    n_dim=None,
                    sample_info_df=None,
                    debug=False,
@@ -330,6 +333,7 @@ class TCGADataModel():
             self.data_df = du.load_compressed_data(train_data_type,
                                                    n_dim=n_dim,
                                                    verbose=self.verbose,
+                                                   standardize_input=standardize_input,
                                                    load_subset=(debug or test))
         else:
             self.data_df = du.load_raw_data(train_data_type,

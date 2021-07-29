@@ -146,6 +146,8 @@ if __name__ == '__main__':
                               training_data=model_options.training_data,
                               overlap_data_types=model_options.overlap_data_types,
                               load_compressed_data=True,
+                              standardize_input=(model_options.training_data in
+                                                 cfg.standardize_data_types),
                               n_dim=model_options.n_dim,
                               sample_info_df=sample_info_df,
                               verbose=io_args.verbose,

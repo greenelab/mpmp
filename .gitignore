@@ -5,6 +5,7 @@
 # don't track large data files
 # these can all be generated de novo using scripts in 00_download_data
 data/raw/*
+data/compressed_data/*
 data/expression_confusion_matrix.tsv
 data/exp_compressed/*
 data/HumanMethylation450_15017482_v1-2.csv
