@@ -100,7 +100,8 @@ def load_compressed_data(data_type,
             load_raw_data(data_type),
             cfg.compressed_data_dir,
             n_dim,
-            standardize_input
+            standardize_input,
+            verbose
         )
     return data_df
 

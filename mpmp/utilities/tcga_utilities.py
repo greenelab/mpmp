@@ -640,11 +640,23 @@ def compress_and_save_data(data_type,
                            output_dir,
                            n_dim,
                            standardize_input,
+                           verbose=False,
                            seed=cfg.default_seed,
                            save_variance_explained=False):
 
     from sklearn.decomposition import PCA
     from sklearn.preprocessing import StandardScaler
+
+    n, p = input_data_df.shape
+    if n_dim > min(n, p):
+        if verbose:
+            print('n_dim > min(n, p), so setting n_dim = min(n, p)')
+        n_dim = min(n, p)
+
+    output_prefix = get_compress_output_prefix(data_type,
+                                               n_dim,
+                                               seed,
+                                               standardize_input)
 
     # standardize first for some data types
     if standardize_input:
@@ -653,11 +665,6 @@ def compress_and_save_data(data_type,
             index=input_data_df.index.copy(),
             columns=input_data_df.columns.copy()
         )
-
-    output_prefix = get_compress_output_prefix(data_type,
-                                               n_dim,
-                                               seed,
-                                               standardize_input)
 
     # calculate PCA and save compressed data matrix
     pca = PCA(n_components=n_dim, random_state=seed)

@@ -59,8 +59,7 @@ def process_args():
                                      'experiment metadata ')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
-    opts.add_argument('--n_dim', type=int, default=None,
-                      choices=[None, 100, 1000, 5000], # TODO more flexibility
+    opts.add_argument('--n_dim', default=None,
                       help='number of compressed components/dimensions to use, '
                            'None to use raw features')
     opts.add_argument('--num_folds', type=int, default=4,
@@ -84,6 +83,9 @@ def process_args():
 
     if args.log_file is None:
         args.log_file = Path(args.results_dir, 'log_skipped.tsv').resolve()
+
+    if args.n_dim is not None:
+        args.n_dim = int(args.n_dim)
 
     sample_info_df = du.load_sample_info(args.training_data, verbose=args.verbose)
     tcga_cancer_types = list(np.unique(sample_info_df.cancer_type))
