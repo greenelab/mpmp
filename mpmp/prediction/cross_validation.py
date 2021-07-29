@@ -138,8 +138,11 @@ def run_cv_stratified(data_model,
                 ),
                 'signal': signal
             }
-        else:
-            debug_info = None
+            from functools import partial
+            # the non-survival model training functions don't take a debug_info
+            # parameter, so we do a partial function application to make all the
+            # model training functions take the same arguments
+            train_model = partial(train_model, debug_info=debug_info)
 
         try:
             model_results = train_model(
@@ -151,7 +154,6 @@ def run_cv_stratified(data_model,
                 seed=data_model.seed,
                 n_folds=cfg.folds,
                 max_iter=cfg.max_iter_map[predictor],
-                debug_info = debug_info
             )
         except ValueError as e:
             if ('Only one class' in str(e)) or ('got 1 class' in str(e)):
