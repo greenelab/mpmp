@@ -40,8 +40,10 @@ def process_args():
     io = parser.add_argument_group('io',
                                    'arguments related to script input/output, '
                                    'note these will *not* be saved in metadata ')
-    io.add_argument('--cancer_types', nargs='*', default=None,
-                    help='cancer types to run, default is all')
+    io.add_argument('--cancer_types', nargs='*', default=['all_cancer_types'],
+                    help='cancer types to run, \'pancancer\' for a pan-cancer model '
+                         'combining cancer types, default is all individual TCGA '
+                         'cancer types + pan-cancer model')
     io.add_argument('--log_file', default=None,
                     help='name of file to log skipped genes to')
     io.add_argument('--results_dir', default=cfg.results_dirs['survival'],
@@ -90,7 +92,7 @@ def process_args():
     sample_info_df = du.load_sample_info(args.training_data, verbose=args.verbose)
     tcga_cancer_types = list(np.unique(sample_info_df.cancer_type))
     tcga_cancer_types.append('pancancer')
-    if args.cancer_types is None:
+    if 'all_cancer_types' in args.cancer_types:
         args.cancer_types = tcga_cancer_types
     else:
         not_in_tcga = set(args.cancer_types) - set(tcga_cancer_types)
