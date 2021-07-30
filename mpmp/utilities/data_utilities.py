@@ -352,7 +352,6 @@ def load_survival_labels(cancer_type,
     if verbose:
         print('Loading survival info and covariates...', file=sys.stderr)
 
-    # TODO: drop relevant NA columns later
     clinical_df = (
         pd.read_excel(cfg.clinical_data,
                       sheet_name='TCGA-CDR',
@@ -399,7 +398,7 @@ def load_survival_labels(cancer_type,
     clinical_df = clinical_df.loc[~na_survival_times, cols_to_keep].copy()
 
     # mean impute missing age values for now
-    # TODO: should we do this by cancer type?
+    # TODO: we could do this by cancer type
     clinical_df.age.fillna(clinical_df.age.mean(), inplace=True)
 
     if cancer_type == 'pancancer':
