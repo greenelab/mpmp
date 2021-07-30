@@ -59,7 +59,7 @@ def construct_filename(output_dir,
                                         extension))
 
 
-def save_model_options(output_dir, model_options, classify=True):
+def save_model_options(output_dir, model_options, predictor='classify'):
     """Save model hyperparameters/metadata to output directory.
 
     model_options is an argparse Namespace, and is converted to a dictionary
@@ -74,7 +74,7 @@ def save_model_options(output_dir, model_options, classify=True):
                                      'model_options',
                                      '.pkl',
                                      training_data,
-                                     ('classify' if classify else 'regression'),
+                                     predictor,
                                      s=model_options.seed)
 
     with open(output_file, 'wb') as f:
@@ -85,7 +85,7 @@ def check_output_file(output_dir,
                       identifier,
                       shuffle_labels,
                       model_options,
-                      classify=True):
+                      predictor='classify'):
     """Check if results already exist for a given experiment identifier.
 
     If the file does not exist, return the filename.
@@ -109,7 +109,7 @@ def check_output_file(output_dir,
                                     identifier,
                                     training_data,
                                     signal,
-                                    ('classify' if classify else 'regression'),
+                                    predictor,
                                     s=model_options.seed,
                                     n=n_dim)
     if check_file.is_file():
@@ -127,7 +127,7 @@ def save_results(output_dir,
                  identifier,
                  shuffle_labels,
                  model_options,
-                 classify=True):
+                 predictor='classify'):
     """Save results of a single experiment for a single identifier."""
 
     signal = 'shuffled' if shuffle_labels else 'signal'
@@ -142,7 +142,7 @@ def save_results(output_dir,
     else:
         n_dim = model_options.n_dim
 
-    if classify:
+    if predictor == 'classify':
         auc_df = pd.concat(results[
             '{}_auc'.format(exp_string)
         ])
@@ -197,7 +197,7 @@ def save_results(output_dir,
                                      identifier,
                                      training_data,
                                      signal,
-                                     ('classify' if classify else 'regression'),
+                                     predictor,
                                      s=model_options.seed,
 
                                      n=n_dim)
@@ -212,7 +212,7 @@ def save_results(output_dir,
                                          identifier,
                                          training_data,
                                          signal,
-                                         ('classify' if classify else 'regression'),
+                                         predictor,
                                          s=model_options.seed,
                                          n=n_dim)
         preds_df.to_csv(

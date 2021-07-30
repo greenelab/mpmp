@@ -341,7 +341,8 @@ def plot_heatmap(heatmap_df,
                  results_df,
                  different_from_best=True,
                  raw_results_df=None,
-                 metric='aupr'):
+                 metric='aupr',
+                 id_name='gene'):
     """Plot heatmap comparing data types for each gene.
 
     Arguments
@@ -353,7 +354,8 @@ def plot_heatmap(heatmap_df,
     if different_from_best:
         results_df = get_different_from_best(results_df,
                                              raw_results_df,
-                                             metric=metric)
+                                             metric=metric,
+                                             id_name=id_name)
 
     ax = sns.heatmap(heatmap_df, cmap='Greens',
                      cbar_kws={'aspect': 10, 'fraction': 0.1, 'pad': 0.01})
@@ -377,41 +379,44 @@ def plot_heatmap(heatmap_df,
     # add blue highlights to cells that are significant over baseline
     # add red highlights to cells that are significant and "best" predictor for that gene
     if different_from_best:
-        for gene_ix, gene in enumerate(heatmap_df.columns):
+        for id_ix, identifier in enumerate(heatmap_df.columns):
             for data_ix, data_type in enumerate(heatmap_df.index):
-                if (_check_gene_data_type(results_df, gene, data_type) and
-                    _check_equal_to_best(results_df, gene, data_type)):
+                if (_check_data_type(results_df, identifier, data_type, id_name) and
+                    _check_equal_to_best(results_df, identifier, data_type, id_name)):
                     ax.add_patch(
-                        Rectangle((gene_ix, data_ix), 1, 1, fill=False,
+                        Rectangle((id_ix, data_ix), 1, 1, fill=False,
                                   edgecolor='red', lw=3, zorder=1.5)
                     )
-                elif _check_gene_data_type(results_df, gene, data_type):
+                elif _check_data_type(results_df, identifier, data_type, id_name):
                     ax.add_patch(
-                        Rectangle((gene_ix, data_ix), 1, 1, fill=False,
+                        Rectangle((id_ix, data_ix), 1, 1, fill=False,
                                   edgecolor='blue', lw=3)
                     )
     else:
-        for gene_ix, gene in enumerate(heatmap_df.columns):
-            best_data_type = heatmap_df.loc[:, gene].idxmax()
+        for id_ix, identifier in enumerate(heatmap_df.columns):
+            best_data_type = heatmap_df.loc[:, identifier].idxmax()
             for data_ix, data_type in enumerate(heatmap_df.index):
                 if (best_data_type == data_type) and (
-                    _check_gene_data_type(results_df, gene, data_type)):
+                    _check_data_type(results_df, identifier, data_type, id_name)):
                     ax.add_patch(
-                        Rectangle((gene_ix, data_ix), 1, 1, fill=False,
+                        Rectangle((id_ix, data_ix), 1, 1, fill=False,
                                   edgecolor='red', lw=3, zorder=1.5)
                     )
-                elif _check_gene_data_type(results_df, gene, data_type):
+                elif _check_data_type(results_df, identifier, data_type, id_name):
                     ax.add_patch(
-                        Rectangle((gene_ix, data_ix), 1, 1, fill=False,
+                        Rectangle((id_ix, data_ix), 1, 1, fill=False,
                                   edgecolor='blue', lw=3)
                     )
 
-    plt.xlabel('Gene name')
+    plt.xlabel('{} name'.format(id_name.capitalize().replace('_', ' ')))
     plt.ylabel('Training data type')
     plt.tight_layout()
 
 
-def get_different_from_best(results_df, raw_results_df, metric='aupr'):
+def get_different_from_best(results_df,
+                            raw_results_df,
+                            metric='aupr',
+                            id_name='gene'):
     """Identify best-performing data types for each gene.
 
     As an alternative to just identifying the data type with the best average
@@ -432,14 +437,14 @@ def get_different_from_best(results_df, raw_results_df, metric='aupr'):
     from scipy.stats import ttest_rel
 
     comparison_pvals = []
-    for identifier in results_df.gene.unique():
+    for identifier in results_df[id_name].unique():
         # compare best with other data types that are significant from
         # baseline, using pairwise t-tests
         # null hypothesis = each pair of results distributions is the same
 
         # get best data type
         best_data_ix = (
-            results_df[results_df.gene == identifier]
+            results_df[results_df[id_name] == identifier]
               .loc[:, 'delta_mean']
               .idxmax()
         )
@@ -447,7 +452,7 @@ def get_different_from_best(results_df, raw_results_df, metric='aupr'):
 
         # get other significant data types
         other_data_types = (
-            results_df[(results_df.gene == identifier) &
+            results_df[(results_df[id_name] == identifier) &
                        (results_df.training_data != best_data_type) &
                        (results_df.reject_null)]
         )['training_data'].values
@@ -481,7 +486,7 @@ def get_different_from_best(results_df, raw_results_df, metric='aupr'):
 
     comparison_df = pd.DataFrame(
         comparison_pvals,
-        columns=['gene', 'best_data_type', 'other_data_type', 'p_value']
+        columns=[id_name, 'best_data_type', 'other_data_type', 'p_value']
     )
 
     # apply multiple testing correction and identify significant similarities
@@ -490,7 +495,7 @@ def get_different_from_best(results_df, raw_results_df, metric='aupr'):
                          alpha=0.05,
                          method='fdr_bh')
     comparison_df = comparison_df.assign(corr_pval=corr[1],
-                                         reject_null=corr[0])
+                                         accept_null=~corr[0])
 
     # add column to results_df for statistically equal to best
     equal_to_best = []
@@ -498,13 +503,17 @@ def get_different_from_best(results_df, raw_results_df, metric='aupr'):
         if not vals['reject_null']:
             equal_to_best.append(False)
         else:
-            comp_gene_df = comparison_df[comparison_df.gene == vals['gene']]
+            comp_gene_df = comparison_df[comparison_df[id_name] == vals[id_name]]
             if vals['training_data'] in comp_gene_df.best_data_type.values:
                 equal_to_best.append(True)
             elif vals['training_data'] in comp_gene_df.other_data_type.values:
+                # reject null = means are significantly different
+                # accept null = means are statistically the same
+                # so accept null = alternate data type is statistically the
+                # same as the best data type
                 equal_to_best.append(
                     comp_gene_df[comp_gene_df.other_data_type == vals['training_data']]
-                      .reject_null.values[0]
+                      .accept_null.values[0]
                 )
             else:
                 # this happens when the data type is the only significant one
@@ -625,14 +634,14 @@ def plot_best_multi_omics_results(results_df,
     plt.legend(title='Model type', loc='lower left', fontsize=12, title_fontsize=12)
 
 
-def _check_gene_data_type(results_df, gene, data_type):
+def _check_data_type(results_df, identifier, data_type, id_name):
     return results_df[
-        (results_df.gene == gene) &
+        (results_df[id_name] == identifier) &
         (results_df.training_data == data_type)].reject_null.values[0]
 
-def _check_equal_to_best(results_df, gene, data_type):
+def _check_equal_to_best(results_df, identifier, data_type, id_name):
     return results_df[
-        (results_df.gene == gene) &
+        (results_df[id_name] == identifier) &
         (results_df.training_data == data_type)].equal_to_best.values[0]
 
 

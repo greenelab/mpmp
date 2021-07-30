@@ -189,7 +189,7 @@ if __name__ == '__main__':
                                         model_options.training_data,
                                         sample_info_df,
                                         model_options.num_folds,
-                                        model_options.classify,
+                                        ('classify' if model_options.classify else 'regress'),
                                         shuffle_labels,
                                         standardize_columns,
                                         io_args.output_preds)
@@ -201,7 +201,7 @@ if __name__ == '__main__':
                             None,
                             shuffle_labels,
                             model_options,
-                            classify=model_options.classify)
+                            'classify' if model_options.classify else 'regression')
         except NoTrainSamplesError:
             if io_args.verbose:
                 print('Skipping due to no train samples', file=sys.stderr)

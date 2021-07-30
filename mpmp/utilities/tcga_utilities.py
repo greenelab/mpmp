@@ -149,7 +149,8 @@ def process_y_matrix_cancertype(acronym,
 def align_matrices(x_file_or_df,
                    y,
                    add_cancertype_covariate=True,
-                   add_mutation_covariate=True):
+                   add_mutation_covariate=True,
+                   add_age_covariate=False):
     """
     Process the x matrix for the given input file and align x and y together
 
@@ -187,8 +188,13 @@ def align_matrices(x_file_or_df,
 
     if add_mutation_covariate:
         # add covariate for mutation burden
-        mutation_covariate_df = pd.DataFrame(y.loc[:, "log10_mut"], index=y.index)
+        mutation_covariate_df = pd.DataFrame(y.loc[:, 'log10_mut'], index=y.index)
         x_df = x_df.merge(mutation_covariate_df, left_index=True, right_index=True)
+
+    if add_age_covariate:
+        # add covariate for patient age, used for survival prediction
+        age_covariate_df = pd.DataFrame(y.loc[:, 'age'], index=y.index)
+        x_df = x_df.merge(age_covariate_df, left_index=True, right_index=True)
 
     num_added_features = x_df.shape[1] - gene_features.shape[0]
     if num_added_features > 0:
@@ -435,55 +441,6 @@ def standardize_multi_gene_features(X_df, standardize_columns, gene_features, da
 
     # concatenate datasets back together and return
     return pd.concat(datasets, axis=1)
-
-
-def subsample_to_smallest_cancer_type(X_df,
-                                      y_df,
-                                      sample_info_df,
-                                      seed):
-    """Subsample data to the size of the smallest cancer type in dataset.
-
-    Use sample_info_df, filtered to samples in X_df, to calculate the number of
-    samples present for each cancer type. Then randomly subsample each cancer
-    type to the smallest one, returning subsampled data and labels.
-    """
-    # group train samples by cancer type
-    grouped_samples_df = (
-        sample_info_df.reindex(X_df.index)
-                      .groupby('cancer_type')
-    )
-
-    # get count of each sample type in given dataset
-    counts_df = (
-        grouped_samples_df.count()
-                          .drop(columns=['id_for_stratification'])
-                          .rename(columns={'sample_type': 'disease_count'})
-                          .sort_values(by='disease_count', ascending=True)
-    )
-
-    # get fewest samples in train set
-    smallest_count = counts_df.iloc[0, 0]
-
-    # subsample all cancer types in train set to smallest count
-    ss_ixs = np.array(
-        [np.random.choice(x, size=smallest_count)
-             for x in grouped_samples_df.groups.values()]).flatten()
-    X_ss_df = X_df.loc[ss_ixs, :]
-    y_ss_df = y_df.loc[ss_ixs, :]
-
-    # check that all cancer type counts are now the same
-    grouped_ss_df = (
-        sample_info_df.reindex(X_ss_df.index)
-                      .groupby('cancer_type')
-                      .count()
-                      .drop(columns=['id_for_stratification'])
-                      .rename(columns={'sample_type': 'disease_count'})
-                      .sort_values(by='disease_count', ascending=True)
-    )
-    assert min(grouped_ss_df.disease_count) == max(grouped_ss_df.disease_count)
-
-    # return subsampled data and labels
-    return X_ss_df, y_ss_df
 
 
 def get_all_data_types(use_subsampled=False, compressed_data=False):

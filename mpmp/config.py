@@ -9,6 +9,7 @@ results_dirs = {
     'cancer_type': repo_root / '03_classify_cancer_type' / 'results',
     'purity': repo_root / '04_predict_tumor_purity' / 'results',
     'multimodal': repo_root / '05_classify_mutations_multimodal' / 'results',
+    'survival': repo_root / '06_predict_survival' / 'results',
 }
 images_dirs = {
     'data': repo_root / '00_download_data' / 'images',
@@ -16,6 +17,7 @@ images_dirs = {
     'cancer_type': repo_root / '03_classify_cancer_type' / 'images',
     'purity': repo_root / '04_predict_tumor_purity' / 'images',
     'multimodal': repo_root / '05_classify_mutations_multimodal' / 'images',
+    'survival': repo_root / '06_predict_survival' / 'images',
 }
 paper_figures_dir = repo_root / 'figures'
 
@@ -88,6 +90,17 @@ subsampled_data_types = {
 # location of tumor purity data
 tumor_purity_data = data_dir / 'raw' / 'TCGA_mastercalls.abs_tables_JSedit.fixed.txt'
 
+# location of clinical data from TCGA
+clinical_data = data_dir / 'raw' / 'TCGA-CDR-SupplementalTableS1.xlsx'
+
+# cancer types where we want to use PFI as the clinical endpoint
+# rather than OS
+# see Table 1 of https://doi.org/10.1101/2021.06.01.446243
+pfi_cancer_types = [
+    'BRCA', 'DLBC', 'LGG', 'PCPG', 'PRAD',
+    'READ', 'TGCT', 'THCA', 'THYM'
+]
+
 # default seed for random number generator
 default_seed = 42
 
@@ -113,6 +126,29 @@ l1_ratios = [0.0, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0]
 reg_max_iter = 500
 reg_alphas = [0.001, 0.01, 0.1, 0.5, 1]
 reg_l1_ratios = [0.1, 0.5, 0.7, 0.9, 0.95, 0.99, 1.0]
+
+# hyperparameters for survival experiments
+# cox regression is a bit more finicky than logistic/linear regression,
+# so we need to use slightly larger ranges to make sure the models converge
+survival_max_iter = 1000
+survival_alphas = None
+survival_l1_ratios = [0.01, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0]
+
+max_iter_map = {
+    'classify': max_iter,
+    'regress': reg_max_iter,
+    'survival': survival_max_iter
+}
+alphas_map = {
+    'classify': alphas,
+    'regress': reg_alphas,
+    'survival': survival_alphas
+}
+l1_ratios_map = {
+    'classify': l1_ratios,
+    'regress': reg_l1_ratios,
+    'survival': survival_l1_ratios
+}
 
 # repo/commit information to retrieve precomputed cancer gene information
 # this is used in data_utilities.py
@@ -142,10 +178,6 @@ manifest_url = (
 
 # data types to standardize columns for
 standardize_data_types = ['expression', 'rppa', 'mirna']
-
-# subsample data to smallest cancer type
-# hopefully this will improve prediction for imbalanced cancer types
-subsample_to_smallest = False
 
 # constant for non-gene feature indices
 # this is used in multimodal prediction experiments, e.g. scripts in

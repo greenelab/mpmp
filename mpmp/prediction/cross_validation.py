@@ -7,7 +7,7 @@ import contextlib
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import KFold, StratifiedKFold
 
 import mpmp.config as cfg
 from mpmp.exceptions import (
@@ -17,6 +17,7 @@ from mpmp.exceptions import (
 )
 import mpmp.prediction.classification as clf
 import mpmp.prediction.regression as reg
+import mpmp.prediction.survival as surv
 import mpmp.utilities.tcga_utilities as tu
 
 def run_cv_stratified(data_model,
@@ -25,10 +26,12 @@ def run_cv_stratified(data_model,
                       training_data,
                       sample_info,
                       num_folds,
-                      classify=True,
+                      predictor='classify',
                       shuffle_labels=False,
                       standardize_columns=False,
-                      output_preds=False):
+                      output_preds=False,
+                      stratify=True,
+                      results_dir=None):
     """
     Run stratified cross-validation experiments for a given dataset, then write
     the results to files in the results directory. If the relevant files already
@@ -42,6 +45,7 @@ def run_cv_stratified(data_model,
     training_data (str): what type of data is being used to train model
     sample_info (pd.DataFrame): df with TCGA sample information
     num_folds (int): number of cross-validation folds to run
+    predictor (str): one of 'classify', 'regress', 'survival'
     classify (bool): if True predict binary labels, else do regression
     shuffle_labels (bool): whether or not to shuffle labels (negative control)
     standardize_columns (bool): whether or not to standardize predictors
@@ -51,7 +55,7 @@ def run_cv_stratified(data_model,
     -------
     results (dict): maps results metrics to values across CV folds
     """
-    if classify:
+    if predictor == 'classify':
         results = {
             '{}_metrics'.format(exp_string): [],
             '{}_auc'.format(exp_string): [],
@@ -80,7 +84,7 @@ def run_cv_stratified(data_model,
                                         message='The least populated class in y')
                 X_train_raw_df, X_test_raw_df, _ = split_stratified(
                    data_model.X_df, sample_info, num_folds=num_folds,
-                   fold_no=fold_no, seed=data_model.seed)
+                   fold_no=fold_no, seed=data_model.seed, stratify=stratify)
         except ValueError:
             if data_model.X_df.shape[0] == 0:
                 raise NoTrainSamplesError(
@@ -118,29 +122,48 @@ def run_cv_stratified(data_model,
                                                        standardize_columns,
                                                        data_model.subset_mad_genes)
 
-        if cfg.subsample_to_smallest:
-            sample_counts_df = pd.read_csv(cfg.sample_counts, sep='\t')
-            X_train_df, y_train_df = tu.subsample_to_smallest_cancer_type(
-                    X_train_df, y_train_df, sample_info, data_model.seed)
-            X_test_df, y_test_df = tu.subsample_to_smallest_cancer_type(
-                    X_test_df, y_test_df, sample_info, data_model.seed)
+        models_list = {
+            'classify': clf.train_classifier,
+            'regress': reg.train_regressor,
+            'survival': surv.train_survival
+        }
+        train_model = models_list[predictor]
 
-        train_model = clf.train_classifier if classify else reg.train_regressor
+        # save model results for survival prediction
+        if predictor == 'survival':
+            debug_info = {
+                'fold_no': fold_no,
+                'prefix': '{}/{}_{}'.format(
+                    results_dir, identifier, predictor
+                ),
+                'signal': signal
+            }
+            from functools import partial
+            # the non-survival model training functions don't take a debug_info
+            # parameter, so we do a partial function application to make all the
+            # model training functions take the same arguments
+            train_model = partial(train_model, debug_info=debug_info)
+
         try:
             model_results = train_model(
                 X_train=X_train_df,
                 X_test=X_test_df,
                 y_train=y_train_df,
-                alphas=(cfg.alphas if classify else cfg.reg_alphas),
-                l1_ratios=(cfg.l1_ratios if classify else cfg.reg_l1_ratios),
+                alphas=cfg.alphas_map[predictor],
+                l1_ratios=cfg.l1_ratios_map[predictor],
                 seed=data_model.seed,
                 n_folds=cfg.folds,
-                max_iter=(cfg.max_iter if classify else cfg.reg_max_iter)
+                max_iter=cfg.max_iter_map[predictor],
             )
         except ValueError as e:
             if ('Only one class' in str(e)) or ('got 1 class' in str(e)):
                 raise OneClassError(
                     'Only one class present in test set for identifier: '
+                    '{}'.format(identifier)
+                )
+            elif ('All samples are censored' in str(e)):
+                raise OneClassError(
+                    'All samples are censored in test set for identifier:'
                     '{}'.format(identifier)
                 )
             else:
@@ -158,8 +181,7 @@ def run_cv_stratified(data_model,
             feature_names=X_train_df.columns,
             signal=signal,
             seed=data_model.seed,
-            name=('classify' if classify else 'regress')
-
+            name=predictor
         )
         coef_df = coef_df.assign(identifier=identifier)
         if isinstance(training_data, str):
@@ -170,7 +192,7 @@ def run_cv_stratified(data_model,
         results['{}_coef'.format(exp_string)].append(coef_df)
 
         # get relevant metrics
-        if classify:
+        if predictor == 'classify':
             try:
                 metric_df, auc_df, aupr_df = clf.get_metrics(
                     y_train_df, y_test_df, y_cv_df, y_pred_train,
@@ -192,21 +214,39 @@ def run_cv_stratified(data_model,
             results['{}_aupr'.format(exp_string)].append(aupr_df)
 
         else:
-            metric_df = reg.get_metrics(
-                y_train_df,
-                y_test_df,
-                y_cv_df,
-                y_pred_train,
-                y_pred_test,
-                identifier=identifier,
-                training_data=training_data,
-                signal=signal,
-                seed=data_model.seed,
-                fold_no=fold_no
-            )
+            if predictor == 'survival':
+                metric_df = surv.get_metrics(
+                    cv_pipeline,
+                    X_train_df,
+                    X_test_df,
+                    X_train_df,
+                    y_train_df,
+                    y_test_df,
+                    y_cv_df,
+                    identifier=identifier,
+                    training_data=training_data,
+                    signal=signal,
+                    seed=data_model.seed,
+                    fold_no=fold_no
+                )
+            else:
+                metric_df = reg.get_metrics(
+                    y_train_df,
+                    y_test_df,
+                    y_cv_df,
+                    y_pred_train,
+                    y_pred_test,
+                    identifier=identifier,
+                    training_data=training_data,
+                    signal=signal,
+                    seed=data_model.seed,
+                    fold_no=fold_no
+                )
             results['{}_metrics'.format(exp_string)].append(metric_df)
 
         if output_preds:
+            if predictor == 'survival':
+                raise NotImplementedError
             get_preds = clf.get_preds if classify else reg.get_preds
             results['{}_preds'.format(exp_string)].append(
                 get_preds(X_test_df, y_test_df, cv_pipeline, fold_no)
@@ -219,7 +259,8 @@ def split_stratified(data_df,
                      sample_info_df,
                      num_folds=4,
                      fold_no=1,
-                     seed=cfg.default_seed):
+                     seed=cfg.default_seed,
+                     stratify=True):
     """Split expression data into train and test sets.
 
     The train and test sets will both contain data from all cancer types,
@@ -261,12 +302,20 @@ def split_stratified(data_df,
     ] = 'other'
 
     # now do stratified CV splitting and return the desired fold
-    kf = StratifiedKFold(n_splits=num_folds, shuffle=True, random_state=seed)
-    for fold, (train_ixs, test_ixs) in enumerate(
-            kf.split(data_df, sample_info_df.id_for_stratification)):
-        if fold == fold_no:
-            train_df = data_df.iloc[train_ixs]
-            test_df = data_df.iloc[test_ixs]
+    if stratify: # TODO this is a mess, clean up
+        kf = StratifiedKFold(n_splits=num_folds, shuffle=True, random_state=seed)
+        for fold, (train_ixs, test_ixs) in enumerate(
+                kf.split(data_df, sample_info_df.id_for_stratification)):
+            if fold == fold_no:
+                train_df = data_df.iloc[train_ixs]
+                test_df = data_df.iloc[test_ixs]
+    else:
+        kf = KFold(n_splits=num_folds, shuffle=True, random_state=seed)
+        for fold, (train_ixs, test_ixs) in enumerate(kf.split(data_df)):
+            if fold == fold_no:
+                train_df = data_df.iloc[train_ixs]
+                test_df = data_df.iloc[test_ixs]
+
     return train_df, test_df, sample_info_df
 
 
@@ -289,12 +338,17 @@ def extract_coefficients(cv_pipeline,
     final_pipeline = cv_pipeline.best_estimator_
     final_classifier = final_pipeline.named_steps[name]
 
+    if name == 'survival':
+        weights = final_classifier.coef_.flatten()
+    else:
+        weights = final_classifier.coef_[0]
+
     coef_df = pd.DataFrame.from_dict(
-        {"feature": feature_names, "weight": final_classifier.coef_[0]}
+        {"feature": feature_names, "weight": weights}
     )
 
-    coef_df = (
-        coef_df.assign(abs=coef_df["weight"].abs())
+    coef_df = (coef_df
+        .assign(abs=coef_df["weight"].abs())
         .sort_values("abs", ascending=False)
         .reset_index(drop=True)
         .assign(signal=signal, seed=seed)

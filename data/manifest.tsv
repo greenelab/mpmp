@@ -6,3 +6,4 @@ rppa	fcbb373e-28d4-4818-92f3-601ede3da5e1	TCGA-RPPA-pancan-clean.txt	e2b914c7ecd
 rna_seq	3586c0da-64d0-4b74-a449-5ff4d9136611	EBPlusPlusAdjustPANCAN_IlluminaHiSeq_RNASeqV2.geneExp.tsv	02e72c33071307ff6570621480d3c90b	1882540959
 mirna	1c6174d9-8ffb-466e-b5ee-07b204c15cf8	pancanMiRs_EBadjOnProtocolPlatformWithoutRepsWithUnCorrectMiRs_08_04_16.csv	c7501dc3c505ca172a6a05b611bd11c3	67167640
 purity	4f277128-f793-4354-a13d-30cc7fe9f6b5	TCGA_mastercalls.abs_tables_JSedit.fixed.txt	8ea2ca92c8ae58350538999dfa1174da	901812
+clinical	1b5f413e-a8d1-4d10-92eb-7c4ae739ed81	TCGA-CDR-SupplementalTableS1.xlsx	a4591b2dcee39591f59e5e25a6ce75fa	2945129
