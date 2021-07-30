@@ -679,7 +679,7 @@ def compress_and_save_data(data_type,
 
     if save_variance_explained:
         np.savetxt(os.path.join(output_dir, '{}_ve.tsv.gz'.format(output_prefix)),
-                   pca.variance_explained_ratio_)
+                   pca.explained_variance_ratio_)
 
     return transformed_data_df
 

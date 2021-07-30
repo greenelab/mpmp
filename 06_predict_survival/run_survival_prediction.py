@@ -195,10 +195,9 @@ if __name__ == '__main__':
 
             try:
                 # for now, don't standardize methylation data
-                # also don't standardize PCA components, they should already be
-                # in a reasonable range
+                # also, always standardize PCA components, for all data types
                 standardize_columns = (
-                    (model_options.n_dim is None) and
+                    (model_options.n_dim is not None) or
                     (model_options.training_data in cfg.standardize_data_types)
                 )
                 results = run_cv_stratified(tcga_data,
