@@ -130,7 +130,7 @@ def run_cv_stratified(data_model,
         train_model = models_list[predictor]
 
         # save model results for survival prediction
-        if predictor == 'survival':
+        if predictor == 'survival' and cfg.survival_debug:
             debug_info = {
                 'fold_no': fold_no,
                 'prefix': '{}/{}_{}'.format(

@@ -22,10 +22,7 @@ from mpmp.exceptions import (
 from mpmp.prediction.cross_validation import run_cv_stratified
 import mpmp.utilities.data_utilities as du
 import mpmp.utilities.file_utilities as fu
-from mpmp.utilities.tcga_utilities import (
-    get_all_data_types,
-    check_all_data_types,
-)
+from mpmp.utilities.tcga_utilities import check_all_data_types
 
 def process_args():
     """Parse and format command line arguments."""
@@ -109,8 +106,9 @@ def process_args():
 
     # add some additional hyperparameters/ranges from config file to model options
     # these shouldn't be changed by the user, so they aren't added as arguments
-    model_options.alphas = cfg.alphas
-    model_options.l1_ratios = cfg.l1_ratios
+    model_options.max_iter = cfg.max_iter_map['survival']
+    model_options.alphas = cfg.alphas_map['survival']
+    model_options.l1_ratios = cfg.l1_ratios_map['survival']
     model_options.standardize_data_types = cfg.standardize_data_types
 
     return io_args, model_options, sample_info_df
@@ -154,10 +152,6 @@ if __name__ == '__main__':
                               sample_info_df=sample_info_df,
                               verbose=io_args.verbose,
                               debug=model_options.debug)
-
-    print(model_options)
-    print(tcga_data.data_df.iloc[:5, :5])
-    exit()
 
     # we want to run survival prediction experiments:
     # - for true labels and shuffled labels
