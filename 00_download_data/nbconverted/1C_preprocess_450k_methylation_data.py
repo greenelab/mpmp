@@ -218,42 +218,39 @@ plt.ylabel('Count')
 # In[15]:
 
 
+# take PCA + save to file, for equal comparison with methylation
+from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 
 pca_dir = os.path.join(cfg.data_dir, 'me_compressed')
 os.makedirs(pca_dir, exist_ok=True)
 
 n_pcs_list = [100, 1000, 5000]
-
-# it's much faster to just calculate this once for max n_pcs, and truncate it,
-# than to recalculate it for each number of PCs we want
-pca = PCA(n_components=max(n_pcs_list), random_state=cfg.default_seed)
-me_pca = pca.fit_transform(tcga_methylation_df)
-print(me_pca.shape)
-
 for n_pcs in n_pcs_list:
-    me_pca_truncated = pd.DataFrame(me_pca[:, :n_pcs], index=tcga_methylation_df.index)
-    print(me_pca_truncated.shape)
-    me_pca_truncated.to_csv(
-        os.path.join(pca_dir, 'me_450k_f{}_i{}_pc{}.tsv.gz'.format(
-                         n_filter, n_impute, n_pcs)),
-        sep='\t',
-        float_format='%.3g')
+    print(n_pcs)
+    tu.compress_and_save_data('me_450k',
+                              tcga_methylation_df,
+                              pca_dir,
+                              n_pcs,
+                              standardize_input=True,
+                              verbose=True,
+                              save_variance_explained=True)
 
 
 # In[16]:
 
 
 # plot PCA variance explained
-import matplotlib.pyplot as plt
-import seaborn as sns
-
 sns.set({'figure.figsize': (15, 4)})
 fig, axarr = plt.subplots(1, 3)
 
 for ix, n_pcs in enumerate(n_pcs_list):
-    ve = pca.explained_variance_ratio_[:n_pcs]
-    sns.lineplot(x=range(n_pcs), y=np.cumsum(ve), ax=axarr[ix])
+    ve = np.loadtxt(
+        os.path.join(pca_dir, '{}_ve.tsv.gz'.format(
+            tu.get_compress_output_prefix('me_450k', n_pcs, cfg.default_seed, True)
+        ))
+    )
+    sns.lineplot(x=range(len(ve)), y=np.cumsum(ve), ax=axarr[ix])
     axarr[ix].set_title('{} PCs, variance explained: {:.4f}'.format(
         n_pcs_list[ix], sum(ve, 0)))
     axarr[ix].set_xlabel('# of PCs')

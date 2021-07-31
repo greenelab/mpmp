@@ -232,7 +232,7 @@ filtered_file = os.path.join(output_dir,
 print(filtered_file)
 
 
-# In[13]:
+# In[ ]:
 
 
 tcga_methylation_df.to_csv(filtered_file, sep='\t', float_format='%.3g')
@@ -242,7 +242,7 @@ tcga_methylation_df.to_csv(filtered_file, sep='\t', float_format='%.3g')
 # 
 # See https://gdc.cancer.gov/resources-tcga-users/tcga-code-tables/tissue-source-site-codes for more details.
 
-# In[14]:
+# In[13]:
 
 
 # get sample info and save to file
@@ -256,7 +256,7 @@ print(tcga_id.shape)
 tcga_id.head()
 
 
-# In[15]:
+# In[14]:
 
 
 # get cancer type counts and save to file
@@ -276,37 +276,41 @@ cancertype_count_df.head()
 # 
 # Compress the data using PCA with various dimensions, and save the results to tsv files.
 
-# In[16]:
+# In[15]:
 
 
+# take PCA + save to file, for equal comparison with methylation
+from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 
 pca_dir = os.path.join(cfg.data_dir, 'me_compressed')
 os.makedirs(pca_dir, exist_ok=True)
 
 n_pcs_list = [100, 1000, 5000]
-var_exp_list = []
 for n_pcs in n_pcs_list:
-    pca = PCA(n_components=n_pcs, random_state=cfg.default_seed)
-    me_pca = pca.fit_transform(tcga_methylation_df)
-    print(me_pca.shape)
-    var_exp_list.append(pca.explained_variance_ratio_)
-    me_pca = pd.DataFrame(me_pca, index=tcga_methylation_df.index)
-    me_pca.to_csv(os.path.join(pca_dir,
-                               'me_27k_f{}_i{}_pc{}.tsv.gz'.format(
-                                   n_filter, n_impute, n_pcs)),
-                  sep='\t',
-                  float_format='%.3g')
+    print(n_pcs)
+    tu.compress_and_save_data('me_27k',
+                              tcga_methylation_df,
+                              pca_dir,
+                              n_pcs,
+                              standardize_input=True,
+                              verbose=True,
+                              save_variance_explained=True)
 
 
-# In[17]:
+# In[16]:
 
 
 # plot PCA variance explained
 sns.set({'figure.figsize': (15, 4)})
 fig, axarr = plt.subplots(1, 3)
 
-for ix, ve in enumerate(var_exp_list):
+for ix, n_pcs in enumerate(n_pcs_list):
+    ve = np.loadtxt(
+        os.path.join(pca_dir, '{}_ve.tsv.gz'.format(
+            tu.get_compress_output_prefix('me_27k', n_pcs, cfg.default_seed, True)
+        ))
+    )
     sns.lineplot(x=range(len(ve)), y=np.cumsum(ve), ax=axarr[ix])
     axarr[ix].set_title('{} PCs, variance explained: {:.4f}'.format(
         n_pcs_list[ix], sum(ve, 0)))
