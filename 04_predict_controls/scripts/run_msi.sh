@@ -1,7 +1,7 @@
 #!/bin/bash
 ERRORS_DIR=./msi_errors
 N_DIM=5000
-RESULTS_DIR=./04_predict_controls/results/msi_${N_DIM}_top_mad
+RESULTS_DIR=./04_predict_controls/results/msi/msi_${N_DIM}_top_mad
 
 mkdir -p $ERRORS_DIR
 

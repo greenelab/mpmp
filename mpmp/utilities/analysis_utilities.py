@@ -114,6 +114,31 @@ def load_purity_results(results_dir, classify=True):
     return results_df
 
 
+def load_msi_results(results_dir):
+    """Load results of microsatellite instability prediction experiments.
+
+    Arguments
+    ---------
+    results_dir (str): directory containing results files
+
+    Returns
+    -------
+    results_df (pd.DataFrame): results of prediction experiments
+    """
+    results_df = pd.DataFrame()
+    results_dir = Path(results_dir)
+    for results_file in results_dir.iterdir():
+        if not results_file.is_file(): continue
+        results_filename = str(results_file.stem)
+        if ('classify' not in results_filename
+            or 'metrics' not in results_filename): continue
+        if results_filename[0] == '.': continue
+        id_results_df = pd.read_csv(results_file, sep='\t')
+        # TODO: n_dims?
+        results_df = pd.concat((results_df, id_results_df))
+    return results_df
+
+
 def load_purity_by_cancer_type(results_dir, sample_info_df, classify=True):
     """Load results of tumor purity prediction, grouped by cancer type.
 

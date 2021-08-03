@@ -192,7 +192,7 @@ if __name__ == '__main__':
                                        cfg.standardize_data_types)
                 results = run_cv_stratified(tcga_data,
                                             'msi',
-                                            None,
+                                            cancer_type,
                                             model_options.training_data,
                                             sample_info_df,
                                             model_options.num_folds,
