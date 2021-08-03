@@ -369,9 +369,6 @@ def load_msi(cancer_type, mut_burden_df, sample_info_df, verbose=False):
 
     # join mutation burden information and MSI information
     # these are necessary to generate non-gene covariates later on
-    print(msi_df.shape)
-    print(mut_burden_df.shape)
-    print(sample_info_df.shape)
     msi_df = (msi_df
         .drop(columns=['msi_status'])
         .merge(mut_burden_df, left_index=True, right_on='sample_first_ten')
