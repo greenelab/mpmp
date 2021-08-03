@@ -269,7 +269,7 @@ class TCGADataModel():
         filtered_data = self._filter_data(
             self.data_df,
             y_df_raw,
-            add_cancertype_covariate=True
+            add_cancertype_covariate=(cancer_type == 'pancancer')
         )
         train_filtered_df, y_filtered_df, gene_features = filtered_data
 

@@ -133,7 +133,7 @@ if __name__ == '__main__':
 
     # create empty log file if it doesn't exist
     log_columns = [
-        # TODO cancer_type
+        'cancer_type',
         'training_data',
         'shuffle_labels',
         'skip_reason'
@@ -147,6 +147,7 @@ if __name__ == '__main__':
     tcga_data = TCGADataModel(seed=model_options.seed,
                               subset_mad_genes=model_options.subset_mad_genes,
                               training_data=model_options.training_data,
+                              overlap_data_types=model_options.overlap_data_types,
                               load_compressed_data=model_options.use_compressed,
                               n_dim=model_options.n_dim,
                               sample_info_df=sample_info_df,
@@ -178,16 +179,12 @@ if __name__ == '__main__':
                     print('Skipping because results file exists already', file=sys.stderr)
                 log_df = fu.generate_log_df(
                     log_columns,
-                    [model_options.training_data, shuffle_labels, 'file_exists']
+                    [cancer_type, model_options.training_data, shuffle_labels, 'file_exists']
                 )
                 fu.write_log_file(log_df, io_args.log_file)
                 continue
 
             tcga_data.process_msi_data(cancer_type, experiment_dir)
-            print(tcga_data.X_df.shape)
-            print(tcga_data.y_df.shape)
-            print(tcga_data.y_df.head())
-            exit()
 
             try:
                 # for now, don't standardize methylation data
@@ -201,14 +198,13 @@ if __name__ == '__main__':
                                             model_options.num_folds,
                                             'classify',
                                             shuffle_labels,
-                                            standardize_columns,
-                                            io_args.output_preds)
+                                            standardize_columns)
                 # only save results if no exceptions
-                fu.save_results(output_dir,
+                fu.save_results(experiment_dir,
                                 check_file,
                                 results,
                                 'msi',
-                                None,
+                                cancer_type,
                                 shuffle_labels,
                                 model_options,
                                 'classify')
@@ -217,14 +213,14 @@ if __name__ == '__main__':
                     print('Skipping due to no train samples', file=sys.stderr)
                 log_df = fu.generate_log_df(
                     log_columns,
-                    [model_options.training_data, shuffle_labels, 'no_train_samples']
+                    [cancer_type, model_options.training_data, shuffle_labels, 'no_train_samples']
                 )
             except OneClassError:
                 if io_args.verbose:
                     print('Skipping due to one holdout class', file=sys.stderr)
                 log_df = fu.generate_log_df(
                     log_columns,
-                    [model_options.training_data, shuffle_labels, 'one_class']
+                    [cancer_type, model_options.training_data, shuffle_labels, 'one_class']
                 )
 
         if log_df is not None:
