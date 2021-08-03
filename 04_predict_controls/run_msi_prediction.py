@@ -131,20 +131,18 @@ if __name__ == '__main__':
     # (hyperparameters, preprocessing info, etc)
     fu.save_model_options(experiment_dir, model_options)
 
-    print(io_args.cancer_types)
-    exit()
-
     # create empty log file if it doesn't exist
     log_columns = [
+        # TODO cancer_type
         'training_data',
         'shuffle_labels',
         'skip_reason'
     ]
     if io_args.log_file.exists() and io_args.log_file.is_file():
-        purity_log_df = pd.read_csv(io_args.log_file, sep='\t')
+        log_df = pd.read_csv(io_args.log_file, sep='\t')
     else:
-        purity_log_df = pd.DataFrame(columns=log_columns)
-        purity_log_df.to_csv(io_args.log_file, sep='\t')
+        log_df = pd.DataFrame(columns=log_columns)
+        log_df.to_csv(io_args.log_file, sep='\t')
 
     tcga_data = TCGADataModel(seed=model_options.seed,
                               subset_mad_genes=model_options.subset_mad_genes,
@@ -155,74 +153,80 @@ if __name__ == '__main__':
                               verbose=io_args.verbose,
                               debug=model_options.debug)
 
-    # we want to run purity prediction experiments for true labels and
+    # we want to run MSI prediction experiments for true labels and
     # shuffled labels (the latter as a lower baseline)
-    progress = tqdm([False, True],
-                    ncols=100,
-                    file=sys.stdout)
-    for shuffle_labels in progress:
-        progress.set_description('shuffle labels: {}'.format(shuffle_labels))
+    for shuffle_labels in (False, True):
 
-        try:
-            output_dir = fu.make_output_dir(experiment_dir, '')
-            check_file = fu.check_output_file(output_dir,
-                                              None,
-                                              shuffle_labels,
-                                              model_options,
-                                              model_options.classify)
-        except ResultsFileExistsError:
-            # this happens if cross-validation for this gene has already been
-            # run (i.e. the results file already exists)
-            if io_args.verbose:
-                print('Skipping because results file exists already', file=sys.stderr)
-            purity_log_df = fu.generate_log_df(
-                log_columns,
-                [model_options.training_data, shuffle_labels, 'file_exists']
-            )
-            fu.write_log_file(purity_log_df, io_args.log_file)
-            continue
+        print('shuffle labels: {}'.format(shuffle_labels))
 
-        tcga_data.process_purity_data(experiment_dir,
-                                      classify=model_options.classify)
+        progress = tqdm(io_args.cancer_types,
+                        total=len(io_args.cancer_types),
+                        ncols=100,
+                        file=sys.stdout)
 
-        try:
-            # for now, don't standardize methylation data
-            standardize_columns = (model_options.training_data in
-                                   cfg.standardize_data_types)
-            results = run_cv_stratified(tcga_data,
-                                        'purity',
-                                        None,
-                                        model_options.training_data,
-                                        sample_info_df,
-                                        model_options.num_folds,
-                                        ('classify' if model_options.classify else 'regress'),
-                                        shuffle_labels,
-                                        standardize_columns,
-                                        io_args.output_preds)
-            # only save results if no exceptions
-            fu.save_results(output_dir,
-                            check_file,
-                            results,
-                            'purity',
-                            None,
-                            shuffle_labels,
-                            model_options,
-                            'classify' if model_options.classify else 'regression')
-        except NoTrainSamplesError:
-            if io_args.verbose:
-                print('Skipping due to no train samples', file=sys.stderr)
-            purity_log_df = fu.generate_log_df(
-                log_columns,
-                [model_options.training_data, shuffle_labels, 'no_train_samples']
-            )
-        except OneClassError:
-            if io_args.verbose:
-                print('Skipping due to one holdout class', file=sys.stderr)
-            purity_log_df = fu.generate_log_df(
-                log_columns,
-                [model_options.training_data, shuffle_labels, 'one_class']
-            )
+        for cancer_type in progress:
 
-        if purity_log_df is not None:
-            fu.write_log_file(purity_log_df, io_args.log_file)
+            try:
+                check_file = fu.check_output_file(experiment_dir,
+                                                  cancer_type,
+                                                  shuffle_labels,
+                                                  model_options)
+            except ResultsFileExistsError:
+                # this happens if cross-validation for this gene has already been
+                # run (i.e. the results file already exists)
+                if io_args.verbose:
+                    print('Skipping because results file exists already', file=sys.stderr)
+                log_df = fu.generate_log_df(
+                    log_columns,
+                    [model_options.training_data, shuffle_labels, 'file_exists']
+                )
+                fu.write_log_file(log_df, io_args.log_file)
+                continue
+
+            tcga_data.process_msi_data(cancer_type, experiment_dir)
+            print(tcga_data.X_df.shape)
+            print(tcga_data.y_df.shape)
+            print(tcga_data.y_df.head())
+            exit()
+
+            try:
+                # for now, don't standardize methylation data
+                standardize_columns = (model_options.training_data in
+                                       cfg.standardize_data_types)
+                results = run_cv_stratified(tcga_data,
+                                            'msi',
+                                            None,
+                                            model_options.training_data,
+                                            sample_info_df,
+                                            model_options.num_folds,
+                                            'classify',
+                                            shuffle_labels,
+                                            standardize_columns,
+                                            io_args.output_preds)
+                # only save results if no exceptions
+                fu.save_results(output_dir,
+                                check_file,
+                                results,
+                                'msi',
+                                None,
+                                shuffle_labels,
+                                model_options,
+                                'classify')
+            except NoTrainSamplesError:
+                if io_args.verbose:
+                    print('Skipping due to no train samples', file=sys.stderr)
+                log_df = fu.generate_log_df(
+                    log_columns,
+                    [model_options.training_data, shuffle_labels, 'no_train_samples']
+                )
+            except OneClassError:
+                if io_args.verbose:
+                    print('Skipping due to one holdout class', file=sys.stderr)
+                log_df = fu.generate_log_df(
+                    log_columns,
+                    [model_options.training_data, shuffle_labels, 'one_class']
+                )
+
+        if log_df is not None:
+            fu.write_log_file(log_df, io_args.log_file)
 

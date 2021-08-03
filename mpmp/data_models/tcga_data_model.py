@@ -253,6 +253,43 @@ class TCGADataModel():
         assert np.count_nonzero(self.X_df.index.duplicated()) == 0
         assert np.count_nonzero(self.y_df.index.duplicated()) == 0
 
+    def process_msi_data(self, cancer_type, output_dir):
+        """Prepare to run experiments predicting microsatellite instability status.
+
+        Arguments
+        ---------
+        output_dir (str): directory to write output to, if None don't write output
+        classify (bool): if True do classification, else regression
+        """
+        y_df_raw = du.load_msi(cancer_type,
+                               self.mut_burden_df,
+                               self.sample_info_df,
+                               verbose=self.verbose)
+
+        filtered_data = self._filter_data(
+            self.data_df,
+            y_df_raw,
+            add_cancertype_covariate=True
+        )
+        train_filtered_df, y_filtered_df, gene_features = filtered_data
+
+        train_filtered_df, y_filtered_df = filter_to_cross_data_samples(
+            train_filtered_df,
+            y_filtered_df,
+            data_types=self.overlap_data_types,
+            n_dim=self.n_dim,
+            use_subsampled=(self.debug or self.test),
+            verbose=self.verbose
+        )
+
+        # filter to samples in common between training data and tumor purity
+        self.X_df = train_filtered_df
+        self.y_df = y_filtered_df
+        self.gene_features = gene_features
+
+        assert np.count_nonzero(self.X_df.index.duplicated()) == 0
+        assert np.count_nonzero(self.y_df.index.duplicated()) == 0
+
     def process_survival_data(self,
                               output_dir,
                               cancer_type,

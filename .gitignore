@@ -13,6 +13,7 @@ data/methylation_27k_filtered_probe_types.txt
 data/methylation_450k*.pkl
 data/me_compressed/*
 data/me_preprocessed/*
+data/msi_data/*
 data/sample_info/*_mut_sigs_*
 data/sample_info/*_me_450k_*
 data/sample_info/*_rppa_*

@@ -193,4 +193,6 @@ gene_aliases = {
 }
 
 # cancer types for microsatellite instability prediction
-msi_cancer_types = ['COAD', 'STAD', 'UCEC']
+# TODO: split COADREAD data?
+msi_data_dir = data_dir / 'msi_data'
+msi_cancer_types = ['COADREAD', 'STAD', 'UCEC']

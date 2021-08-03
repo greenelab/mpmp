@@ -331,6 +331,69 @@ def load_purity(mut_burden_df,
     return purity_df.loc[:, ['status', 'DISEASE', 'log10_mut']]
 
 
+def load_msi(cancer_type, mut_burden_df, sample_info_df, verbose=False):
+    """Load microsatellite instability data.
+
+    Arguments
+    ---------
+    mut_burden_df (pd.DataFrame): dataframe with sample mutation burden info
+    sample_info_df (pd.DataFrame): dataframe with sample cancer type info
+    verbose (bool): if True, print verbose output
+
+    Returns
+    -------
+    msi_df (pd.DataFrame): dataframe where the "status" attribute is a binary
+                           label (1 = MSI-H, 0 = anything else)
+    """
+
+    if verbose:
+        print('Loading microsatellite instability info...', file=sys.stderr)
+
+    if cancer_type == 'pancancer':
+        msi_df = _load_msi_all()
+    else:
+        msi_df = _load_msi_cancer_type(cancer_type)
+
+    msi_df.index.rename('sample_id', inplace=True)
+
+    # do one-vs-rest classification, with the MSI-high subtype as positive
+    # label and everything alse (MSI-low, MSS, undetermined) as negatives
+    msi_df['status'] = (msi_df.msi_status == 'msi-h').values.astype('int')
+
+
+    # clinical data is identified by the patient info (without the sample
+    # ID), so we want to match the first ten characters in the other dataframes
+    mut_burden_df['sample_first_ten'] = (
+        mut_burden_df.index.to_series().str.split('-').str[:3].str.join('-')
+    )
+
+    # join mutation burden information and MSI information
+    # these are necessary to generate non-gene covariates later on
+    print(msi_df.shape)
+    print(mut_burden_df.shape)
+    print(sample_info_df.shape)
+    msi_df = (msi_df
+        .drop(columns=['msi_status'])
+        .merge(mut_burden_df, left_index=True, right_on='sample_first_ten')
+        .merge(sample_info_df, left_index=True, right_index=True)
+        .rename(columns={'cancer_type': 'DISEASE'})
+    )
+    return msi_df.loc[:, ['status', 'DISEASE', 'log10_mut']]
+
+
+def _load_msi_all():
+    msi_list = []
+    for cancer_type in cfg.msi_cancer_types:
+        msi_list.append(_load_msi_cancer_type(cancer_type))
+    return pd.concat(msi_list)
+
+
+def _load_msi_cancer_type(cancer_type):
+    return pd.read_csv(Path(cfg.msi_data_dir,
+                            '{}_msi_status.tsv'.format(cancer_type)),
+                       sep='\t', index_col=0)
+
+
 def load_survival_labels(cancer_type,
                          mut_burden_df,
                          sample_info_df,
