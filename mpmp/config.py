@@ -193,6 +193,6 @@ gene_aliases = {
 }
 
 # cancer types for microsatellite instability prediction
-# TODO: split COADREAD data?
+# COADREAD = COAD + READ, most MSI analyses group them together
 msi_data_dir = data_dir / 'msi_data'
 msi_cancer_types = ['COADREAD', 'STAD', 'UCEC']
