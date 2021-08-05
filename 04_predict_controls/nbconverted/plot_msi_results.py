@@ -21,17 +21,20 @@ import mpmp.config as cfg
 import mpmp.utilities.analysis_utilities as au
 import mpmp.utilities.data_utilities as du
 
+get_ipython().run_line_magic('load_ext', 'autoreload')
+get_ipython().run_line_magic('autoreload', '2')
+
 
 # ### Load results
 
-# In[3]:
+# In[2]:
 
 
 # set results directory
-results_dir = Path(cfg.results_dirs['msi'], 'msi_5000_top_mad').resolve()
+results_dir = Path(cfg.results_dirs['msi'], 'msi_5000_top_mad_std').resolve()
 
 
-# In[4]:
+# In[3]:
 
 
 results_df = au.load_msi_results(results_dir)
@@ -43,7 +46,7 @@ results_df.head()
 
 # ### Plot results per cancer type, on true labels
 
-# In[6]:
+# In[4]:
 
 
 sns.set({'figure.figsize': (14, 12)})
@@ -73,7 +76,7 @@ axarr[1].legend(title='Data type')
 
 # ### Plot results per cancer type, corrected for permuted labels baseline
 
-# In[10]:
+# In[5]:
 
 
 compare_df = au.compare_all_data_types(results_df,
@@ -95,7 +98,7 @@ print(compare_df.training_data.unique())
 compare_df.head()
 
 
-# In[17]:
+# In[6]:
 
 
 sns.set({'figure.figsize': (14, 12)})
@@ -122,3 +125,55 @@ axarr[1].set_ylabel('AUROC(signal) - AUROC(shuffled)')
 axarr[1].set_ylim(0.0, 1.0)
 axarr[1].legend(title='Data type')
 
+
+# ### Look at features selected from mutational signatures data
+# 
+# There are a few mutational signatures that have been directly associated with MSI. Let's see if those are selected frequently in our models, and if they tend to have positive coefficients (i.e. higher prevalence of signature -> higher probability of MSI-H status).
+
+# In[7]:
+
+
+nz_coefs = []
+for identifier, seed, coefs in au.generate_nz_coefs_msi(results_dir):
+    if 'mut_sigs' not in identifier: continue
+    for fold_no, fold_coefs in enumerate(coefs):
+        for feat_name, feat_coef in fold_coefs:
+            nz_coefs.append([identifier, seed, fold_no, feat_name, feat_coef])
+            
+nz_coefs_df = pd.DataFrame(nz_coefs, columns=['identifier', 'seed', 'fold', 'name', 'coef'])
+nz_coefs_df.head()
+
+
+# In[8]:
+
+
+# just average each coefficient over seeds/folds for now
+coefs_df = (nz_coefs_df
+  .groupby(['identifier', 'name'])
+  .agg(['count', 'mean'])
+  .drop(columns=['seed', 'fold'])
+)
+coefs_df.sort_values(by=[('coef', 'count'), ('coef', 'mean')], ascending=[False, False]).head(10)
+
+
+# In[9]:
+
+
+coefs_df[coefs_df.index.get_level_values(1).isin(
+    ['SBS6', 'SBS14', 'SBS15', 'SBS20', 'SBS21', 'SBS26', 'SBS44']
+)]
+
+
+# In[10]:
+
+
+coefs_df[coefs_df.index.get_level_values(0) == 'pancancer_mut_sigs'].sort_values(
+    by=[('coef', 'count'), ('coef', 'mean')], ascending=[False, False]
+).head(10)
+
+
+# On [this page](https://cancer.sanger.ac.uk/signatures/sbs/sbs6/), we can see that the single-base mutational signatures commonly associated with MSI/defective DNA mismatch repair are SBS6, SBS14, SBS15, SBS20, SBS21, SBS26, and SBS44.
+# 
+# We can see in the tables above that on average, these signatures tend to have positive coefficients, and some of them (SBS15, SBS20, SBS21, SBS44) consistently have very large positive coefficients (indicating that the presence of these signatures implies a very high probability of MSI). This makes sense, given what is known about these signatures.
+# 
+# This effect is most clear in the individual cancer types, however - the pan-cancer predictor tends to rely more on cancer type and mutation burden, and there is less consistency in which signatures are selected by the model.
