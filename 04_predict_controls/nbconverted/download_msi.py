@@ -65,96 +65,81 @@ def download_and_extract_firebrowse(cancer_type):
     
     # return downloaded tsv filename
     return clinical_move_to
-   
 
 
 # In[4]:
+
+
+def get_and_save_msi_status(cancer_type, clinical_info_file):
+    """Function to get MSI status from clinical info, and save to file"""
+    
+    # this column stores MSI status (MSI-H, MSI-L, MSS, indeterminate)
+    clinical_df = (
+        pd.read_csv(clinical_info_file, sep='\t', index_col=0)
+          .transpose()
+    )['mononucleotide_and_dinucleotide_marker_panel_analysis_status']
+
+    # rename column and uppercase TCGA identifiers to match omics datasets
+    clinical_df = pd.DataFrame(
+        clinical_df.values,
+        index=clinical_df.index.str.upper(),
+        columns=['msi_status']
+    )
+
+    clinical_df.to_csv(
+        os.path.join(cfg.msi_data_dir, 
+                     '{}_msi_status.tsv'.format(cancer_type)),
+        sep='\t'
+    )
+    return clinical_df
+
+
+# In[5]:
 
 
 coadread_clinical_file = download_and_extract_firebrowse('COADREAD') 
 print(coadread_clinical_file)
 
 
-# In[5]:
+# In[6]:
 
 
-coadread_clinical_df = (
-    pd.read_csv(coadread_clinical_file, sep='\t', index_col=0)
-      .transpose()
-)['mononucleotide_and_dinucleotide_marker_panel_analysis_status']
-
-# rename column and uppercase TCGA identifiers to match omics datasets
-coadread_clinical_df = pd.DataFrame(
-    coadread_clinical_df.values,
-    index=coadread_clinical_df.index.str.upper(),
-    columns=['msi_status']
-)
-
-coadread_clinical_df.to_csv(
-    os.path.join(cfg.msi_data_dir, 'COADREAD_msi_status.tsv'), sep='\t'
-)
+coadread_clinical_df = get_and_save_msi_status('COADREAD',
+                                               coadread_clinical_file)
 
 print(coadread_clinical_df.shape)
 print(coadread_clinical_df.columns)
 coadread_clinical_df.head()
 
 
-# In[6]:
+# In[7]:
 
 
 stad_clinical_file = download_and_extract_firebrowse('STAD') 
 print(stad_clinical_file)
 
 
-# In[7]:
+# In[8]:
 
 
-stad_clinical_df = (
-    pd.read_csv(stad_clinical_file, sep='\t', index_col=0)
-      .transpose()
-)['mononucleotide_and_dinucleotide_marker_panel_analysis_status']
-
-# rename column and uppercase TCGA identifiers to match omics datasets
-stad_clinical_df = pd.DataFrame(
-    stad_clinical_df.values,
-    index=stad_clinical_df.index.str.upper(),
-    columns=['msi_status']
-)
-
-stad_clinical_df.to_csv(
-    os.path.join(cfg.msi_data_dir, 'STAD_msi_status.tsv'), sep='\t'
-)
+stad_clinical_df = get_and_save_msi_status('STAD', stad_clinical_file)
 
 print(stad_clinical_df.shape)
 print(stad_clinical_df.columns)
 stad_clinical_df.head()
 
 
-# In[8]:
+# In[9]:
 
 
 ucec_clinical_file = download_and_extract_firebrowse('UCEC') 
 print(ucec_clinical_file)
 
 
-# In[9]:
+# In[10]:
 
 
-ucec_clinical_df = (
-    pd.read_csv(ucec_clinical_file, sep='\t', index_col=0)
-      .transpose()
-)['mononucleotide_and_dinucleotide_marker_panel_analysis_status']
-
-# rename column and uppercase TCGA identifiers to match omics datasets
-ucec_clinical_df = pd.DataFrame(
-    ucec_clinical_df.values,
-    index=ucec_clinical_df.index.str.upper(),
-    columns=['msi_status']
-)
-
-ucec_clinical_df.to_csv(
-    os.path.join(cfg.msi_data_dir, 'UCEC_msi_status.tsv'), sep='\t'
-)
+ucec_clinical_df = get_and_save_msi_status('UCEC', ucec_clinical_file)
 
 print(ucec_clinical_df.shape)
 print(ucec_clinical_df.columns)
