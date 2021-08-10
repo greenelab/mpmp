@@ -12,7 +12,9 @@ def plot_volcano_baseline(results_df,
                           training_data_map,
                           sig_alpha,
                           sig_alphas=[0.05, 0.01, 0.001],
+                          identifier='gene',
                           metric='aupr',
+                          predict_str='Mutation prediction',
                           xlim=None,
                           ylim=None,
                           verbose=False,
@@ -85,13 +87,13 @@ def plot_volcano_baseline(results_df,
         if ix == 0:
             ax.legend(title=r'Reject $H_0$', loc='upper left',
                       fontsize=14, title_fontsize=14)
-        ax.set_title(r'Mutation prediction, {} data'.format(training_data), size=14)
+        ax.set_title(r'{}, {} data'.format(predict_str, training_data), size=14)
 
         # label genes and adjust text to not overlap
         # automatic alignment isn't perfect, can align by hand in inkscape if necessary
         text_labels = _label_points(data_results_df['delta_mean'],
                                     data_results_df['nlog10_p'],
-                                    data_results_df.gene,
+                                    data_results_df[identifier],
                                     ax,
                                     sig_alpha)
         adjust_text(text_labels,
@@ -195,7 +197,7 @@ def plot_volcano_comparison(results_df,
                       fontsize=14, title_fontsize=14)
 
         ax.set_title(
-            r'Mutation prediction, expression vs. {}'.format(training_data),
+            r'{}, expression vs. {}'.format(predict_str, training_data),
             size=14
         )
 
@@ -204,7 +206,7 @@ def plot_volcano_comparison(results_df,
         text_labels = _label_points_compare(
                           compare_results_df['delta_mean'],
                           compare_results_df['nlog10_p'],
-                          compare_results_df.gene,
+                          compare_results_df[identifier],
                           ax,
                           sig_alpha)
         adjust_text(text_labels,
