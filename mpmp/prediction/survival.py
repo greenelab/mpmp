@@ -25,6 +25,7 @@ def train_survival(X_train,
                    seed,
                    n_folds=4,
                    max_iter=1000,
+                   output_fn=False,
                    debug_info=None):
     """
     Build the logic and sklearn pipelines to predict survival info y from dataset x,
@@ -71,6 +72,7 @@ def train_survival(X_train,
                     # this seems to help with model convergence
                     # TODO could try doing this using StandardScaler pipeline
                     normalize=True,
+                    fit_baseline_model=output_fn
                 ),
             )
         ]
@@ -146,6 +148,11 @@ def get_survival_metrics(cv_pipeline, X_df, y_df):
         cindex = 0.0
     # TODO add more?
     return {'cindex': cindex}
+
+
+def get_survival_function(cv_pipeline, X_test_df):
+    """Get model-predicted survival function for test data."""
+    return cv_pipeline.best_estimator_.predict_survival_function(X_test_df)
 
 
 def _y_df_to_struct(y_df):

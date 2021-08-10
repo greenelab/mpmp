@@ -43,6 +43,7 @@ def process_args():
                          'cancer types + pan-cancer model')
     io.add_argument('--log_file', default=None,
                     help='name of file to log skipped genes to')
+    io.add_argument('--output_survival_fn', action='store_true')
     io.add_argument('--results_dir', default=cfg.results_dirs['survival'],
                     help='where to write results to')
     io.add_argument('--verbose', action='store_true')
@@ -207,6 +208,7 @@ if __name__ == '__main__':
                                             standardize_columns,
                                             # don't stratify if we're predicting survival for
                                             # a single cancer type
+                                            output_survival_fn=io_args.output_survival_fn,
                                             stratify=(cancer_type == 'pancancer'),
                                             results_dir=experiment_dir)
                 # only save results if no exceptions
