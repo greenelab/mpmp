@@ -134,8 +134,8 @@ reg_l1_ratios = [0.1, 0.5, 0.7, 0.9, 0.95, 0.99, 1.0]
 # so we need to use slightly larger ranges to make sure the models converge
 survival_debug = False
 survival_max_iter = 1000
-# survival_alphas = None
-survival_alphas = [1e-4, 5e-4, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 10]
+survival_alphas = None
+# survival_alphas = [1e-4, 5e-4, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 10]
 survival_l1_ratios = [0.01, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0]
 
 max_iter_map = {

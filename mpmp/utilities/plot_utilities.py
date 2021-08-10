@@ -342,7 +342,8 @@ def plot_heatmap(heatmap_df,
                  different_from_best=True,
                  raw_results_df=None,
                  metric='aupr',
-                 id_name='gene'):
+                 id_name='gene',
+                 scale=None):
     """Plot heatmap comparing data types for each gene.
 
     Arguments
@@ -357,8 +358,13 @@ def plot_heatmap(heatmap_df,
                                              metric=metric,
                                              id_name=id_name)
 
-    ax = sns.heatmap(heatmap_df, cmap='Greens',
-                     cbar_kws={'aspect': 10, 'fraction': 0.1, 'pad': 0.01})
+    if scale is not None:
+        ax = sns.heatmap(heatmap_df, cmap='Greens',
+                         cbar_kws={'aspect': 10, 'fraction': 0.1, 'pad': 0.01},
+                         vmin=scale[0], vmax=scale[1])
+    else:
+        ax = sns.heatmap(heatmap_df, cmap='Greens',
+                         cbar_kws={'aspect': 10, 'fraction': 0.1, 'pad': 0.01})
     ax.xaxis.labelpad = 15
 
     # outline around heatmap
