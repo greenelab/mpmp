@@ -173,6 +173,22 @@ if SAVE_FIGS:
 # In[9]:
 
 
+# map gene/training data combinations to accept/reject null
+# vs. shuffled baseline
+# we want to plot this info on top of -omics comparison
+id_to_sig = (all_results_df
+  .loc[:, ['gene', 'training_data', 'reject_null']]
+  .rename(columns={'reject_null': 'reject_null_baseline'})
+  .groupby('gene')
+  .any()
+)['reject_null_baseline']
+
+id_to_sig.head()
+
+
+# In[10]:
+
+
 # compare expression against all other data modalities
 # could do all vs. all, but that would give us lots of plots
 sns.set({'figure.figsize': (16, 5)})
@@ -188,6 +204,7 @@ plu.plot_volcano_comparison(results_df,
                             filtered_data_map,
                             SIG_ALPHA,
                             metric=plot_metric,
+                            sig_genes=id_to_sig,
                             verbose=True)
 
 if SAVE_FIGS:
@@ -196,7 +213,7 @@ if SAVE_FIGS:
                 dpi=300, bbox_inches='tight')
 
 
-# In[10]:
+# In[11]:
 
 
 # compare expression against all other data modalities
@@ -214,6 +231,7 @@ plu.plot_volcano_comparison(results_df,
                             filtered_data_map,
                             SIG_ALPHA,
                             metric=plot_metric,
+                            sig_genes=id_to_sig,
                             verbose=True)
 
 if SAVE_FIGS:
@@ -222,7 +240,7 @@ if SAVE_FIGS:
                 dpi=300, bbox_inches='tight')
 
 
-# In[11]:
+# In[12]:
 
 
 sns.set({'figure.figsize': (12, 9)})
@@ -249,7 +267,7 @@ if SAVE_FIGS:
                 dpi=300, bbox_inches='tight')
 
 
-# In[12]:
+# In[13]:
 
 
 # pairwise rank sum tests comparing results distributions
@@ -257,7 +275,7 @@ if SAVE_FIGS:
 tests_df.sort_values(['gene_set', 'p_value'])
 
 
-# In[13]:
+# In[14]:
 
 
 sns.set({'figure.figsize': (15, 6)})
@@ -272,7 +290,7 @@ plu.plot_boxes(all_results_df,
                verbose=True)
 
 
-# In[14]:
+# In[15]:
 
 
 heatmap_df = (all_results_df
@@ -282,7 +300,7 @@ heatmap_df = (all_results_df
 heatmap_df.iloc[:, :5]
 
 
-# In[15]:
+# In[16]:
 
 
 sns.set({'figure.figsize': (28, 6)})
