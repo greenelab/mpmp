@@ -164,7 +164,21 @@ def plot_volcano_comparison(results_df,
         compare_results_df['nlog10_p'] = -np.log10(compare_results_df.corr_pval)
 
         if sig_genes is not None:
-            compare_results_df = compare_results_df.merge(sig_genes, on='gene')
+            # get only the training data types involved in this comparison, and
+            # identify genes that beat the shuffled baseline for both data types
+            sig_genes_comparison = (
+                sig_genes[
+                    sig_genes.training_data.isin(['gene expression', training_data])
+                ]
+                  .groupby('gene')
+                  .all()
+            )['reject_null_baseline']
+            # join baseline comparison results into inter-omics comparisons
+            compare_results_df = (compare_results_df
+                .merge(sig_genes_comparison, on=['gene'])
+            )
+            # then plot using the baseline results as the marker style,
+            # and inter-omics results as the marker hue
             sns.scatterplot(data=compare_results_df, x='delta_mean', y='nlog10_p',
                             hue='reject_null', style='reject_null_baseline',
                             hue_order=[False, True], ax=ax, legend=(ix == 0))

@@ -179,9 +179,7 @@ if SAVE_FIGS:
 id_to_sig = (all_results_df
   .loc[:, ['gene', 'training_data', 'reject_null']]
   .rename(columns={'reject_null': 'reject_null_baseline'})
-  .groupby('gene')
-  .any()
-)['reject_null_baseline']
+)
 
 id_to_sig.head()
 
