@@ -152,7 +152,10 @@ def get_survival_metrics(cv_pipeline, X_df, y_df):
 
 def get_survival_function(cv_pipeline, X_test_df):
     """Get model-predicted survival function for test data."""
-    return cv_pipeline.best_estimator_.predict_survival_function(X_test_df)
+    return {
+        'samples': X_test_df.index.values,
+        'functions': cv_pipeline.best_estimator_.predict_survival_function(X_test_df)
+    }
 
 
 def _y_df_to_struct(y_df):
