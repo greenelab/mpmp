@@ -114,6 +114,7 @@ def plot_volcano_comparison(results_df,
                             sig_alpha,
                             sig_alphas=[0.05, 0.01, 0.001],
                             metric='aupr',
+                            sig_genes=None,
                             xlim=None,
                             ylim=None,
                             verbose=False):
@@ -162,9 +163,29 @@ def plot_volcano_comparison(results_df,
         compare_results_df.rename(columns={'identifier': 'gene'}, inplace=True)
         compare_results_df['nlog10_p'] = -np.log10(compare_results_df.corr_pval)
 
-        sns.scatterplot(data=compare_results_df, x='delta_mean', y='nlog10_p',
-                        hue='reject_null', hue_order=[False, True], ax=ax,
-                        legend=(ix == 0))
+        if sig_genes is not None:
+            # get only the training data types involved in this comparison, and
+            # identify genes that beat the shuffled baseline for both data types
+            sig_genes_comparison = (
+                sig_genes[
+                    sig_genes.training_data.isin(['gene expression', training_data])
+                ]
+                  .groupby('gene')
+                  .all()
+            )['reject_null_baseline']
+            # join baseline comparison results into inter-omics comparisons
+            compare_results_df = (compare_results_df
+                .merge(sig_genes_comparison, on=['gene'])
+            )
+            # then plot using the baseline results as the marker style,
+            # and inter-omics results as the marker hue
+            sns.scatterplot(data=compare_results_df, x='delta_mean', y='nlog10_p',
+                            hue='reject_null', style='reject_null_baseline',
+                            hue_order=[False, True], ax=ax, legend=(ix == 0))
+        else:
+            sns.scatterplot(data=compare_results_df, x='delta_mean', y='nlog10_p',
+                            hue='reject_null', hue_order=[False, True], ax=ax,
+                            legend=(ix == 0))
 
         # add vertical line at 0
         ax.axvline(x=0, linestyle='--', linewidth=1.25, color='black')
@@ -191,8 +212,15 @@ def plot_volcano_comparison(results_df,
 
         # only add a legend to the first subplot
         if ix == 0:
-            ax.legend(title=r'Reject $H_0$', loc='upper left',
-                      fontsize=14, title_fontsize=14)
+            if sig_genes is not None:
+                h, l = ax.get_legend_handles_labels()
+                l[0] = r'Reject $H_0$'
+                l[3] = r'Reject baseline $H_0$'
+                ax.legend(h, l, loc='upper right',
+                          fontsize=13, title_fontsize=13)
+            else:
+                ax.legend(title=r'Reject $H_0$', loc='upper left',
+                          fontsize=14, title_fontsize=14)
 
         ax.set_title(
             r'Mutation prediction, expression vs. {}'.format(training_data),
