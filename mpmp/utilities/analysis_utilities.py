@@ -1,5 +1,7 @@
 import os
 import sys
+import glob
+import pickle as pkl
 import warnings
 from pathlib import Path
 
@@ -157,6 +159,22 @@ def load_purity_by_cancer_type(results_dir, sample_info_df, classify=True):
                                                                    classify=classify)
         results_df = pd.concat((results_df, cancer_type_results_df))
     return results_df
+
+
+def load_survival_curves(results_dir,
+                         cancer_type,
+                         signal='signal'):
+    samples, functions = [], []
+    path_name = os.path.join(
+        results_dir,
+        '{}_survival_{}_fold*_functions.pkl'.format(cancer_type, signal)
+    )
+    for fname in glob.glob(path_name):
+        with open(fname, 'rb') as f:
+            fns_dict = pkl.load(f)
+        samples += list(fns_dict['samples'])
+        functions += list(fns_dict['functions'])
+    return samples, functions
 
 
 def calculate_metrics_for_cancer_type(id_results_df,
