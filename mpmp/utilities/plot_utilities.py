@@ -116,6 +116,7 @@ def plot_volcano_comparison(results_df,
                             sig_alpha,
                             sig_alphas=[0.05, 0.01, 0.001],
                             metric='aupr',
+                            predict_str='Mutation prediction',
                             xlim=None,
                             ylim=None,
                             verbose=False):
@@ -206,7 +207,7 @@ def plot_volcano_comparison(results_df,
         text_labels = _label_points_compare(
                           compare_results_df['delta_mean'],
                           compare_results_df['nlog10_p'],
-                          compare_results_df[identifier],
+                          compare_results_df['gene'],
                           ax,
                           sig_alpha)
         adjust_text(text_labels,
