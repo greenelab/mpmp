@@ -181,7 +181,7 @@ manifest_url = (
 )
 
 # data types to standardize columns for
-standardize_data_types = ['expression', 'rppa', 'mirna']
+standardize_data_types = ['expression', 'rppa', 'mirna', 'mut_sigs']
 
 # constant for non-gene feature indices
 # this is used in multimodal prediction experiments, e.g. scripts in
