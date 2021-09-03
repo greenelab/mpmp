@@ -93,8 +93,6 @@ def load_compressed_data(data_type,
         if verbose:
             print('PCA compressing data type: {}, n_dims: {}'.format(
                 data_type, n_dim))
-        # TODO: calculate correct PCA dimension for small datasets
-        #       and print warning
         data_df = compress_and_save_data(
             data_type,
             load_raw_data(data_type),

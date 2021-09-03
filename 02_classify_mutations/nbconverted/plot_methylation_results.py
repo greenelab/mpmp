@@ -153,7 +153,7 @@ id_to_sig.head()
 
 # compare expression against all other data modalities
 # could do all vs. all, but that would give us lots of plots
-sns.set({'figure.figsize': (16, 6)})
+sns.set({'figure.figsize': (15, 6)})
 sns.set_style('whitegrid')
 
 fig, axarr = plt.subplots(1, 2)
