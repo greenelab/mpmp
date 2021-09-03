@@ -37,7 +37,7 @@ def process_args():
     io.add_argument('--log_file', default=None,
                     help='name of file to log errors to')
     io.add_argument('--output_preds', action='store_true')
-    io.add_argument('--results_dir', default=cfg.results_dirs['purity'],
+    io.add_argument('--results_dir', default=cfg.results_dirs['controls'],
                     help='where to write results to')
     io.add_argument('--verbose', action='store_true')
 

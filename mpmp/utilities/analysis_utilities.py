@@ -116,6 +116,31 @@ def load_purity_results(results_dir, classify=True):
     return results_df
 
 
+def load_msi_results(results_dir):
+    """Load results of microsatellite instability prediction experiments.
+
+    Arguments
+    ---------
+    results_dir (str): directory containing results files
+
+    Returns
+    -------
+    results_df (pd.DataFrame): results of prediction experiments
+    """
+    results_df = pd.DataFrame()
+    results_dir = Path(results_dir)
+    for results_file in results_dir.iterdir():
+        if not results_file.is_file(): continue
+        results_filename = str(results_file.stem)
+        if ('classify' not in results_filename
+            or 'metrics' not in results_filename): continue
+        if results_filename[0] == '.': continue
+        id_results_df = pd.read_csv(results_file, sep='\t')
+        # TODO: n_dims?
+        results_df = pd.concat((results_df, id_results_df))
+    return results_df
+
+
 def load_purity_by_cancer_type(results_dir, sample_info_df, classify=True):
     """Load results of tumor purity prediction, grouped by cancer type.
 
@@ -566,6 +591,38 @@ def generate_nonzero_coefficients(results_dir):
             identifier = '{}_{}'.format(gene_name, training_data)
             coefs = process_coefs(coefs_df)
             yield identifier, coefs
+
+
+def generate_nz_coefs_msi(results_dir):
+    """Generate coefficients from MSI model fits.
+
+    Arguments
+    ---------
+    results_dir (str): directory to look in for results, subdirectories should
+                       be experiments for individual genes
+
+    Yields
+    ------
+    identifier (str): identifier for given coefficients
+    coefs (dict): list of nonzero coefficients for each fold of CV, for the
+                  given identifier
+    """
+    coefs = {}
+    all_features = None
+    for coefs_file in os.listdir(results_dir):
+        if coefs_file[0] == '.': continue
+        if 'signal' not in coefs_file: continue
+        if 'coefficients' not in coefs_file: continue
+        full_coefs_file = os.path.join(results_dir, coefs_file)
+        coefs_df = pd.read_csv(full_coefs_file, sep='\t')
+        seed = coefs_df.seed.values[0]
+        cancer_type = coefs_df.identifier.values[0]
+        training_data = coefs_df.training_data.values[0]
+        if all_features is None:
+            all_features = np.unique(coefs_df.feature.values)
+        identifier = '{}_{}'.format(cancer_type, training_data)
+        coefs = process_coefs(coefs_df)
+        yield identifier, seed, coefs
 
 
 def process_coefs(coefs_df):

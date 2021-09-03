@@ -137,6 +137,20 @@ if SAVE_FIGS:
 # In[8]:
 
 
+# map gene/training data combinations to accept/reject null
+# vs. shuffled baseline
+# we want to plot this info on top of -omics comparison
+id_to_sig = (all_results_df
+  .loc[:, ['gene', 'training_data', 'reject_null']]
+  .rename(columns={'reject_null': 'reject_null_baseline'})
+)
+
+id_to_sig.head()
+
+
+# In[9]:
+
+
 # compare expression against all other data modalities
 # could do all vs. all, but that would give us lots of plots
 sns.set({'figure.figsize': (16, 6)})
@@ -144,12 +158,14 @@ sns.set_style('whitegrid')
 
 fig, axarr = plt.subplots(1, 2)
 
+
 plu.plot_volcano_comparison(results_df,
                             axarr,
                             training_data_map,
                             SIG_ALPHA,
                             metric=plot_metric,
                             xlim=(-0.6, 0.6),
+                            sig_genes=id_to_sig,
                             verbose=True)
 
 if SAVE_FIGS:
@@ -158,7 +174,7 @@ if SAVE_FIGS:
                 dpi=300, bbox_inches='tight')
 
 
-# In[9]:
+# In[10]:
 
 
 sns.set({'figure.figsize': (13, 6)})
@@ -182,7 +198,7 @@ if SAVE_FIGS:
                 dpi=300, bbox_inches='tight')
 
 
-# In[10]:
+# In[11]:
 
 
 # pairwise rank sum tests comparing results distributions
@@ -190,7 +206,7 @@ if SAVE_FIGS:
 tests_df.sort_values(['gene_set', 'p_value'])
 
 
-# In[11]:
+# In[12]:
 
 
 heatmap_df = (all_results_df
@@ -200,7 +216,7 @@ heatmap_df = (all_results_df
 heatmap_df.iloc[:, :5]
 
 
-# In[12]:
+# In[13]:
 
 
 sns.set({'figure.figsize': (32, 5)})
