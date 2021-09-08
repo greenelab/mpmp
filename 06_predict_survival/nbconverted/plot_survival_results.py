@@ -45,10 +45,9 @@ SAVE_FIGS = True
 # set results directory
 me_results_dir = Path(cfg.repo_root,
                       '06_predict_survival',
-                      'results',
-                      # 'results_extended_alphas',
-                      'results_100_pca').resolve()
-me_results_desc = 'top 100 PCs'
+                      'results_extended_alphas',
+                      'results_1000_pca').resolve()
+me_results_desc = 'top 1000 PCs'
 
 # set images directory
 images_dir = Path(cfg.images_dirs['survival'])
@@ -168,8 +167,6 @@ plt.tight_layout()
 # ### Heatmap
 # 
 # This is similar to the heatmaps we plotted in the results script in `02_classify_mutations` for the mutation prediction problem. We want to compare data types for predicting survival in different cancer types.
-# 
-# A blue square means that data type significantly outperforms the baseline with shuffled survival labels in the corresponding cancer type, and a red square means the same + the results are statistically equivalent to the "best" data type for that cancer type (determined by pairwise $t$-tests).
 
 # In[10]:
 
@@ -224,6 +221,14 @@ if SAVE_FIGS:
     plt.savefig(images_dir / 'survival_me_heatmap.png',
                 dpi=300, bbox_inches='tight')
 
+
+# Key to above heatmap:
+# 
+# * A blue square = significantly better than label-permuted baseline, but significantly worse than best-performing data type
+# * A red square =  significantly better than label-permuted baseline, and not significantly different from best-performing data type (i.e. "statistically equivalent to best")
+# * No square/box = not significantly better than label-permuted baseline
+# 
+# So we can see that many of the same cancer types are well-predicted using all data types (KIRP, LGG, pancancer), and the predictors based on different datasets tend to be statistically equivalent in many of those cases.
 
 # In[14]:
 
@@ -303,10 +308,9 @@ plu.plot_volcano_comparison(me_results_df,
 # set results directory
 all_results_dir = Path(cfg.repo_root,
                        '06_predict_survival',
-                       'results',
-                       'all_data_types',
-                       'results_5000_pca').resolve()
-all_results_desc = 'top 5000 PCs'
+                       'results_all_extended_alphas',
+                       'results_1000_pca').resolve()
+all_results_desc = 'top 1000 PCs'
 
 # load results into a single dataframe
 all_data_results_df = su.load_survival_results(all_results_dir)
@@ -466,6 +470,12 @@ if SAVE_FIGS:
     plt.savefig(images_dir / 'survival_all_heatmap.png',
                 dpi=300, bbox_inches='tight')
 
+
+# Key to above heatmap:
+# 
+# * A blue square = significantly better than label-permuted baseline, but significantly worse than best-performing data type
+# * A red square =  significantly better than label-permuted baseline, and not significantly different from best-performing data type (i.e. "statistically equivalent to best")
+# * No square/box = not significantly better than label-permuted baseline
 
 # In[28]:
 

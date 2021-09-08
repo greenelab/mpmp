@@ -317,3 +317,9 @@ if SAVE_FIGS:
     plt.savefig(images_dir / 'all_heatmap.png',
                 dpi=300, bbox_inches='tight')
 
+
+# Key to above heatmap:
+# 
+# * A blue square = significantly better than label-permuted baseline, but significantly worse than best-performing data type
+# * A red square =  significantly better than label-permuted baseline, and not significantly different from best-performing data type (i.e. "statistically equivalent to best")
+# * No square/box = not significantly better than label-permuted baseline
