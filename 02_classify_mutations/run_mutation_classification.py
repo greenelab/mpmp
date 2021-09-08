@@ -20,10 +20,7 @@ from mpmp.exceptions import (
 from mpmp.prediction.cross_validation import run_cv_stratified
 import mpmp.utilities.data_utilities as du
 import mpmp.utilities.file_utilities as fu
-from mpmp.utilities.tcga_utilities import (
-    get_all_data_types,
-    check_all_data_types,
-)
+from mpmp.utilities.tcga_utilities import check_all_data_types
 
 def process_args():
     """Parse and format command line arguments."""
@@ -209,7 +206,7 @@ if __name__ == '__main__':
                                             model_options.training_data,
                                             sample_info_df,
                                             model_options.num_folds,
-                                            True,
+                                            'classify',
                                             shuffle_labels,
                                             standardize_columns)
                 # only save results if no exceptions

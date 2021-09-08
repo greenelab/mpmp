@@ -140,13 +140,13 @@ tcga_expr_df = tcga_expr_df.loc[~tcga_expr_df.index.duplicated(), :]
 tcga_expr_df = tcga_expr_df.loc[:, tcga_expr_df.columns.isin(gene_df.entrez_gene_id.astype(str))]
 
 
-# In[13]:
+# In[ ]:
 
 
 tcga_expr_df.to_csv(cfg.rnaseq_data, sep='\t', compression='gzip', float_format='%.3g')
 
 
-# In[14]:
+# In[13]:
 
 
 print(tcga_expr_df.shape)
@@ -161,7 +161,7 @@ tcga_expr_df.head()
 # 
 # The goal is to use this info to stratify train and test sets by cancer type and sample type. 
 
-# In[15]:
+# In[14]:
 
 
 # get sample info and save to file
@@ -193,46 +193,41 @@ cancertype_count_df.head()
 # 
 # Compress the data using PCA with various dimensions, and save the results to tsv files.
 
-# In[18]:
+# In[16]:
 
 
 # take PCA + save to file, for equal comparison with methylation
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 
-# standardize first for expression data
-tcga_scaled_df = pd.DataFrame(
-    StandardScaler().fit_transform(tcga_expr_df),
-    index=tcga_expr_df.index.copy(),
-    columns=tcga_expr_df.columns.copy(),
-)
-
 pca_dir = os.path.join(cfg.data_dir, 'exp_compressed')
 os.makedirs(pca_dir, exist_ok=True)
 
 n_pcs_list = [100, 1000, 5000]
-var_exp_list = []
 for n_pcs in n_pcs_list:
-    pca = PCA(n_components=n_pcs, random_state=cfg.default_seed)
-    exp_pca = pca.fit_transform(tcga_scaled_df)
-    print(exp_pca.shape)
-    var_exp_list.append(pca.explained_variance_ratio_)
-    exp_pca = pd.DataFrame(exp_pca, index=tcga_scaled_df.index)
-    exp_pca.to_csv(os.path.join(pca_dir,
-                               'exp_std_pc{}.tsv.gz'.format(n_pcs)),
-                   sep='\t',
-                   float_format='%.3g')
+    print(n_pcs)
+    tu.compress_and_save_data('expression',
+                              tcga_expr_df,
+                              pca_dir,
+                              n_pcs,
+                              standardize_input=True,
+                              verbose=True,
+                              save_variance_explained=True)
 
 
-# In[19]:
+# In[18]:
 
 
 # plot PCA variance explained
-
 sns.set({'figure.figsize': (15, 4)})
 fig, axarr = plt.subplots(1, 3)
 
-for ix, ve in enumerate(var_exp_list):
+for ix, n_pcs in enumerate(n_pcs_list):
+    ve = np.loadtxt(
+        os.path.join(pca_dir, '{}_ve.tsv.gz'.format(
+            tu.get_compress_output_prefix('expression', n_pcs, cfg.default_seed, True)
+        ))
+    )
     sns.lineplot(x=range(len(ve)), y=np.cumsum(ve), ax=axarr[ix])
     axarr[ix].set_title('{} PCs, variance explained: {:.4f}'.format(
         n_pcs_list[ix], sum(ve, 0)))

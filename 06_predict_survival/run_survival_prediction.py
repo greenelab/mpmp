@@ -22,10 +22,7 @@ from mpmp.exceptions import (
 from mpmp.prediction.cross_validation import run_cv_stratified
 import mpmp.utilities.data_utilities as du
 import mpmp.utilities.file_utilities as fu
-from mpmp.utilities.tcga_utilities import (
-    get_all_data_types,
-    check_all_data_types,
-)
+from mpmp.utilities.tcga_utilities import check_all_data_types
 
 def process_args():
     """Parse and format command line arguments."""
@@ -46,6 +43,7 @@ def process_args():
                          'cancer types + pan-cancer model')
     io.add_argument('--log_file', default=None,
                     help='name of file to log skipped genes to')
+    io.add_argument('--output_survival_fn', action='store_true')
     io.add_argument('--results_dir', default=cfg.results_dirs['survival'],
                     help='where to write results to')
     io.add_argument('--verbose', action='store_true')
@@ -61,6 +59,9 @@ def process_args():
                                      'experiment metadata ')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
+    opts.add_argument('--n_dim', default=None,
+                      help='number of compressed components/dimensions to use, '
+                           'None to use raw features')
     opts.add_argument('--num_folds', type=int, default=4,
                       help='number of folds of cross-validation to run')
     opts.add_argument('--overlap_data_types', nargs='*',
@@ -83,6 +84,9 @@ def process_args():
     if args.log_file is None:
         args.log_file = Path(args.results_dir, 'log_skipped.tsv').resolve()
 
+    if args.n_dim is not None:
+        args.n_dim = int(args.n_dim)
+
     sample_info_df = du.load_sample_info(args.training_data, verbose=args.verbose)
     tcga_cancer_types = list(np.unique(sample_info_df.cancer_type))
     tcga_cancer_types.append('pancancer')
@@ -103,9 +107,9 @@ def process_args():
 
     # add some additional hyperparameters/ranges from config file to model options
     # these shouldn't be changed by the user, so they aren't added as arguments
-    model_options.n_dim = None
-    model_options.alphas = cfg.alphas
-    model_options.l1_ratios = cfg.l1_ratios
+    model_options.max_iter = cfg.max_iter_map['survival']
+    model_options.alphas = cfg.alphas_map['survival']
+    model_options.l1_ratios = cfg.l1_ratios_map['survival']
     model_options.standardize_data_types = cfg.standardize_data_types
 
     return io_args, model_options, sample_info_df
@@ -141,6 +145,11 @@ if __name__ == '__main__':
                               subset_mad_genes=model_options.subset_mad_genes,
                               training_data=model_options.training_data,
                               overlap_data_types=model_options.overlap_data_types,
+                              load_compressed_data=(model_options.n_dim is not None),
+                              standardize_input=(model_options.n_dim is not None and
+                                                 model_options.training_data in
+                                                 cfg.standardize_data_types),
+                              n_dim=model_options.n_dim,
                               sample_info_df=sample_info_df,
                               verbose=io_args.verbose,
                               debug=model_options.debug)
@@ -183,8 +192,11 @@ if __name__ == '__main__':
 
             try:
                 # for now, don't standardize methylation data
-                standardize_columns = (model_options.training_data in
-                                       cfg.standardize_data_types)
+                # also, always standardize PCA components, for all data types
+                standardize_columns = (
+                    (model_options.n_dim is not None) or
+                    (model_options.training_data in cfg.standardize_data_types)
+                )
                 results = run_cv_stratified(tcga_data,
                                             'survival',
                                             cancer_type,
@@ -196,6 +208,7 @@ if __name__ == '__main__':
                                             standardize_columns,
                                             # don't stratify if we're predicting survival for
                                             # a single cancer type
+                                            output_survival_fn=io_args.output_survival_fn,
                                             stratify=(cancer_type == 'pancancer'),
                                             results_dir=experiment_dir)
                 # only save results if no exceptions

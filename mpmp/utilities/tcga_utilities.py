@@ -443,15 +443,15 @@ def standardize_multi_gene_features(X_df, standardize_columns, gene_features, da
     return pd.concat(datasets, axis=1)
 
 
-def get_all_data_types(use_subsampled=False, compressed_data=False):
+def get_all_samples(use_subsampled=False):
     """Get all possible data types (that we have data for)."""
     if use_subsampled:
-        data_types = cfg.subsampled_data_types
-    elif compressed_data:
-        data_types = cfg.compressed_data_types
+        data_samples = cfg.subsampled_data_types
     else:
-        data_types = cfg.data_types
-    return data_types
+        assert cfg.data_types.keys() == cfg.sample_infos.keys(), (
+            'make sure all data types in config.data_types also have sample info')
+        data_samples = cfg.sample_infos
+    return data_samples
 
 
 def check_all_data_types(parser, overlap_data_types, debug=False):
@@ -459,7 +459,7 @@ def check_all_data_types(parser, overlap_data_types, debug=False):
 
     If not, throw an argparse error.
     """
-    all_data_types = get_all_data_types(use_subsampled=debug).keys()
+    all_data_types = get_all_samples(use_subsampled=debug).keys()
     if (set(all_data_types).intersection(overlap_data_types) !=
           set(overlap_data_types)):
         parser.error(
@@ -472,44 +472,35 @@ def check_all_data_types(parser, overlap_data_types, debug=False):
 def get_cross_data_samples(data_types=None,
                            use_subsampled=False,
                            verbose=False,
-                           compressed_data_only=False,
                            n_dim=None):
     """Get set of samples included in desired data modalities."""
 
     # only use data types in data_types list
     if data_types is not None:
-        data_types = {
+        data_samples = {
             d: f for d, f in (
-                get_all_data_types(use_subsampled, compressed_data_only).items()
+                get_all_samples(use_subsampled).items()
             ) if d in data_types
         }
     else:
-        data_types = get_all_data_types(use_subsampled, compressed_data_only)
+        data_samples = get_all_samples(use_subsampled)
 
     # get intersection of samples in all training datasets
+    # TODO: make sure sample intersections for experiments are the same as before
     valid_samples = None
-    for data_type, data_file in data_types.items():
+    for data_type, samples_file in data_samples.items():
         # get sample IDs for the given data type/processed data file
         if verbose:
             print('Loading sample IDs for {} data'.format(data_type))
 
-        if compressed_data_only:
-            data_file = str(data_file).format(n_dim)
-
-        if (not compressed_data_only) and (data_type == 'me_450k'):
-            # use sample list from compressed 450K methylation data with 100
-            # PCs, to minimize memory usage
-            # the filtering steps in the 450K preprocessing notebook should
-            # ensure that the samples used here are the same
-            df = pd.read_csv(str(cfg.compressed_data_types[data_type]).format('100'),
-                             sep='\t', usecols=[0], index_col=0)
-        else:
-            df = pd.read_csv(data_file, sep='\t', usecols=[0], index_col=0)
+        sample_info_df = pd.read_csv(
+            samples_file, sep='\t', usecols=[0], index_col=0
+        )
 
         if valid_samples is None:
-            valid_samples = df.index
+            valid_samples = sample_info_df.index
         else:
-            valid_samples = df.index.intersection(valid_samples)
+            valid_samples = sample_info_df.index.intersection(valid_samples)
 
     return valid_samples
 
@@ -520,7 +511,6 @@ def filter_to_cross_data_samples(X_df,
                                  data_types=None,
                                  use_subsampled=False,
                                  verbose=False,
-                                 compressed_data_only=False,
                                  n_dim=None):
     """Filter dataset to samples included in all data modalities."""
 
@@ -530,7 +520,6 @@ def filter_to_cross_data_samples(X_df,
             data_types=data_types,
             use_subsampled=use_subsampled,
             verbose=verbose,
-            compressed_data_only=compressed_data_only,
             n_dim=n_dim
         )
 
@@ -623,4 +612,65 @@ def get_and_save_sample_info(tcga_df,
     tcga_id.to_csv(fname, sep='\t', index=False)
 
     return tcga_id
+
+
+def get_compress_output_prefix(data_type,
+                               n_dim,
+                               seed,
+                               standardize_input=True):
+    output_prefix = '{}_pc{}_s{}'.format(data_type, n_dim, seed)
+    if standardize_input:
+        output_prefix += '_std'
+    return output_prefix
+
+
+def compress_and_save_data(data_type,
+                           input_data_df,
+                           output_dir,
+                           n_dim,
+                           standardize_input,
+                           verbose=False,
+                           seed=cfg.default_seed,
+                           save_variance_explained=False):
+
+    from sklearn.decomposition import PCA
+    from sklearn.preprocessing import StandardScaler
+
+    n, p = input_data_df.shape
+    if n_dim > min(n, p):
+        if verbose:
+            print('n_dim > min(n, p), so setting n_dim = min(n, p)')
+        n_dim = min(n, p)
+
+    output_prefix = get_compress_output_prefix(data_type,
+                                               n_dim,
+                                               seed,
+                                               standardize_input)
+
+    # standardize first for some data types
+    if standardize_input:
+        input_data_df = pd.DataFrame(
+            StandardScaler().fit_transform(input_data_df),
+            index=input_data_df.index.copy(),
+            columns=input_data_df.columns.copy()
+        )
+
+    # calculate PCA and save compressed data matrix
+    pca = PCA(n_components=n_dim, random_state=seed)
+    transformed_data_df = pd.DataFrame(
+        pca.fit_transform(input_data_df),
+        index=input_data_df.index,
+        columns=['PC{}'.format(i) for i in range(n_dim)]
+    )
+    transformed_data_df.to_csv(
+        os.path.join(output_dir, '{}.tsv.gz'.format(output_prefix)),
+        sep='\t', float_format='%.3g')
+
+    if save_variance_explained:
+        np.savetxt(os.path.join(output_dir, '{}_ve.tsv.gz'.format(output_prefix)),
+                   pca.explained_variance_ratio_)
+
+    return transformed_data_df
+
+
 

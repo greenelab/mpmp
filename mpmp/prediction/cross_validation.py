@@ -30,6 +30,7 @@ def run_cv_stratified(data_model,
                       shuffle_labels=False,
                       standardize_columns=False,
                       output_preds=False,
+                      output_survival_fn=False,
                       stratify=True,
                       results_dir=None):
     """
@@ -131,6 +132,9 @@ def run_cv_stratified(data_model,
 
         # save model results for survival prediction
         if predictor == 'survival':
+            from functools import partial
+            train_model = partial(train_model, output_fn=output_survival_fn)
+        if predictor == 'survival' and cfg.survival_debug:
             debug_info = {
                 'fold_no': fold_no,
                 'prefix': '{}/{}_{}'.format(
@@ -251,6 +255,18 @@ def run_cv_stratified(data_model,
             results['{}_preds'.format(exp_string)].append(
                 get_preds(X_test_df, y_test_df, cv_pipeline, fold_no)
             )
+
+        if output_survival_fn:
+            import pickle as pkl
+            if predictor != 'survival':
+                raise NotImplementedError
+            surv_fns = surv.get_survival_function(cv_pipeline, X_test_df)
+            fn_prefix = '{}/{}_{}'.format(results_dir, identifier, predictor)
+            fn_file = '{}_{}_fold{}_functions.pkl'.format(fn_prefix,
+                                                          signal,
+                                                          fold_no)
+            with open(fn_file, 'wb') as f:
+                pkl.dump(surv_fns, f)
 
     return results
 

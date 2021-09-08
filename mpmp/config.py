@@ -70,14 +70,16 @@ data_types = {
 }
 
 # locations of compressed multimodal data files
-exp_compressed_dir = data_dir / 'exp_compressed'
-me_compressed_dir = data_dir / 'me_compressed'
-compressed_data_types = {
-    'expression': exp_compressed_dir / 'exp_std_pc{}.tsv.gz',
-    'me_27k': me_compressed_dir / 'me_27k_f10_i5_pc{}.tsv.gz',
-    'me_27k_bmiq': me_compressed_dir / 'me_27k_bmiq_pc{}.tsv.gz',
-    'me_450k': me_compressed_dir / 'me_450k_f10_i5_pc{}.tsv.gz',
-}
+compressed_data_dir = data_dir / 'compressed_data'
+
+# exp_compressed_dir = data_dir / 'exp_compressed'
+# me_compressed_dir = data_dir / 'me_compressed'
+# compressed_data_types = {
+#     'expression': exp_compressed_dir / 'exp_std_pc{}.tsv.gz',
+#     'me_27k': me_compressed_dir / 'me_27k_f10_i5_pc{}.tsv.gz',
+#     'me_27k_bmiq': me_compressed_dir / 'me_27k_bmiq_pc{}.tsv.gz',
+#     'me_450k': me_compressed_dir / 'me_450k_f10_i5_pc{}.tsv.gz',
+# }
 
 # locations of subsampled data, for debugging and testing
 subsampled_data_dir = data_dir / 'subsampled'
@@ -131,8 +133,10 @@ reg_l1_ratios = [0.1, 0.5, 0.7, 0.9, 0.95, 0.99, 1.0]
 # hyperparameters for survival experiments
 # cox regression is a bit more finicky than logistic/linear regression,
 # so we need to use slightly larger ranges to make sure the models converge
+survival_debug = False
 survival_max_iter = 1000
 survival_alphas = None
+# survival_alphas = [1e-4, 5e-4, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 10]
 survival_l1_ratios = [0.01, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0]
 
 max_iter_map = {

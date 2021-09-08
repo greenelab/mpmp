@@ -153,7 +153,7 @@ id_to_sig.head()
 
 # compare expression against all other data modalities
 # could do all vs. all, but that would give us lots of plots
-sns.set({'figure.figsize': (16, 6)})
+sns.set({'figure.figsize': (15, 6)})
 sns.set_style('whitegrid')
 
 fig, axarr = plt.subplots(1, 2)
@@ -235,3 +235,9 @@ if SAVE_FIGS:
     plt.savefig(images_dir / 'methylation_heatmap.png',
                 dpi=300, bbox_inches='tight')
 
+
+# Key to above heatmap:
+# 
+# * A blue square = significantly better than label-permuted baseline, but significantly worse than best-performing data type
+# * A red square =  significantly better than label-permuted baseline, and not significantly different from best-performing data type (i.e. "statistically equivalent to best")
+# * No square/box = not significantly better than label-permuted baseline

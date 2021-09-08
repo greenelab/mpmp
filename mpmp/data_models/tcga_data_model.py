@@ -28,6 +28,7 @@ class TCGADataModel():
                  training_data='expression',
                  overlap_data_types=None,
                  load_compressed_data=False,
+                 standardize_input=False,
                  n_dim=None,
                  sample_info_df=None,
                  verbose=False,
@@ -64,6 +65,7 @@ class TCGADataModel():
         # load and store data in memory
         self._load_data(train_data_type=training_data,
                         compressed_data=load_compressed_data,
+                        standardize_input=standardize_input,
                         n_dim=n_dim,
                         sample_info_df=sample_info_df,
                         debug=debug,
@@ -150,8 +152,7 @@ class TCGADataModel():
                               gene,
                               classification,
                               gene_dir,
-                              use_pancancer=False,
-                              compressed_only=False):
+                              use_pancancer=False):
         """
         Prepare to run mutation prediction experiments for a given gene.
 
@@ -190,11 +191,6 @@ class TCGADataModel():
             y_filtered_df,
             valid_samples=valid_samples,
             data_types=self.overlap_data_types,
-            # if this option is True, use only samples for which we have
-            # compressed data. if false, take overlap of samples for which
-            # we have non-compressed data (generally a subset of compressed
-            # data samples)
-            compressed_data_only=compressed_only,
             n_dim=self.n_dim,
             use_subsampled=(self.debug or self.test),
             verbose=self.verbose
@@ -209,15 +205,13 @@ class TCGADataModel():
 
     def process_purity_data(self,
                             output_dir,
-                            classify=False,
-                            compressed_only=False):
+                            classify=False):
         """Prepare to run experiments predicting tumor purity.
 
         Arguments
         ---------
         output_dir (str): directory to write output to, if None don't write output
         classify (bool): if True do classification, else regression
-        compressed_only (bool): if True, use intersection of compressed samples
         """
         y_df_raw = du.load_purity(self.mut_burden_df,
                                   self.sample_info_df,
@@ -235,11 +229,6 @@ class TCGADataModel():
             train_filtered_df,
             y_filtered_df,
             data_types=self.overlap_data_types,
-            # if this option is True, use only samples for which we have
-            # compressed data. if False, take overlap of samples for which
-            # we have non-compressed data (generally a subset of compressed
-            # data samples)
-            compressed_data_only=compressed_only,
             n_dim=self.n_dim,
             use_subsampled=(self.debug or self.test),
             verbose=self.verbose
@@ -292,14 +281,12 @@ class TCGADataModel():
 
     def process_survival_data(self,
                               output_dir,
-                              cancer_type,
-                              compressed_only=False):
+                              cancer_type):
         """Prepare to run experiments predicting survival from omics data.
 
         Arguments
         ---------
         output_dir (str): directory to write output to, if None don't write output
-        compressed_only (bool): if True, use intersection of compressed samples
         """
         y_df_raw = du.load_survival_labels(cancer_type,
                                            self.mut_burden_df,
@@ -319,11 +306,6 @@ class TCGADataModel():
             train_filtered_df,
             y_filtered_df,
             data_types=self.overlap_data_types,
-            # if this option is True, use only samples for which we have
-            # compressed data. if False, take overlap of samples for which
-            # we have non-compressed data (generally a subset of compressed
-            # data samples)
-            compressed_data_only=compressed_only,
             n_dim=self.n_dim,
             use_subsampled=(self.debug or self.test),
             verbose=self.verbose
@@ -340,6 +322,7 @@ class TCGADataModel():
     def _load_data(self,
                    train_data_type,
                    compressed_data=False,
+                   standardize_input=False,
                    n_dim=None,
                    sample_info_df=None,
                    debug=False,
@@ -367,6 +350,7 @@ class TCGADataModel():
             self.data_df = du.load_compressed_data(train_data_type,
                                                    n_dim=n_dim,
                                                    verbose=self.verbose,
+                                                   standardize_input=standardize_input,
                                                    load_subset=(debug or test))
         else:
             self.data_df = du.load_raw_data(train_data_type,
