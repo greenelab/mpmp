@@ -106,8 +106,8 @@ for ix in range(len(fns)):
 handles, labels = plt.gca().get_legend_handles_labels()
 by_label = dict(zip(labels, handles))
 plt.legend(by_label.values(), by_label.keys(), title='Above/below 80th age percentile')
-plt.xlabel('Time')
-plt.ylabel('Survival probability')
+plt.xlabel('Time (days)')
+plt.ylabel('Predicted survival probability')
 
 
 # ### Color survival curves by stage at diagnosis
@@ -159,8 +159,8 @@ for ix in range(len(fns)):
 handles, labels = plt.gca().get_legend_handles_labels()
 by_label = dict(zip(labels, handles))
 plt.legend(by_label.values(), by_label.keys(), title='Stage at diagnosis')
-plt.xlabel('Time')
-plt.ylabel('Survival probability')
+plt.xlabel('Time (days)')
+plt.ylabel('Predicted survival probability')
 
 
 # ### Color survival curves by cancer subtype
@@ -204,6 +204,6 @@ for ix in range(len(fns)):
 handles, labels = plt.gca().get_legend_handles_labels()
 by_label = dict(zip(labels, handles))
 plt.legend(by_label.values(), by_label.keys(), title='{} subtype'.format(cancer_type))
-plt.xlabel('Time')
-plt.ylabel('Survival probability')
+plt.xlabel('Time (days)')
+plt.ylabel('Predicted survival probability')
 
