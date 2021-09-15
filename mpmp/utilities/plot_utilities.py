@@ -374,7 +374,11 @@ def plot_heatmap(heatmap_df,
                  raw_results_df=None,
                  metric='aupr',
                  id_name='gene',
-                 scale=None):
+                 scale=None,
+                 origin_eps_x=0.0,
+                 origin_eps_y=0.0,
+                 length_x=1.0,
+                 length_y=1.0):
     """Plot heatmap comparing data types for each gene.
 
     Arguments
@@ -420,14 +424,22 @@ def plot_heatmap(heatmap_df,
             for data_ix, data_type in enumerate(heatmap_df.index):
                 if (_check_data_type(results_df, identifier, data_type, id_name) and
                     _check_equal_to_best(results_df, identifier, data_type, id_name)):
+                    # origin_eps_(x|y) and length_(x|y) are offsets to the origin and
+                    # length, respectively, to make rectangles non-overlapping
+                    #
+                    # there's really no good built-in way to do this in matplotlib so
+                    # these have to be set by trial and error for each plot; the defaults
+                    # (offset=0 and length=1) will result in overlapping rectangles
                     ax.add_patch(
-                        Rectangle((id_ix, data_ix), 1, 1, fill=False,
-                                  edgecolor='red', lw=3, zorder=1.5)
+                        Rectangle((id_ix + origin_eps_x, data_ix + origin_eps_y),
+                                  length_x, length_y,
+                                  fill=False, edgecolor='red', lw=3, zorder=1.5)
                     )
                 elif _check_data_type(results_df, identifier, data_type, id_name):
                     ax.add_patch(
-                        Rectangle((id_ix, data_ix), 1, 1, fill=False,
-                                  edgecolor='blue', lw=3)
+                        Rectangle((id_ix + origin_eps_x, data_ix + origin_eps_y),
+                                  length_x, length_y,
+                                  fill=False, edgecolor='blue', lw=3)
                     )
     else:
         for id_ix, identifier in enumerate(heatmap_df.columns):
