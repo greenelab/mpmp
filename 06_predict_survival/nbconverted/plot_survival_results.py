@@ -212,7 +212,11 @@ ax = plu.plot_heatmap(me_heatmap_df,
                       raw_results_df=raw_results_df,
                       metric='cindex',
                       id_name='cancer_type',
-                      scale=(-0.1, 0.4))
+                      scale=(-0.1, 0.4),
+                      origin_eps_x=0.01,
+                      origin_eps_y=0.01,
+                      length_x=0.965,
+                      length_y=0.975)
 
 plt.title('Performance by cancer type for survival prediction, {}'.format(me_results_desc), pad=15)
 if SAVE_FIGS:
@@ -461,7 +465,11 @@ ax = plu.plot_heatmap(all_data_heatmap_df,
                       raw_results_df=raw_results_df,
                       metric='cindex',
                       id_name='cancer_type',
-                      scale=(-0.1, 0.4))
+                      scale=(-0.1, 0.4),
+                      origin_eps_x=0.01,
+                      origin_eps_y=0.01,
+                      length_x=0.965,
+                      length_y=0.95)
 
 plt.title('Performance by cancer type for survival prediction, {}'.format(all_results_desc), pad=15)
 if SAVE_FIGS:

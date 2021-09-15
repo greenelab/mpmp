@@ -308,7 +308,11 @@ ax = plu.plot_heatmap(heatmap_df,
                       all_results_df.reset_index(drop=True),
                       different_from_best=True,
                       raw_results_df=results_df,
-                      metric=plot_metric)
+                      metric=plot_metric,
+                      origin_eps_x=0.02,
+                      origin_eps_y=0.015,
+                      length_x=0.85,
+                      length_y=0.95)
 
 plt.title('Performance by data type for Vogelstein et al. genes, all data types', pad=15)
 
