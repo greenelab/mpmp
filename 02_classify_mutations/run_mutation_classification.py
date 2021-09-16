@@ -103,6 +103,7 @@ def process_args():
     model_options.alphas = cfg.alphas
     model_options.l1_ratios = cfg.l1_ratios
     model_options.standardize_data_types = cfg.standardize_data_types
+    model_options.shuffle_by_cancer_type = cfg.shuffle_by_cancer_type
 
     return io_args, model_options
 
@@ -148,7 +149,8 @@ if __name__ == '__main__':
     # - for true labels and shuffled labels
     #   (shuffled labels acts as our lower baseline)
     # - for all genes in the given gene set
-    for shuffle_labels in (False, True):
+    # for shuffle_labels in (False, True):
+    for shuffle_labels in [True]:
 
         print('shuffle_labels: {}'.format(shuffle_labels))
 
