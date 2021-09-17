@@ -73,7 +73,7 @@ def process_args():
                            'overlapping samples from these data types')
     opts.add_argument('--seed', type=int, default=cfg.default_seed)
     opts.add_argument('--training_data', type=str, default='expression',
-                      choices=list(cfg.compressed_data_types.keys()),
+                      choices=list(cfg.data_types.keys()),
                       help='what data type to train model on')
 
     args = parser.parse_args()
@@ -208,7 +208,7 @@ if __name__ == '__main__':
                                             model_options.training_data,
                                             sample_info_df,
                                             model_options.num_folds,
-                                            True,
+                                            'classify',
                                             shuffle_labels,
                                             standardize_columns=False)
                 # only save results if no exceptions

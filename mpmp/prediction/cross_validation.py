@@ -101,8 +101,17 @@ def run_cv_stratified(data_model,
         # (see https://github.com/greenelab/mpmp/issues/44)
         if shuffle_labels:
             if cfg.shuffle_by_cancer_type:
-                y_train_df.status = shuffle_by_cancer_type(y_train_df)
-                y_test_df.status = shuffle_by_cancer_type(y_train_df)
+                # in this case we want to shuffle labels independently for each cancer type
+                # (i.e. preserve the total number of mutated samples in each)
+                original_ones = y_train_df.groupby('DISEASE').sum()['status']
+                y_train_df.status = shuffle_by_cancer_type(y_train_df, data_model.seed)
+                y_test_df.status = shuffle_by_cancer_type(y_test_df, data_model.seed)
+                new_ones = y_train_df.groupby('DISEASE').sum()['status']
+
+                # number of mutated samples per cancer type should be the same before
+                # and after shuffling
+                assert original_ones.equals(new_ones)
+
             else:
                 # we set a temp seed here to make sure this shuffling order
                 # is the same for each gene between data types, otherwise
@@ -377,9 +386,15 @@ def extract_coefficients(cv_pipeline,
     return coef_df
 
 
-def shuffle_by_cancer_type(y_df):
-    print(y_df.head())
-    exit()
+def shuffle_by_cancer_type(y_df, seed):
+    y_copy_df = y_df.copy()
+    with temp_seed(seed):
+        for cancer_type in y_copy_df.DISEASE.unique():
+            is_cancer_type = (y_copy_df.DISEASE == cancer_type)
+            y_copy_df.loc[is_cancer_type, 'status'] = (
+                np.random.permutation(y_copy_df.loc[is_cancer_type, 'status'].values)
+            )
+    return y_copy_df.status.values
 
 @contextlib.contextmanager
 def temp_seed(cntxt_seed):

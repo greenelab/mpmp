@@ -149,8 +149,7 @@ if __name__ == '__main__':
     # - for true labels and shuffled labels
     #   (shuffled labels acts as our lower baseline)
     # - for all genes in the given gene set
-    # for shuffle_labels in (False, True):
-    for shuffle_labels in [True]:
+    for shuffle_labels in (False, True):
 
         print('shuffle_labels: {}'.format(shuffle_labels))
 

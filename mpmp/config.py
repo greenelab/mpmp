@@ -192,5 +192,5 @@ gene_aliases = {
 msi_data_dir = data_dir / 'msi_data'
 msi_cancer_types = ['COADREAD', 'STAD', 'UCEC']
 
-# if true, shuffle labels within cancer types instead of across
+# if true, shuffle labels within cancer types to preserve number of mutations
 shuffle_by_cancer_type = True
