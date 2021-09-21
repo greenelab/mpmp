@@ -208,11 +208,14 @@ sns.set_context('notebook', font_scale=1.5)
 
 ax = plu.plot_heatmap(me_heatmap_df,
                       me_all_results_df.reset_index(drop=True),
-                      different_from_best=True,
-                      raw_results_df=raw_results_df,
+                      raw_results_df,
                       metric='cindex',
                       id_name='cancer_type',
-                      scale=(-0.1, 0.4))
+                      scale=(-0.1, 0.4),
+                      origin_eps_x=0.01,
+                      origin_eps_y=0.01,
+                      length_x=0.965,
+                      length_y=0.975)
 
 plt.title('Performance by cancer type for survival prediction, {}'.format(me_results_desc), pad=15)
 if SAVE_FIGS:
@@ -224,9 +227,9 @@ if SAVE_FIGS:
 
 # Key to above heatmap:
 # 
-# * A blue square = significantly better than label-permuted baseline, but significantly worse than best-performing data type
-# * A red square =  significantly better than label-permuted baseline, and not significantly different from best-performing data type (i.e. "statistically equivalent to best")
-# * No square/box = not significantly better than label-permuted baseline
+# * A grey dot = significantly better than label-permuted baseline, but significantly worse than best-performing data type
+# * A grey dot with black dot inside = significantly better than label-permuted baseline, and not significantly different from best-performing data type (i.e. "statistically equivalent to best")
+# * No dot = not significantly better than label-permuted baseline
 # 
 # So we can see that many of the same cancer types are well-predicted using all data types (KIRP, LGG, pancancer), and the predictors based on different datasets tend to be statistically equivalent in many of those cases.
 
@@ -457,11 +460,14 @@ sns.set_context('notebook', font_scale=1.5)
 
 ax = plu.plot_heatmap(all_data_heatmap_df,
                       all_data_all_results_df.reset_index(drop=True),
-                      different_from_best=True,
-                      raw_results_df=raw_results_df,
+                      raw_results_df,
                       metric='cindex',
                       id_name='cancer_type',
-                      scale=(-0.1, 0.4))
+                      scale=(-0.1, 0.4),
+                      origin_eps_x=0.01,
+                      origin_eps_y=0.01,
+                      length_x=0.965,
+                      length_y=0.95)
 
 plt.title('Performance by cancer type for survival prediction, {}'.format(all_results_desc), pad=15)
 if SAVE_FIGS:
@@ -473,9 +479,9 @@ if SAVE_FIGS:
 
 # Key to above heatmap:
 # 
-# * A blue square = significantly better than label-permuted baseline, but significantly worse than best-performing data type
-# * A red square =  significantly better than label-permuted baseline, and not significantly different from best-performing data type (i.e. "statistically equivalent to best")
-# * No square/box = not significantly better than label-permuted baseline
+# * A grey dot = significantly better than label-permuted baseline, but significantly worse than best-performing data type
+# * A grey dot with black dot inside = significantly better than label-permuted baseline, and not significantly different from best-performing data type (i.e. "statistically equivalent to best")
+# * No dot = not significantly better than label-permuted baseline
 
 # In[28]:
 

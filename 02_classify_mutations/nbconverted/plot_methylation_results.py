@@ -224,9 +224,12 @@ sns.set_context('notebook', font_scale=1.5)
 
 ax = plu.plot_heatmap(heatmap_df,
                       all_results_df.reset_index(drop=True),
-                      different_from_best=True,
-                      raw_results_df=results_df,
-                      metric=plot_metric)
+                      results_df,
+                      metric=plot_metric,
+                      origin_eps_x=0.02,
+                      origin_eps_y=0.015,
+                      length_x=0.85,
+                      length_y=0.95)
 
 plt.title('Performance by data type for Vogelstein et al. genes, expression vs. methylation', pad=15)
 
@@ -238,6 +241,6 @@ if SAVE_FIGS:
 
 # Key to above heatmap:
 # 
-# * A blue square = significantly better than label-permuted baseline, but significantly worse than best-performing data type
-# * A red square =  significantly better than label-permuted baseline, and not significantly different from best-performing data type (i.e. "statistically equivalent to best")
-# * No square/box = not significantly better than label-permuted baseline
+# * A grey dot = significantly better than label-permuted baseline, but significantly worse than best-performing data type
+# * A grey dot with black dot inside = significantly better than label-permuted baseline, and not significantly different from best-performing data type (i.e. "statistically equivalent to best")
+# * No dot = not significantly better than label-permuted baseline

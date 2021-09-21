@@ -370,11 +370,14 @@ def add_annotation(ax, results_df, all_pairs, metric, box_pairs):
 
 def plot_heatmap(heatmap_df,
                  results_df,
-                 different_from_best=True,
-                 raw_results_df=None,
+                 raw_results_df,
                  metric='aupr',
                  id_name='gene',
-                 scale=None):
+                 scale=None,
+                 origin_eps_x=0.0,
+                 origin_eps_y=0.0,
+                 length_x=1.0,
+                 length_y=1.0):
     """Plot heatmap comparing data types for each gene.
 
     Arguments
@@ -383,11 +386,11 @@ def plot_heatmap(heatmap_df,
                                genes, entries are mean AUPR differences
     results_df (pd.DataFrame): dataframe with processed results/p-values
     """
-    if different_from_best:
-        results_df = get_different_from_best(results_df,
-                                             raw_results_df,
-                                             metric=metric,
-                                             id_name=id_name)
+    # get data types that are equivalent to best-performing data type
+    results_df = get_different_from_best(results_df,
+                                         raw_results_df,
+                                         metric=metric,
+                                         id_name=id_name)
 
     if scale is not None:
         ax = sns.heatmap(heatmap_df, cmap='Greens',
@@ -413,37 +416,15 @@ def plot_heatmap(heatmap_df,
 
     ax = plt.gca()
 
-    # add blue highlights to cells that are significant over baseline
-    # add red highlights to cells that are significant and "best" predictor for that gene
-    if different_from_best:
-        for id_ix, identifier in enumerate(heatmap_df.columns):
-            for data_ix, data_type in enumerate(heatmap_df.index):
-                if (_check_data_type(results_df, identifier, data_type, id_name) and
-                    _check_equal_to_best(results_df, identifier, data_type, id_name)):
-                    ax.add_patch(
-                        Rectangle((id_ix, data_ix), 1, 1, fill=False,
-                                  edgecolor='red', lw=3, zorder=1.5)
-                    )
-                elif _check_data_type(results_df, identifier, data_type, id_name):
-                    ax.add_patch(
-                        Rectangle((id_ix, data_ix), 1, 1, fill=False,
-                                  edgecolor='blue', lw=3)
-                    )
-    else:
-        for id_ix, identifier in enumerate(heatmap_df.columns):
-            best_data_type = heatmap_df.loc[:, identifier].idxmax()
-            for data_ix, data_type in enumerate(heatmap_df.index):
-                if (best_data_type == data_type) and (
-                    _check_data_type(results_df, identifier, data_type, id_name)):
-                    ax.add_patch(
-                        Rectangle((id_ix, data_ix), 1, 1, fill=False,
-                                  edgecolor='red', lw=3, zorder=1.5)
-                    )
-                elif _check_data_type(results_df, identifier, data_type, id_name):
-                    ax.add_patch(
-                        Rectangle((id_ix, data_ix), 1, 1, fill=False,
-                                  edgecolor='blue', lw=3)
-                    )
+    # add grey dots to cells that are significant over baseline
+    # add black dots to cells that are significant and "best" predictor for that gene
+    for id_ix, identifier in enumerate(heatmap_df.columns):
+        for data_ix, data_type in enumerate(heatmap_df.index):
+            if _check_data_type(results_df, identifier, data_type, id_name):
+                ax.scatter(id_ix + 0.5, data_ix + 0.5, color='0.8', edgecolors='black', s=200)
+            if (_check_data_type(results_df, identifier, data_type, id_name) and
+                _check_equal_to_best(results_df, identifier, data_type, id_name)):
+                ax.scatter(id_ix + 0.5, data_ix + 0.5, color='black', edgecolor='black', s=60)
 
     plt.xlabel('{} name'.format(id_name.capitalize().replace('_', ' ')))
     plt.ylabel('Training data type')
