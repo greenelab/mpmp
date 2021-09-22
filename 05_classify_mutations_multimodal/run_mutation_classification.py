@@ -233,7 +233,7 @@ if __name__ == '__main__':
                                             model_options.training_data,
                                             sample_info_df,
                                             model_options.num_folds,
-                                            classify=True,
+                                            'classify',
                                             shuffle_labels=shuffle_labels,
                                             standardize_columns=standardize_columns)
                 # only save results if no exceptions

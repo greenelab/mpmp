@@ -127,7 +127,8 @@ def load_multiple_data_types(data_types, n_dims, verbose=False):
         if verbose:
             print('- Loading {} data...'.format(data_type), file=sys.stderr)
         if n_dim is not None:
-            partial_data_df = load_compressed_data(data_type, n_dim)
+            # partial_data_df = load_compressed_data(data_type, n_dim)
+            partial_data_df = load_compressed_data(data_type, int(n_dim))
             # the default PC name is just the integer index, so here we need
             # to rename them in case we have PCs for more than one data type
             #
