@@ -123,11 +123,14 @@ def load_multiple_data_types(data_types, n_dims, verbose=False):
     if verbose:
         print('Loading data for data types {}...'.format(', '.join(data_types)),
               file=sys.stderr)
-    for ix, (data_type, n_dim) in enumerate(zip(data_types, n_dims)):
+    if standardize_input is None:
+        standardize_input = [False] * len(data_types)
+    for ix, (data_type, n_dim, standardize) in enumerate(zip(data_types, n_dims, standardize_input)):
         if verbose:
             print('- Loading {} data...'.format(data_type), file=sys.stderr)
         if n_dim is not None:
-            partial_data_df = load_compressed_data(data_type, int(n_dim))
+            partial_data_df = load_compressed_data(data_type, int(n_dim),
+                                                   standardize_input=standardize)
             # the default PC name is just the integer index, so here we need
             # to rename them in case we have PCs for more than one data type
             #
@@ -242,7 +245,7 @@ def get_classification(gene, genes_df=None):
         if gene in genes_df.gene:
             classification = genes_df[genes_df.gene == gene].classification.iloc[0]
         else:
-            genes_df = load_top_50()
+            genes_df = load_top_genes()
             if gene in genes_df.gene:
                 classification = genes_df[genes_df.gene == gene].classification.iloc[0]
     return classification
