@@ -6,8 +6,7 @@ for seed in 42 1; do
     for n_dim in 10 100 500 1000 5000; do
 
         # top n_dim PCA features
-        results_dir=./06_predict_survival/results/results_all_extended_alphas/results_${n_dim}_pca/
-
+        results_dir=./06_predict_survival/results/all_shuffle_cancer_type/results_${n_dim}_pca/
         for data_type in expression me_27k me_450k rppa mirna mut_sigs; do
             cmd="python 06_predict_survival/run_survival_prediction.py "
             cmd+="--n_dim $n_dim "
