@@ -111,6 +111,7 @@ def process_args():
     model_options.alphas = cfg.alphas_map['survival']
     model_options.l1_ratios = cfg.l1_ratios_map['survival']
     model_options.standardize_data_types = cfg.standardize_data_types
+    model_options.shuffle_by_cancer_type = cfg.shuffle_by_cancer_type
 
     return io_args, model_options, sample_info_df
 
@@ -187,7 +188,7 @@ if __name__ == '__main__':
                     log_columns,
                     [cancer_type, model_options.training_data, shuffle_labels, 'file_exists']
                 )
-                fu.write_log_file(log_df, io_args.log_file)
+                # fu.write_log_file(log_df, io_args.log_file)
                 continue
 
             try:
@@ -256,6 +257,6 @@ if __name__ == '__main__':
                 )
 
 
-            if log_df is not None:
-                fu.write_log_file(log_df, io_args.log_file)
+            # if log_df is not None:
+            #     fu.write_log_file(log_df, io_args.log_file)
 

@@ -127,6 +127,7 @@ def process_args():
     model_options.standardize_data_types = (
         [t for ix, t in enumerate(model_options.training_data)]
     )
+    model_options.shuffle_by_cancer_type = cfg.shuffle_by_cancer_type
 
     return io_args, model_options
 
