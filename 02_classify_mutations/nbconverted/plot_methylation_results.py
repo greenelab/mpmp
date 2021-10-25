@@ -30,7 +30,7 @@ import mpmp.utilities.plot_utilities as plu
 
 # set results directory
 results_dir = Path(cfg.results_dirs['mutation'],
-                   'methylation_results',
+                   'methylation_results_shuffle_cancer_type',
                    'gene').resolve()
 
 # set significance cutoff after FDR correction
