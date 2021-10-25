@@ -14,6 +14,7 @@ from mpmp.exceptions import (
     NoTrainSamplesError,
     NoTestSamplesError,
     OneClassError,
+    ModelFitError,
 )
 import mpmp.prediction.classification as clf
 import mpmp.prediction.regression as reg
@@ -182,6 +183,11 @@ def run_cv_stratified(data_model,
                 raise OneClassError(
                     'All samples are censored in test set for identifier:'
                     '{}'.format(identifier)
+                )
+            elif ('search direction contains NaN' in str(e)):
+                raise ModelFitError(
+                    'Hyperparameter path returned NaN/infinite results for '
+                    'identifier: {}'.format(identifier)
                 )
             else:
                 # if not only one class error, just re-raise

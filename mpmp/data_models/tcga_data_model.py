@@ -358,6 +358,14 @@ class TCGADataModel():
                                                    verbose=self.verbose,
                                                    standardize_input=standardize_input,
                                                    load_subset=(debug or test))
+        elif train_data_type == 'baseline':
+            # we just want to use non-omics covariates as a baseline
+            # so here, get sample list for expression data, then create an
+            # empty data frame using it as an index
+            if sample_info_df is None:
+                sample_info_df = du.load_sample_info('expression',
+                                                     verbose=self.verbose)
+            self.data_df = pd.DataFrame(index=sample_info_df.index)
         else:
             self.data_df = du.load_raw_data(train_data_type,
                                             verbose=self.verbose,

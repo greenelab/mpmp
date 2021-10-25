@@ -54,3 +54,12 @@ class GenesNotFoundError(Exception):
     """
     pass
 
+class ModelFitError(Exception):
+    """
+    Custom exception to raise when the model fails to converge.
+
+    This allows calling scripts to choose how to handle this case (e.g. to
+    print an error message and continue, or to abort execution).
+    """
+    pass
+
