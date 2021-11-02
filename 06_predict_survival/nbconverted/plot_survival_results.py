@@ -29,6 +29,8 @@ get_ipython().run_line_magic('load_ext', 'autoreload')
 get_ipython().run_line_magic('autoreload', '2')
 
 
+# ### Parameters and data directories
+
 # In[2]:
 
 
@@ -37,490 +39,127 @@ SIG_ALPHA = 0.05
 
 # if True, save figures to images directory
 SAVE_FIGS = True
+images_dir = Path(cfg.images_dirs['survival'])
 
+# set results directories
+# TODO: document why these need to be different
+me_pancancer_results_dir = Path(cfg.results_dirs['survival'], 'me_baseline_alphas')
+all_pancancer_results_dir = Path(cfg.results_dirs['survival'], 'all_baseline_alphas')
+
+me_pancancer_baseline_results_dir = Path(cfg.results_dirs['survival'], 'me_baseline', 'results_baseline')
+all_pancancer_baseline_results_dir = Path(cfg.results_dirs['survival'], 'all_baseline', 'results_baseline')
+
+me_cancer_type_results_dir = Path(cfg.results_dirs['survival'], 'me_ridge')
+all_cancer_type_results_dir = Path(cfg.results_dirs['survival'], 'all_ridge')
+
+me_cancer_type_baseline_results_dir = Path(cfg.results_dirs['survival'], 'me_ridge_baseline')
+all_cancer_type_baseline_results_dir = Path(cfg.results_dirs['survival'], 'all_ridge_baseline')
+
+# set list of PCA component numbers to look for
+pancancer_pcs_list = [10, 100, 500, 1000, 5000]
+cancer_type_n_pcs = 10
+
+
+# ### Pan-cancer survival prediction, expression vs. methylation
 
 # In[3]:
 
 
-# set results directory
-me_results_dir = Path(cfg.repo_root,
-                      '06_predict_survival',
-                      'results_extended_alphas',
-                      'results_1000_pca').resolve()
-me_results_desc = 'top 1000 PCs'
-
-# set images directory
-images_dir = Path(cfg.images_dirs['survival'])
-
-# load results into a single dataframe
-me_results_df = su.load_survival_results(me_results_dir)
-me_results_df.rename(columns={'identifier': 'cancer_type',
-                              'fold_no': 'fold'}, inplace=True)
-me_results_df.head()
-
-
-# ### Check model convergence results
-# 
-# In the past we were having issues with model convergence for some cancer types. Let's see how frequently (if at all) this is happening.
-
-# In[4]:
-
-
-me_count_df = (me_results_df[me_results_df.data_type == 'test']
-    .groupby(['cancer_type', 'training_data'])
-    .count()
-)
-problem_df = me_count_df[me_count_df['cindex'] != 16].copy()
-print(len(problem_df), '/', len(me_count_df))
-problem_df
-
-
-# We'll just drop these missing cancer types from our comparisons for now, although we could debug the issues with model convergence sometime in the future (e.g. by using an extended parameter range).
-
-# In[5]:
-
-
-drop_cancer_types = problem_df.index.get_level_values(0).unique().values
-print(drop_cancer_types)
-
-
-# ### Plot survival prediction results
-# 
-# We want to compare survival prediction for:
-# * true labels vs. shuffled labels
-# * between omics types
-#     
-# As a metric, for now we're just using the [censored concordance index](https://scikit-survival.readthedocs.io/en/latest/api/generated/sksurv.metrics.concordance_index_censored.html). Essentially, this compares the actual order of events (i.e. death or tumor progression) in the test dataset vs. the order of events predicted by the model in the test samples. A higher concordance index = better prediction.
-
-# In[6]:
-
-
-sns.set({'figure.figsize': (18, 15)})
-fig, axarr = plt.subplots(3, 1)
-
-for ix, data_type in enumerate(
-    me_results_df.training_data.sort_values().unique()
-):
-    
-    ax = axarr[ix]
-    
-    filtered_df = me_results_df[
-        (me_results_df.training_data == data_type) &
-        (me_results_df.data_type == 'test')
-    ].copy()
-
-    filtered_df.sort_values(by='cancer_type', inplace=True)
-
-    sns.boxplot(data=filtered_df, x='cancer_type', y='cindex', hue='signal',
-                hue_order=['signal', 'shuffled'], ax=ax)
-    ax.set_xlabel('TCGA cancer type')
-    ax.set_ylabel('Concordance index')
-    ax.set_title('Survival prediction using {}, {}'.format(data_type,
-                                                           me_results_desc))
-    ax.set_ylim(0.0, 1.0)
-    
-plt.tight_layout()
-
-
-# In[7]:
-
-
-me_results_df['identifier'] = (me_results_df.cancer_type + '_' +
-                               me_results_df.training_data)
-me_results_df.head()
-
-
-# In[8]:
-
-
-me_compare_df = au.compare_control_ind(me_results_df,
-                                       identifier='identifier',
-                                       metric='cindex',
-                                       verbose=True)
-me_compare_df['cancer_type'] = me_compare_df.identifier.str.split('_', 1, expand=True)[0]
-me_compare_df['training_data'] = me_compare_df.identifier.str.split('_', 1, expand=True)[1]
-
-print(len(me_compare_df))
-me_compare_df.head()
-
-
-# In[9]:
-
-
-sns.set({'figure.figsize': (18, 8)})
-    
-me_compare_df.sort_values(by='cancer_type', inplace=True)
-
-sns.boxplot(data=me_compare_df[~me_compare_df.cancer_type.isin(drop_cancer_types)],
-            x='cancer_type',
-            y='delta_cindex',
-            hue='training_data',
-            hue_order=sorted(me_compare_df.training_data.unique()))
-plt.xlabel('TCGA cancer type')
-plt.ylabel('cindex(signal) - cindex(shuffled)')
-plt.title('Survival prediction, {}'.format(me_results_desc))
-plt.ylim(-0.5, 0.5)
-    
-plt.tight_layout()
-
-
-# ### Heatmap
-# 
-# This is similar to the heatmaps we plotted in the results script in `02_classify_mutations` for the mutation prediction problem. We want to compare data types for predicting survival in different cancer types.
-
-# In[10]:
-
-
-me_all_results_df = au.compare_all_data_types(me_results_df[~me_results_df.cancer_type.isin(drop_cancer_types)],
-                                           SIG_ALPHA,
-                                           identifier='cancer_type',
-                                           metric='cindex')
-
-me_all_results_df.rename(columns={'gene': 'cancer_type'}, inplace=True)
-me_all_results_df.sort_values(by='p_value').head(10)
-
-
-# In[11]:
-
-
-me_heatmap_df = (me_all_results_df
-    .pivot(index='training_data', columns='cancer_type', values='delta_mean')
-    .reindex(sorted(me_compare_df.training_data.unique()))
-)
-me_heatmap_df.iloc[:, :5]
-
-
-# In[12]:
-
-
-raw_results_df = (me_results_df
-    .drop(columns=['identifier'])
-    .rename(columns={'cancer_type': 'identifier'})
-)
-raw_results_df.head()
-
-
-# In[13]:
-
-
-sns.set({'figure.figsize': (28, 6)})
-sns.set_context('notebook', font_scale=1.5)
-
-ax = plu.plot_heatmap(me_heatmap_df,
-                      me_all_results_df.reset_index(drop=True),
-                      raw_results_df,
-                      metric='cindex',
-                      id_name='cancer_type',
-                      scale=(-0.1, 0.4),
-                      origin_eps_x=0.01,
-                      origin_eps_y=0.01,
-                      length_x=0.965,
-                      length_y=0.975)
-
-plt.title('Performance by cancer type for survival prediction, {}'.format(me_results_desc), pad=15)
-if SAVE_FIGS:
-    images_dir.mkdir(exist_ok=True)
-    plt.savefig(images_dir / 'survival_me_heatmap.svg', bbox_inches='tight')
-    plt.savefig(images_dir / 'survival_me_heatmap.png',
-                dpi=300, bbox_inches='tight')
-
-
-# Key to above heatmap:
-# 
-# * A grey dot = significantly better than label-permuted baseline, but significantly worse than best-performing data type
-# * A grey dot with black dot inside = significantly better than label-permuted baseline, and not significantly different from best-performing data type (i.e. "statistically equivalent to best")
-# * No dot = not significantly better than label-permuted baseline
-# 
-# So we can see that many of the same cancer types are well-predicted using all data types (KIRP, LGG, pancancer), and the predictors based on different datasets tend to be statistically equivalent in many of those cases.
-
-# In[14]:
-
-
-sns.set()
-sns.set({'figure.figsize': (22, 5)})
-sns.set_style('whitegrid')
-
-fig, axarr = plt.subplots(1, 3)
-
-# just use shortened data type names
-training_data_map = {k: k for k in sorted(me_all_results_df.training_data.unique())}
-
-plu.plot_volcano_baseline(me_all_results_df,
-                          axarr,
-                          training_data_map,
-                          SIG_ALPHA,
-                          identifier='cancer_type',
-                          metric='cindex',
-                          predict_str='Survival prediction',
-                          verbose=True,
-                          ylim=(0, 7))
-
-if SAVE_FIGS:
-    plt.savefig(images_dir / 'me_vs_shuffled_survival.svg', bbox_inches='tight')
-    plt.savefig(images_dir / 'me_vs_shuffled_survival.png',
-                dpi=300, bbox_inches='tight')
-
-
-# In[15]:
-
-
-me_results_df = (me_results_df
-    .drop(columns=['identifier'])
-    .rename(columns={'cancer_type': 'identifier'})
-).copy()
-
+# order to plot data types in
 training_data_map = {
     'expression': 'gene expression',
     'me_27k': '27k methylation',
     'me_450k': '450k methylation',
 }
-me_results_df.training_data.replace(to_replace=training_data_map, inplace=True)
-me_results_df.head()
 
 
-# In[16]:
+# In[4]:
 
 
-# compare expression against all other data modalities
-# could do all vs. all, but that would give us lots of plots
-sns.set({'figure.figsize': (16, 6)})
+# get baseline predictor results, using non-omics covariates only
+me_pancancer_df = []
+
+for n_dim in pancancer_pcs_list:
+    # load results into a single dataframe
+    me_pcs_dir = Path(me_pancancer_results_dir, 'results_{}_pca'.format(n_dim))
+    me_results_df = su.load_survival_results(me_pcs_dir)
+    me_results_df.rename(columns={'identifier': 'cancer_type',
+                                  'fold_no': 'fold'}, inplace=True)
+    me_results_df['n_dim'] = n_dim
+    me_pancancer_df.append(me_results_df)
+    
+me_pancancer_df = pd.concat(me_pancancer_df)
+me_pancancer_df = (me_pancancer_df
+      .loc[me_pancancer_df.cancer_type == 'pancancer', :]
+      .reset_index(drop=True)
+)
+me_pancancer_df.training_data.replace(to_replace=training_data_map, inplace=True)
+
+print(me_pancancer_df.shape)
+print(me_pancancer_df.n_dim.unique())
+print(me_pancancer_df.training_data.unique())
+me_pancancer_df.head()
+
+
+# In[5]:
+
+
+# get baseline predictor results, using non-omics covariates only
+me_baseline_df = su.load_survival_results(me_pancancer_baseline_results_dir)
+me_baseline_df.rename(columns={'identifier': 'cancer_type',
+                               'fold_no': 'fold'}, inplace=True)
+print(me_baseline_df.shape)
+print(me_baseline_df.training_data.unique())
+me_baseline_df.head()
+
+
+# In[6]:
+
+
+sns.set({'figure.figsize': (7, 6)})
 sns.set_style('whitegrid')
 
-fig, axarr = plt.subplots(1, 2)
+sns.pointplot(data=me_pancancer_df,
+              x='n_dim', y='cindex', hue='training_data', 
+              hue_order=training_data_map.values())
+plt.xlabel('Number of PCs', size=14)
+plt.ylabel('cindex', size=14)
+plt.legend(title='Training data', fontsize=13, title_fontsize=13, loc='upper left')
+plt.title('Pan-cancer survival performance, expression/methylation', size=14)
+plt.ylim(0.5, 1.0)
 
-plu.plot_volcano_comparison(me_results_df,
-                            axarr,
-                            training_data_map,
-                            SIG_ALPHA,
-                            metric='cindex',
-                            predict_str='Survival prediction',
-                            xlim=(-0.6, 0.6),
-                            verbose=True)
+# plot baseline mean/bootstrapped 95% CI
+baseline_vals = (me_baseline_df
+    [(me_baseline_df.data_type == 'test') &
+     (me_baseline_df.signal == 'signal') &
+     (me_baseline_df.cancer_type == 'pancancer')]
+).cindex.values
 
-# if SAVE_FIGS:
-#     plt.savefig(images_dir / 'methylation_comparison.svg', bbox_inches='tight')
-#     plt.savefig(images_dir / 'methylation_comparison.png',
-#                 dpi=300, bbox_inches='tight')
+baseline_mean = np.mean(baseline_vals)
+plt.gca().axhline(y=baseline_mean, linestyle='--', linewidth=3, color='gray')
 
-
-# ### Same plots, for all data types
-
-# In[17]:
-
-
-# set results directory
-all_results_dir = Path(cfg.repo_root,
-                       '06_predict_survival',
-                       'results_all_extended_alphas',
-                       'results_1000_pca').resolve()
-all_results_desc = 'top 1000 PCs'
-
-# load results into a single dataframe
-all_data_results_df = su.load_survival_results(all_results_dir)
-all_data_results_df.rename(columns={'identifier': 'cancer_type',
-                                    'fold_no': 'fold'}, inplace=True)
-all_data_results_df.head()
-
-
-# ### Check model convergence results, all data types
-
-# In[18]:
-
-
-all_data_count_df = (all_data_results_df[all_data_results_df.data_type == 'test']
-    .groupby(['cancer_type', 'training_data'])
-    .count()
+baseline_ci = sns.utils.ci(
+    sns.algorithms.bootstrap(baseline_vals,
+                             func=np.mean,
+                             n_boot=1000,
+                             units=None,
+                             seed=cfg.default_seed)
 )
-problem_df = all_data_count_df[all_data_count_df['cindex'] != 16].copy()
-print(len(problem_df), '/', len(all_data_count_df))
-problem_df
+plt.gca().axhspan(baseline_ci[0], baseline_ci[1], facecolor='gray', alpha=0.3)
 
-
-# In[19]:
-
-
-drop_cancer_types = problem_df.index.get_level_values(0).unique().values
-print(drop_cancer_types)
-
-
-# ### Plot raw survival prediction results, all data types
-
-# In[20]:
-
-
-sns.set()
-sns.set({'figure.figsize': (20, 24)})
-fig, axarr = plt.subplots(6, 1)
-
-for ix, data_type in enumerate(
-    all_data_results_df.training_data.sort_values().unique()
-):
-    
-    ax = axarr[ix]
-    
-    filtered_df = all_data_results_df[
-        (all_data_results_df.training_data == data_type) &
-        (all_data_results_df.data_type == 'test')
-    ].copy()
-
-    filtered_df.sort_values(by='cancer_type', inplace=True)
-
-    sns.boxplot(data=filtered_df, x='cancer_type', y='cindex', hue='signal',
-                hue_order=['signal', 'shuffled'], ax=ax)
-    ax.set_xlabel('TCGA cancer type')
-    ax.set_ylabel('Concordance index')
-    ax.set_title('Survival prediction using {}, {}'.format(data_type,
-                                                           all_results_desc))
-    ax.set_ylim(0.0, 1.0)
-    
-plt.tight_layout()
-
-
-# In[21]:
-
-
-all_data_results_df['identifier'] = (all_data_results_df.cancer_type + '_' +
-                               all_data_results_df.training_data)
-all_data_results_df.head()
-
-
-# In[22]:
-
-
-all_data_compare_df = au.compare_control_ind(all_data_results_df,
-                                       identifier='identifier',
-                                       metric='cindex',
-                                       verbose=True)
-all_data_compare_df['cancer_type'] = all_data_compare_df.identifier.str.split('_', 1, expand=True)[0]
-all_data_compare_df['training_data'] = all_data_compare_df.identifier.str.split('_', 1, expand=True)[1]
-
-print(len(all_data_compare_df))
-all_data_compare_df.head()
-
-
-# In[23]:
-
-
-sns.set({'figure.figsize': (18, 8)})
-    
-all_data_compare_df.sort_values(by='cancer_type', inplace=True)
-
-sns.boxplot(data=all_data_compare_df[~all_data_compare_df.cancer_type.isin(drop_cancer_types)],
-            x='cancer_type',
-            y='delta_cindex',
-            hue='training_data',
-            hue_order=sorted(all_data_compare_df.training_data.unique()))
-plt.xlabel('TCGA cancer type')
-plt.ylabel('cindex(signal) - cindex(shuffled)')
-plt.title('Survival prediction, {}'.format(all_results_desc))
-plt.ylim(-0.5, 0.5)
-    
-plt.tight_layout()
-
-
-# ### Heatmap, all data types
-
-# In[24]:
-
-
-all_data_all_results_df = au.compare_all_data_types(all_data_results_df[~all_data_results_df.cancer_type.isin(drop_cancer_types)],
-                                                    SIG_ALPHA,
-                                                    identifier='cancer_type',
-                                                    metric='cindex')
-
-all_data_all_results_df.rename(columns={'gene': 'cancer_type'}, inplace=True)
-all_data_all_results_df.sort_values(by='p_value').head(10)
-
-
-# In[25]:
-
-
-all_data_heatmap_df = (all_data_all_results_df
-    .pivot(index='training_data', columns='cancer_type', values='delta_mean')
-    .reindex(sorted(all_data_compare_df.training_data.unique()))
-)
-all_data_heatmap_df.iloc[:, :5]
-
-
-# In[26]:
-
-
-raw_results_df = (all_data_results_df
-    .drop(columns=['identifier'])
-    .rename(columns={'cancer_type': 'identifier'})
-)
-raw_results_df.head()
-
-
-# In[27]:
-
-
-sns.set({'figure.figsize': (28, 6)})
-sns.set_context('notebook', font_scale=1.5)
-
-ax = plu.plot_heatmap(all_data_heatmap_df,
-                      all_data_all_results_df.reset_index(drop=True),
-                      raw_results_df,
-                      metric='cindex',
-                      id_name='cancer_type',
-                      scale=(-0.1, 0.4),
-                      origin_eps_x=0.01,
-                      origin_eps_y=0.01,
-                      length_x=0.965,
-                      length_y=0.95)
-
-plt.title('Performance by cancer type for survival prediction, {}'.format(all_results_desc), pad=15)
 if SAVE_FIGS:
     images_dir.mkdir(exist_ok=True)
-    plt.savefig(images_dir / 'survival_all_heatmap.svg', bbox_inches='tight')
-    plt.savefig(images_dir / 'survival_all_heatmap.png',
+    plt.savefig(images_dir / 'me_pancan_survival.svg', bbox_inches='tight')
+    plt.savefig(images_dir / 'me_pancan_survival.png',
                 dpi=300, bbox_inches='tight')
 
 
-# Key to above heatmap:
-# 
-# * A grey dot = significantly better than label-permuted baseline, but significantly worse than best-performing data type
-# * A grey dot with black dot inside = significantly better than label-permuted baseline, and not significantly different from best-performing data type (i.e. "statistically equivalent to best")
-# * No dot = not significantly better than label-permuted baseline
+# ### Pan-cancer survival prediction, all data types
 
-# In[28]:
+# In[7]:
 
 
-sns.set()
-sns.set({'figure.figsize': (18, 10)})
-sns.set_style('whitegrid')
-
-fig, axarr = plt.subplots(2, 3)
-
-# just use shortened data type names
-training_data_map = {k: k for k in sorted(all_data_all_results_df.training_data.unique())}
-
-plu.plot_volcano_baseline(all_data_all_results_df,
-                          axarr,
-                          training_data_map,
-                          SIG_ALPHA,
-                          identifier='cancer_type',
-                          metric='cindex',
-                          predict_str='Survival prediction',
-                          verbose=True,
-                          ylim=(0, 6))
-
-plt.tight_layout()
-
-if SAVE_FIGS:
-    plt.savefig(images_dir / 'all_vs_shuffled_survival.svg', bbox_inches='tight')
-    plt.savefig(images_dir / 'all_vs_shuffled_survival.png',
-                dpi=300, bbox_inches='tight')
-
-
-# In[29]:
-
-
-all_data_results_df = (all_data_results_df
-    .drop(columns=['identifier'])
-    .rename(columns={'cancer_type': 'identifier'})
-).copy()
-
+# order to plot data types in
 training_data_map = {
     'expression': 'gene expression',
     'me_27k': '27k methylation',
@@ -529,31 +168,368 @@ training_data_map = {
     'mirna': 'microRNA',
     'mut_sigs': 'mutational signatures',
 }
-all_data_results_df.training_data.replace(to_replace=training_data_map, inplace=True)
-all_data_results_df.head()
 
 
-# In[30]:
+# In[8]:
 
 
-# compare expression against all other data modalities
-# could do all vs. all, but that would give us lots of plots
-sns.set({'figure.figsize': (24, 16)})
+me_performance_df = []
+all_drop_cancer_types = set()
+
+me_pcs_dir = Path(me_cancer_type_results_dir, 'results_{}_pca'.format(cancer_type_n_pcs))
+me_results_df = su.load_survival_results(me_pcs_dir)
+me_results_df.rename(columns={'identifier': 'cancer_type',
+                              'fold_no': 'fold'}, inplace=True)
+    
+me_performance_df = me_results_df[
+    (me_results_df.data_type == 'test') &
+    (me_results_df.signal == 'signal')
+].copy()
+me_performance_df.drop(columns=['data_type', 'signal'], inplace=True)
+me_performance_df.training_data.replace(to_replace=training_data_map, inplace=True)
+
+me_performance_df.head(10)
+
+
+# In[9]:
+
+
+# get baseline predictor results, using non-omics covariates only
+all_pancancer_df = []
+
+for n_dim in pancancer_pcs_list:
+    # load results into a single dataframe
+    all_pcs_dir = Path(all_pancancer_results_dir, 'results_{}_pca'.format(n_dim))
+    all_results_df = su.load_survival_results(all_pcs_dir)
+    all_results_df.rename(columns={'identifier': 'cancer_type',
+                                  'fold_no': 'fold'}, inplace=True)
+    all_results_df['n_dim'] = n_dim
+    all_pancancer_df.append(all_results_df)
+    
+all_pancancer_df = pd.concat(all_pancancer_df)
+all_pancancer_df = (all_pancancer_df
+      .loc[all_pancancer_df.cancer_type == 'pancancer', :]
+      .reset_index(drop=True)
+)
+all_pancancer_df.training_data.replace(to_replace=training_data_map, inplace=True)
+
+print(all_pancancer_df.shape)
+print(all_pancancer_df.n_dim.unique())
+print(all_pancancer_df.training_data.unique())
+all_pancancer_df.head()
+
+
+# In[10]:
+
+
+# get baseline predictor results, using non-omics covariates only
+all_baseline_df = su.load_survival_results(all_pancancer_baseline_results_dir)
+all_baseline_df.rename(columns={'identifier': 'cancer_type',
+                               'fold_no': 'fold'}, inplace=True)
+print(all_baseline_df.shape)
+print(all_baseline_df.training_data.unique())
+all_baseline_df.head()
+
+
+# In[11]:
+
+
+sns.set({'figure.figsize': (10, 5)})
 sns.set_style('whitegrid')
 
-fig, axarr = plt.subplots(2, 3)
+sns.pointplot(data=all_pancancer_df,
+              x='n_dim', y='cindex', hue='training_data', 
+              hue_order=training_data_map.values())
+plt.xlabel('Number of PCs', size=14)
+plt.ylabel('cindex', size=14)
+plt.legend(title='Training data', fontsize=13, title_fontsize=13, loc='upper left', ncol=2)
+plt.title('Pan-cancer survival performance, all data types', size=14)
+plt.ylim(0.5, 1.0)
 
-plu.plot_volcano_comparison(all_data_results_df,
-                            axarr,
-                            training_data_map,
-                            SIG_ALPHA,
-                            metric='cindex',
-                            predict_str='Survival prediction',
-                            xlim=(-0.6, 0.6),
-                            verbose=True)
+# plot baseline mean/bootstrapped 95% CI
+baseline_vals = (all_baseline_df
+    [(all_baseline_df.data_type == 'test') &
+     (all_baseline_df.signal == 'signal') &
+     (all_baseline_df.cancer_type == 'pancancer')]
+).cindex.values
 
-# if SAVE_FIGS:
-#     plt.savefig(images_dir / 'methylation_comparison.svg', bbox_inches='tight')
-#     plt.savefig(images_dir / 'methylation_comparison.png',
-#                 dpi=300, bbox_inches='tight')
+baseline_mean = np.mean(baseline_vals)
+plt.gca().axhline(y=baseline_mean, linestyle='--', linewidth=3, color='gray')
+
+baseline_ci = sns.utils.ci(
+    sns.algorithms.bootstrap(baseline_vals,
+                             func=np.mean,
+                             n_boot=1000,
+                             units=None,
+                             seed=cfg.default_seed)
+)
+plt.gca().axhspan(baseline_ci[0], baseline_ci[1], facecolor='gray', alpha=0.3)
+
+if SAVE_FIGS:
+    plt.savefig(images_dir / 'all_pancan_survival.svg', bbox_inches='tight')
+    plt.savefig(images_dir / 'all_pancan_survival.png',
+                dpi=300, bbox_inches='tight')
+
+
+# ### Individual cancer survival prediction, expression vs. methylation
+
+# In[12]:
+
+
+# order to plot data types in
+training_data_map = {
+    'expression': 'gene expression',
+    'me_27k': '27k methylation',
+    'me_450k': '450k methylation',
+}
+
+
+# In[13]:
+
+
+me_performance_df = []
+all_drop_cancer_types = set()
+
+me_pcs_dir = Path(me_cancer_type_results_dir, 'results_{}_pca'.format(cancer_type_n_pcs))
+me_results_df = su.load_survival_results(me_pcs_dir)
+me_results_df.rename(columns={'identifier': 'cancer_type',
+                              'fold_no': 'fold'}, inplace=True)
+    
+me_performance_df = me_results_df[
+    (me_results_df.data_type == 'test') &
+    (me_results_df.signal == 'signal')
+].copy()
+me_performance_df.drop(columns=['data_type', 'signal'], inplace=True)
+me_performance_df.training_data.replace(to_replace=training_data_map, inplace=True)
+
+me_performance_df.head(10)
+
+
+# In[14]:
+
+
+group_cancer_types = me_performance_df.groupby(['cancer_type']).count().seed
+max_count = group_cancer_types.max()
+valid_cancer_types = group_cancer_types[group_cancer_types == max_count].index
+print(valid_cancer_types)
+
+
+# In[15]:
+
+
+cancer_type_avg = (
+    me_performance_df[me_performance_df.cancer_type.isin(valid_cancer_types)]
+      .groupby('cancer_type')
+      .mean()
+).cindex
+cancer_type_avg.sort_values(ascending=False).head(10)
+
+
+# In[16]:
+
+
+cancer_type_sd = me_performance_df.groupby('cancer_type').std().cindex
+cancer_type_cv = cancer_type_avg / cancer_type_sd
+cancer_type_cv.sort_values(ascending=False).head(10)
+
+
+# In[17]:
+
+
+# get baseline predictor results, using non-omics covariates only
+me_baseline_df = su.load_survival_results(me_cancer_type_baseline_results_dir)
+me_baseline_df.rename(columns={'identifier': 'cancer_type',
+                               'fold_no': 'fold'}, inplace=True)
+print(me_baseline_df.shape)
+print(me_baseline_df.training_data.unique())
+me_baseline_df.head()
+
+
+# In[18]:
+
+
+sns.set({'figure.figsize': (28, 5)})
+sns.set_style('whitegrid')
+fig, axarr = plt.subplots(1, 5)
+
+cancer_type_cv = cancer_type_cv[cancer_type_cv.index != 'pancancer']
+for ix, cancer_type in enumerate(cancer_type_cv.sort_values(ascending=False).index[:5]):
+    ax = axarr[ix]
+    sns.boxplot(data=me_performance_df[me_performance_df.cancer_type == cancer_type],
+                x='training_data', y='cindex', order=training_data_map.values(), ax=ax)
+    ax.set_xlabel('Training data type')
+    ax.set_ylabel('cindex')
+    ax.set_title('{} survival performance'.format(cancer_type))
+    ax.set_ylim(0.4, 1.0)
+        
+    # plot baseline mean/bootstrapped 95% CI
+    baseline_vals = (me_baseline_df
+        [(me_baseline_df.data_type == 'test') &
+         (me_baseline_df.signal == 'signal') &
+         (me_baseline_df.cancer_type == cancer_type)]
+    ).cindex.values
+
+    baseline_mean = np.mean(baseline_vals)
+    ax.axhline(y=baseline_mean, linestyle='--', linewidth=3, color='gray')
+
+    baseline_ci = sns.utils.ci(
+        sns.algorithms.bootstrap(baseline_vals,
+                                 func=np.mean,
+                                 n_boot=1000,
+                                 units=None,
+                                 seed=cfg.default_seed)
+    )
+    ax.axhspan(baseline_ci[0], baseline_ci[1], facecolor='gray', alpha=0.3)
+        
+if SAVE_FIGS:
+    plt.savefig(images_dir / 'me_top_cancers_survival.svg', bbox_inches='tight')
+    plt.savefig(images_dir / 'me_top_cancers_survival.png',
+                dpi=300, bbox_inches='tight')
+
+
+# In[19]:
+
+
+sns.set({'figure.figsize': (8, 6)})
+sns.set_style('whitegrid')
+
+sns.boxplot(data=me_performance_df, x='training_data', y='cindex',
+            order=training_data_map.values())
+plt.xlabel('Training data type')
+plt.ylabel('cindex')
+plt.title('Performance for varying PC count, averaged over cancer types')
+
+
+# ### Individual cancer survival prediction, all data types
+
+# In[20]:
+
+
+# order to plot data types in
+training_data_map = {
+    'expression': 'gene expression',
+    'me_27k': '27k methylation',
+    'me_450k': '450k methylation',
+    'rppa': 'RPPA',
+    'mirna': 'microRNA',
+    'mut_sigs': 'mutational signatures',
+}
+
+
+# In[21]:
+
+
+all_performance_df = []
+all_drop_cancer_types = set()
+
+all_pcs_dir = Path(all_cancer_type_results_dir, 'results_{}_pca'.format(cancer_type_n_pcs))
+all_results_df = su.load_survival_results(all_pcs_dir)
+all_results_df.rename(columns={'identifier': 'cancer_type',
+                              'fold_no': 'fold'}, inplace=True)
+    
+all_performance_df = all_results_df[
+    (all_results_df.data_type == 'test') &
+    (all_results_df.signal == 'signal')
+].copy()
+all_performance_df.drop(columns=['data_type', 'signal'], inplace=True)
+all_performance_df.training_data.replace(to_replace=training_data_map, inplace=True)
+
+all_performance_df.head(10)
+
+
+# In[22]:
+
+
+group_cancer_types = all_performance_df.groupby(['cancer_type']).count().seed
+max_count = group_cancer_types.max()
+valid_cancer_types = group_cancer_types[group_cancer_types == max_count].index
+print(valid_cancer_types)
+
+
+# In[23]:
+
+
+cancer_type_avg = (
+    all_performance_df[all_performance_df.cancer_type.isin(valid_cancer_types)]
+      .groupby('cancer_type')
+      .mean()
+).cindex
+cancer_type_avg.sort_values(ascending=False).head(10)
+
+
+# In[24]:
+
+
+cancer_type_sd = all_performance_df.groupby('cancer_type').std().cindex
+cancer_type_cv = cancer_type_avg / cancer_type_sd
+cancer_type_cv.sort_values(ascending=False).head(10)
+
+
+# In[25]:
+
+
+# get baseline predictor results, using non-omics covariates only
+all_baseline_df = su.load_survival_results(all_cancer_type_baseline_results_dir)
+all_baseline_df.rename(columns={'identifier': 'cancer_type',
+                               'fold_no': 'fold'}, inplace=True)
+print(all_baseline_df.shape)
+print(all_baseline_df.training_data.unique())
+all_baseline_df.head()
+
+
+# In[26]:
+
+
+sns.set({'figure.figsize': (28, 5)})
+sns.set_style('whitegrid')
+fig, axarr = plt.subplots(1, 5)
+
+cancer_type_cv = cancer_type_cv[cancer_type_cv.index != 'pancancer']
+for ix, cancer_type in enumerate(cancer_type_cv.sort_values(ascending=False).index[:5]):
+    ax = axarr[ix]
+    sns.boxplot(data=all_performance_df[all_performance_df.cancer_type == cancer_type],
+                x='training_data', y='cindex', order=training_data_map.values(), ax=ax)
+    ax.set_xlabel('Training data type')
+    for label in ax.get_xticklabels():
+        label.set_rotation(65)
+    ax.set_ylabel('cindex')
+    ax.set_title('{} survival performance'.format(cancer_type))
+    ax.set_ylim(0.3, 1.0)
+        
+    # plot baseline mean/bootstrapped 95% CI
+    baseline_vals = (all_baseline_df
+        [(all_baseline_df.data_type == 'test') &
+         (all_baseline_df.signal == 'signal') &
+         (all_baseline_df.cancer_type == cancer_type)]
+    ).cindex.values
+
+    baseline_mean = np.mean(baseline_vals)
+    ax.axhline(y=baseline_mean, linestyle='--', linewidth=3, color='gray')
+
+    baseline_ci = sns.utils.ci(
+        sns.algorithms.bootstrap(baseline_vals,
+                                 func=np.mean,
+                                 n_boot=1000,
+                                 units=None,
+                                 seed=cfg.default_seed)
+    )
+    ax.axhspan(baseline_ci[0], baseline_ci[1], facecolor='gray', alpha=0.3)
+        
+if SAVE_FIGS:
+    plt.savefig(images_dir / 'all_top_cancers_survival.svg', bbox_inches='tight')
+    plt.savefig(images_dir / 'all_top_cancers_survival.png',
+                dpi=300, bbox_inches='tight')
+
+
+# In[27]:
+
+
+sns.set({'figure.figsize': (10, 6)})
+sns.set_style('whitegrid')
+
+sns.boxplot(data=all_performance_df, x='training_data', y='cindex',
+            order=training_data_map.values())
+plt.xlabel('Training data type')
+plt.ylabel('cindex')
+plt.title('Performance for varying PC count, averaged over cancer types')
 
