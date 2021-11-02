@@ -1,59 +1,79 @@
 #!/bin/bash
-RESULTS_DIR=./05_classify_mutations_multimodal/results/pilot_results_all_feats
-ERRORS_DIR=./multimodal_pilot_errors
-GENES="TP53 KRAS EGFR PIK3CA IDH1 SETD2 TET2"
 
-mkdir -p $ERRORS_DIR
+#SBATCH -N 1
+#SBATCH -t 0-12:00
+#SBATCH --array=0-5
+#SBATCH --cpus-per-task=8
+#SBATCH --output=slurm_output/slurm-%A_%a.out
+#SBATCH --error=slurm_output/slurm-%A_%a.err
+
+# activate conda env
+eval "$(conda shell.bash hook)"
+conda activate ../mpmp-env
+echo "Environment loaded"
+
+RESULTS_DIR=./05_classify_mutations_multimodal/results/compressed_shuffle_cancer_type
+GENES=(
+  "TP53"
+  "KRAS"
+  "EGFR"
+  "PIK3CA"
+  "IDH1"
+  "SETD2"
+)
+gene=${GENES[${SLURM_ARRAY_TASK_ID}]}
 
 for seed in 42 1; do
 
     # run all combinations of expression, me_27k, me_450k
-    # use compressed data for me_450k, raw features for expression/27k
     cmd="python 05_classify_mutations_multimodal/run_mutation_classification.py "
     cmd+="--gene_set custom "
-    cmd+="--custom_genes ${GENES} "
+    cmd+="--custom_genes $gene "
     cmd+="--results_dir $RESULTS_DIR "
     cmd+="--training_data expression me_27k "
     cmd+="--subset_mad_genes -1 "
+    cmd+="--n_dim 5000 5000 "
     cmd+="--seed $seed "
-    cmd+="2>$ERRORS_DIR/errors_expression_me_27k.txt"
+    cmd+="--overlap_data_types expression me_27k me_450k "
     echo "Running: $cmd"
     eval $cmd
 
     cmd="python 05_classify_mutations_multimodal/run_mutation_classification.py "
     cmd+="--gene_set custom "
-    cmd+="--custom_genes ${GENES} "
+    cmd+="--custom_genes $gene "
     cmd+="--results_dir $RESULTS_DIR "
     cmd+="--training_data expression me_450k "
     cmd+="--subset_mad_genes -1 "
-    cmd+="--n_dim None 5000 "
+    cmd+="--n_dim 5000 5000 "
     cmd+="--seed $seed "
-    cmd+="2>$ERRORS_DIR/errors_expression_me_450k.txt"
+    cmd+="--overlap_data_types expression me_27k me_450k "
     echo "Running: $cmd"
     eval $cmd
 
     cmd="python 05_classify_mutations_multimodal/run_mutation_classification.py "
     cmd+="--gene_set custom "
-    cmd+="--custom_genes ${GENES} "
+    cmd+="--custom_genes $gene "
     cmd+="--results_dir $RESULTS_DIR "
     cmd+="--training_data me_27k me_450k "
     cmd+="--subset_mad_genes -1 "
-    cmd+="--n_dim None 5000 "
+    cmd+="--n_dim 5000 5000 "
     cmd+="--seed $seed "
-    cmd+="2>$ERRORS_DIR/errors_me_27k_me_450k.txt"
+    cmd+="--overlap_data_types expression me_27k me_450k "
     echo "Running: $cmd"
     eval $cmd
 
     cmd="python 05_classify_mutations_multimodal/run_mutation_classification.py "
     cmd+="--gene_set custom "
-    cmd+="--custom_genes ${GENES} "
+    cmd+="--custom_genes $gene "
     cmd+="--results_dir $RESULTS_DIR "
     cmd+="--training_data expression me_27k me_450k "
     cmd+="--subset_mad_genes -1 "
-    cmd+="--n_dim None None 5000 "
+    cmd+="--n_dim 5000 5000 5000 "
     cmd+="--seed $seed "
-    cmd+="2>$ERRORS_DIR/errors_all.txt"
+    cmd+="--overlap_data_types expression me_27k me_450k "
     echo "Running: $cmd"
     eval $cmd
 
 done
+
+echo "Job complete"

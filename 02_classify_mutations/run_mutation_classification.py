@@ -103,6 +103,7 @@ def process_args():
     model_options.alphas = cfg.alphas
     model_options.l1_ratios = cfg.l1_ratios
     model_options.standardize_data_types = cfg.standardize_data_types
+    model_options.shuffle_by_cancer_type = cfg.shuffle_by_cancer_type
 
     return io_args, model_options
 

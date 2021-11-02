@@ -122,12 +122,12 @@ def process_args():
     model_options.alphas = cfg.alphas
     model_options.l1_ratios = cfg.l1_ratios
 
-    # for these experiments, we need to standardize all data types that are not
-    # already PCA compressed
+    # for these experiments, we want to standardize all data types to make them
+    # comparable when used as predictive features
     model_options.standardize_data_types = (
-        [t for ix, t in enumerate(model_options.training_data)
-           if model_options.n_dim[ix] == None]
+        [t for ix, t in enumerate(model_options.training_data)]
     )
+    model_options.shuffle_by_cancer_type = cfg.shuffle_by_cancer_type
 
     return io_args, model_options
 
@@ -166,6 +166,8 @@ if __name__ == '__main__':
                               subset_mad_genes=model_options.subset_mad_genes,
                               training_data=model_options.training_data,
                               overlap_data_types=model_options.overlap_data_types,
+                              # standardize all data types
+                              standardize_input=[True] * len(model_options.training_data),
                               n_dim=model_options.n_dim,
                               sample_info_df=sample_info_df,
                               verbose=io_args.verbose,
@@ -233,7 +235,7 @@ if __name__ == '__main__':
                                             model_options.training_data,
                                             sample_info_df,
                                             model_options.num_folds,
-                                            classify=True,
+                                            'classify',
                                             shuffle_labels=shuffle_labels,
                                             standardize_columns=standardize_columns)
                 # only save results if no exceptions

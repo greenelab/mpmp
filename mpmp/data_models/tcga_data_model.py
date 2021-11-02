@@ -103,14 +103,19 @@ class TCGADataModel():
                 genes_df = genes_df[genes_df.gene.isin(gene_set)]
             # else if all genes in gene_set are in top50 dataset, use it
             else:
-                genes_df = du.load_top_50()
+                genes_df = du.load_top_genes()
                 if set(gene_set).issubset(set(genes_df.gene.values)):
                     genes_df = genes_df[genes_df.gene.isin(gene_set)]
                 else:
-                # else throw an error
-                    raise GenesNotFoundError(
-                        'Gene list was not a subset of Vogelstein or top50'
-                    )
+                    # else if all genes in gene_set are in random dataset, use it
+                    genes_df = du.load_random_genes()
+                    if set(gene_set).issubset(set(genes_df.gene.values)):
+                        genes_df = genes_df[genes_df.gene.isin(gene_set)]
+                    else:
+                        # else, finally, throw an error
+                        raise GenesNotFoundError(
+                            'Gene list was not a subset of existing gene sets'
+                        )
 
         return genes_df
 
@@ -345,7 +350,8 @@ class TCGADataModel():
             self.data_df, self.data_types = du.load_multiple_data_types(
                                                 train_data_type,
                                                 n_dims=n_dim,
-                                                verbose=self.verbose)
+                                                verbose=self.verbose,
+                                                standardize_input=standardize_input)
         elif compressed_data:
             self.data_df = du.load_compressed_data(train_data_type,
                                                    n_dim=n_dim,

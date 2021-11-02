@@ -3,7 +3,7 @@
 # Run mutation classification experiments for expression data,
 # using various gene sets
 for dataset in top_50 50_random vogelstein; do
-    results_dir=./02_classify_mutations/results/${dataset}_expression_only
+    results_dir=./02_classify_mutations/results/${dataset}_expression_only_shuffle_cancer_type
     errors_dir=./${dataset}_errors
     mkdir -p $errors_dir
     for seed in 42 1; do

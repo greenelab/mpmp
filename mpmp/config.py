@@ -72,15 +72,6 @@ data_types = {
 # locations of compressed multimodal data files
 compressed_data_dir = data_dir / 'compressed_data'
 
-# exp_compressed_dir = data_dir / 'exp_compressed'
-# me_compressed_dir = data_dir / 'me_compressed'
-# compressed_data_types = {
-#     'expression': exp_compressed_dir / 'exp_std_pc{}.tsv.gz',
-#     'me_27k': me_compressed_dir / 'me_27k_f10_i5_pc{}.tsv.gz',
-#     'me_27k_bmiq': me_compressed_dir / 'me_27k_bmiq_pc{}.tsv.gz',
-#     'me_450k': me_compressed_dir / 'me_450k_f10_i5_pc{}.tsv.gz',
-# }
-
 # locations of subsampled data, for debugging and testing
 subsampled_data_dir = data_dir / 'subsampled'
 subsampled_expression = subsampled_data_dir / 'expression_subsampled.tsv.gz'
@@ -182,7 +173,8 @@ manifest_url = (
 )
 
 # data types to standardize columns for
-standardize_data_types = ['expression', 'rppa', 'mirna', 'mut_sigs']
+# currently we want to standardize all of them
+standardize_data_types = ['expression', 'rppa', 'me_27k', 'me_450k', 'mirna', 'mut_sigs']
 
 # constant for non-gene feature indices
 # this is used in multimodal prediction experiments, e.g. scripts in
@@ -200,3 +192,6 @@ gene_aliases = {
 # COADREAD = COAD + READ, most MSI analyses group them together
 msi_data_dir = data_dir / 'msi_data'
 msi_cancer_types = ['COADREAD', 'STAD', 'UCEC']
+
+# if true, shuffle labels within cancer types to preserve number of mutations
+shuffle_by_cancer_type = True

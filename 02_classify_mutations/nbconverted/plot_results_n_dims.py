@@ -3,7 +3,7 @@
 
 # ## Compare compressed vs. raw results
 # 
-# In this notebook, we want to compare mutation status classification results with varying numbers of PCA components as predictors against results with raw features (CpG beta values for methylation data, standardized per-gene expression values for RNA-seq data).
+# In this notebook, we want to compare mutation status classification results with varying numbers of PCA components as predictors against results with raw features (standardized CpG beta values for methylation data, standardized per-gene expression values for RNA-seq data).
 # 
 # Notebook parameters:
 # * SIG_ALPHA (float): significance cutoff after FDR correction
@@ -29,7 +29,7 @@ import mpmp.utilities.analysis_utilities as au
 
 # set results directories
 results_dir = Path(cfg.results_dirs['mutation'],
-                   'methylation_results',
+                   'methylation_results_shuffle_cancer_type',
                    'gene').resolve()
 
 # set significance cutoff after FDR correction
@@ -280,8 +280,8 @@ for ix, gene in enumerate(genes):
             p_vals = cmp_compare_all_df[(cmp_compare_all_df.gene == gene) &
                                         (cmp_compare_all_df.n_dims == n_dims)]
             
-        for train_ix, train_data in enumerate(p_vals.training_data.unique()):
-            p_val = p_vals[p_vals.training_data == train_data].p_value.values[0]
+        for train_ix, train_data in enumerate(sorted(p_vals.training_data.unique())):
+            p_val = p_vals[p_vals.training_data == train_data].corr_pval.values[0]
             marker = get_marker(p_val)
             color = sns.color_palette()[train_ix]
             

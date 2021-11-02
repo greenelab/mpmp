@@ -1,22 +1,10 @@
 #!/bin/bash
-RESULTS_DIR=./02_classify_mutations/results/methylation_results
+RESULTS_DIR=./02_classify_mutations/results/methylation_results_shuffle_cancer_type
 ERRORS_DIR=./methylation_errors
 
 mkdir -p $ERRORS_DIR
 
 for seed in 42 1; do
-
-    # run raw data for expression
-    # note all the raw datasets here default to 8,000 features (chosen by MAD)
-    cmd="python 02_classify_mutations/run_mutation_classification.py "
-    cmd+="--gene_set vogelstein "
-    cmd+="--results_dir $RESULTS_DIR "
-    cmd+="--training_data expression "
-    cmd+="--seed $seed "
-    cmd+="--overlap_data_types expression me_27k me_450k "
-    cmd+="2>$ERRORS_DIR/errors_expression_raw.txt"
-    echo "Running: $cmd"
-    eval $cmd
 
     # run compressed data for expression
     for n_dim in 100 1000 5000; do
@@ -33,6 +21,7 @@ for seed in 42 1; do
     done
 
     # run raw data for 27k methylation
+    # note all the raw datasets here default to 8,000 features (chosen by MAD)
     cmd="python 02_classify_mutations/run_mutation_classification.py "
     cmd+="--gene_set vogelstein "
     cmd+="--results_dir $RESULTS_DIR "
@@ -44,7 +33,8 @@ for seed in 42 1; do
     eval $cmd
 
     # run compressed data for 27k methylation
-    for n_dim in 100 1000 5000; do
+    # we already ran this for 5000 PCs in run_methylation.sh
+    for n_dim in 100 1000; do
         cmd="python 02_classify_mutations/run_mutation_compressed.py "
         cmd+="--gene_set vogelstein "
         cmd+="--results_dir $RESULTS_DIR "
@@ -69,7 +59,8 @@ for seed in 42 1; do
     eval $cmd
 
     # run compressed data for 450k methylation
-    for n_dim in 100 1000 5000; do
+    # we already ran this for 5000 PCs in run_methylation.sh
+    for n_dim in 100 1000; do
         cmd="python 02_classify_mutations/run_mutation_compressed.py "
         cmd+="--gene_set vogelstein "
         cmd+="--results_dir $RESULTS_DIR "

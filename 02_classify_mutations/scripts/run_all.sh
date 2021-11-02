@@ -1,5 +1,5 @@
 #!/bin/bash
-RESULTS_DIR=./02_classify_mutations/results/all_data_types_results
+RESULTS_DIR=./02_classify_mutations/results/all_data_types_results_shuffle_cancer_type
 ERRORS_DIR=./all_data_types_errors
 N_DIM=5000
 

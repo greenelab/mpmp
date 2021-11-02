@@ -1,5 +1,5 @@
 #!/bin/bash
-RESULTS_DIR=./02_classify_mutations/results/methylation_results
+RESULTS_DIR=./02_classify_mutations/results/methylation_results_shuffle_cancer_type
 ERRORS_DIR=./methylation_errors
 N_DIM=5000
 
