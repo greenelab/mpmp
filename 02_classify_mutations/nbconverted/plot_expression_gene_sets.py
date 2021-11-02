@@ -40,13 +40,16 @@ get_ipython().run_line_magic('autoreload', '2')
 
 # set results directory
 vogelstein_results_dir = Path(cfg.results_dirs['mutation'],
-                              'vogelstein_expression_only',
+                              'shuffle_cancer_type',
+                              'expression_vogelstein',
                               'gene').resolve()
 top_50_results_dir = Path(cfg.results_dirs['mutation'],
-                          'top_50_expression_only',
+                          'shuffle_cancer_type',
+                          'expression_top',
                           'gene').resolve()
 random_50_results_dir = Path(cfg.results_dirs['mutation'],
-                             '50_random_expression_only',
+                             'shuffle_cancer_type',
+                             'expression_random',
                              'gene').resolve()
 
 # set significance cutoff after FDR correction
@@ -164,7 +167,7 @@ if SAVE_FIGS:
 # In[8]:
 
 
-sns.set({'figure.figsize': (8, 6)})
+sns.set({'figure.figsize': (7, 6)})
 sns.set_style('whitegrid')
 fig, axarr = plt.subplots(1, 1)
 

@@ -32,7 +32,7 @@ get_ipython().run_line_magic('autoreload', '2')
 
 # set results directory
 results_dir = Path(cfg.results_dirs['mutation'],
-                   'all_data_types_results',
+                   'all_data_types_results_shuffle_cancer_type',
                    'gene').resolve()
 
 # set significance cutoff after FDR correction
