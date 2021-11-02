@@ -188,7 +188,7 @@ if __name__ == '__main__':
                     log_columns,
                     [cancer_type, model_options.training_data, shuffle_labels, 'file_exists']
                 )
-                # fu.write_log_file(log_df, io_args.log_file)
+                fu.write_log_file(log_df, io_args.log_file)
                 continue
 
             try:
@@ -257,6 +257,6 @@ if __name__ == '__main__':
                 )
 
 
-            # if log_df is not None:
-            #     fu.write_log_file(log_df, io_args.log_file)
+            if log_df is not None:
+                fu.write_log_file(log_df, io_args.log_file)
 
