@@ -18,6 +18,7 @@ from mpmp.exceptions import (
     NoTrainSamplesError,
     NoTestSamplesError,
     OneClassError,
+    ModelFitError,
 )
 from mpmp.prediction.cross_validation import run_cv_stratified
 import mpmp.utilities.data_utilities as du
@@ -74,7 +75,7 @@ def process_args():
                       help='if included, subset gene features to this number of '
                            'features having highest mean absolute deviation')
     opts.add_argument('--training_data', type=str, default='expression',
-                      choices=list(cfg.data_types.keys()),
+                      choices=list(cfg.data_types.keys()) + ['baseline'],
                       help='what data type to train model on')
 
     args = parser.parse_args()
@@ -87,7 +88,14 @@ def process_args():
     if args.n_dim is not None:
         args.n_dim = int(args.n_dim)
 
-    sample_info_df = du.load_sample_info(args.training_data, verbose=args.verbose)
+    if args.training_data == 'baseline':
+        sample_info_df = (
+            du.load_sample_info('expression', verbose=args.verbose)
+        )
+    else:
+        sample_info_df = (
+            du.load_sample_info(args.training_data, verbose=args.verbose)
+        )
     tcga_cancer_types = list(np.unique(sample_info_df.cancer_type))
     tcga_cancer_types.append('pancancer')
     if 'all_cancer_types' in args.cancer_types:
@@ -237,7 +245,7 @@ if __name__ == '__main__':
                     log_columns,
                     [cancer_type, model_options.training_data, shuffle_labels, 'all_censored']
                 )
-            except ArithmeticError:
+            except (ArithmeticError, ModelFitError) as e:
                 # happens when model fit fails
                 # TODO explore parameter ranges when this happens
                 if io_args.verbose:

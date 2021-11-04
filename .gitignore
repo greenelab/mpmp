@@ -12,6 +12,7 @@ data/HumanMethylation450_15017482_v1-2.csv
 data/methylation_27k*.tsv
 data/methylation_27k_filtered_probe_types.txt
 data/methylation_450k*.pkl
+data/methylation_preprocessed/*
 data/me_compressed/*
 data/me_preprocessed/*
 data/msi_data/*
