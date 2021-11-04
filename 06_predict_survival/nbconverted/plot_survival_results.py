@@ -61,6 +61,8 @@ cancer_type_n_pcs = 10
 
 
 # ### Pan-cancer survival prediction, expression vs. methylation
+# 
+# These are models trained and tested on all data types in TCGA, for all samples that have expression and DNA methylation data profiled. We compare against a clinical covariate-only baseline (grey dotted line).
 
 # In[3]:
 
@@ -155,6 +157,8 @@ if SAVE_FIGS:
 
 
 # ### Pan-cancer survival prediction, all data types
+# 
+# These are models trained and tested on all data types in TCGA, for all samples that have all data types (expression, methylation, RPPA, miRNA, mutational signatures) data profiled. We compare against a clinical covariate-only baseline (grey dotted line).
 
 # In[7]:
 
@@ -272,6 +276,10 @@ if SAVE_FIGS:
 
 
 # ### Individual cancer survival prediction, expression vs. methylation
+# 
+# These are models trained and tested on each individual data type in TCGA, for all samples that have expression and DNA methylation data profiled. Like before, grey dotted lines are clinical covariate-only baselines, for that specific cancer type.
+# 
+# We only ran these experiments using 10 principal components extracted from the -omics datasets, since using more PCs than that led to convergence issues on many cancer types.
 
 # In[12]:
 
@@ -401,6 +409,10 @@ plt.title('Performance for varying PC count, averaged over cancer types')
 
 
 # ### Individual cancer survival prediction, all data types
+# 
+# These are models trained and tested on each individual data type in TCGA, for all samples that have all data types (expression, methylation, RPPA, miRNA, mutational signatures) data profiled. Like before, grey dotted lines are clinical covariate-only baselines, for that specific cancer type.
+# 
+# We only ran these experiments using 10 principal components extracted from the -omics datasets, since using more PCs than that led to convergence issues on many cancer types.
 
 # In[20]:
 
