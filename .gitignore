@@ -19,6 +19,7 @@ data/msi_data/*
 data/sample_info/*_mut_sigs_*
 data/sample_info/*_me_450k_*
 data/sample_info/*_rppa_*
+data/significant_genes/*
 data/tcga_mirna_matrix_processed.tsv
 data/tcga_rppa_matrix_processed.tsv
 data/tcga_expression_matrix_processed.tsv.gz

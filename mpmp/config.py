@@ -33,6 +33,12 @@ random_genes = data_dir / 'random_genes.tsv'
 methylation_manifest = data_dir / 'HumanMethylation450_15017482_v1-2.csv'
 cross_reactive_probe_list = data_dir / 'cross_reactive_probes.txt'
 
+# directory/filenames to store information on genes that significantly
+# outperform shuffled baseline, in various experiments
+sig_genes_dir = data_dir / 'significant_genes'
+sig_genes_methylation = sig_genes_dir / 'sig_genes_me.tsv'
+sig_genes_all = sig_genes_dir / 'sig_genes_all.tsv'
+
 # location of sample info
 sample_info_dir = data_dir / 'sample_info'
 expression_sample_info = sample_info_dir / 'tcga_expression_sample_identifiers.tsv'
