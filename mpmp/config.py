@@ -41,6 +41,7 @@ sig_genes_all = sig_genes_dir / 'sig_genes_all.tsv'
 
 # location of sample info
 sample_info_dir = data_dir / 'sample_info'
+mutation_sample_info = sample_info_dir / 'tcga_mutation_sample_identifiers.tsv'
 expression_sample_info = sample_info_dir / 'tcga_expression_sample_identifiers.tsv'
 me_27k_sample_info = sample_info_dir / 'tcga_me_27k_sample_identifiers.tsv'
 me_450k_sample_info = sample_info_dir / 'tcga_me_450k_sample_identifiers.tsv'
@@ -48,6 +49,7 @@ rppa_sample_info = sample_info_dir / 'tcga_rppa_sample_identifiers.tsv'
 mirna_sample_info = sample_info_dir / 'tcga_mirna_sample_identifiers.tsv'
 mut_sigs_sample_info = sample_info_dir / 'tcga_mut_sigs_sample_identifiers.tsv'
 sample_infos = {
+    'mutation': mutation_sample_info,
     'expression': expression_sample_info,
     'me_27k': me_27k_sample_info,
     'me_27k_bmiq': me_27k_sample_info,

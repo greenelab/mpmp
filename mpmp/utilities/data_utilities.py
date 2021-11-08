@@ -291,8 +291,16 @@ def load_pancancer_data_from_repo(subset_columns=None):
 def load_sample_info(train_data_type, verbose=False):
     if verbose:
         print('Loading sample info...', file=sys.stderr)
-    return pd.read_csv(cfg.sample_infos[train_data_type],
-                       sep='\t', index_col='sample_id')
+    try:
+        return pd.read_csv(cfg.sample_infos[train_data_type],
+                           sep='\t', index_col='sample_id')
+    except KeyError as e:
+        if 'mutations' in train_data_type:
+            return pd.read_csv(cfg.sample_infos['mutation'],
+                               sep='\t', index_col='sample_id')
+        else:
+            raise e
+
 
 def load_sample_info_multi(train_data_types, verbose=False):
     if verbose:
