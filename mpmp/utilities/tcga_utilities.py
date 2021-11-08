@@ -22,6 +22,7 @@ def process_y_matrix(y_mutation,
                      filter_count,
                      filter_prop,
                      output_directory,
+                     filter_cancer_types=True,
                      hyper_filter=5,
                      test=False,
                      overlap_data_types=None):
@@ -39,8 +40,9 @@ def process_y_matrix(y_mutation,
     filter_count: the number of positives or negatives required per cancer-type
     filter_prop: the proportion of positives or negatives required per cancer-type
     output_directory: the name of the directory to store the gene summary
+    filter_cancer_types: if False, don't filter cancer types that don't meet criteria
     hyper_filter: the number of std dev above log10 mutation burden to filter
-    test: if true, don't write filtering info to disk
+    test: if True, don't write filtering info to disk
     overlap_data_types: if not None, use samples present for all included data types
 
     Returns
@@ -104,8 +106,9 @@ def process_y_matrix(y_mutation,
         filter_file = os.path.join(output_directory, filter_file)
         disease_stats_df.to_csv(filter_file, sep="\t")
 
-    use_diseases = disease_stats_df.query("disease_included").index.tolist()
-    y_df = y_df.query("DISEASE in @use_diseases")
+    if filter_cancer_types:
+        use_diseases = disease_stats_df.query("disease_included").index.tolist()
+        y_df = y_df.query("DISEASE in @use_diseases")
 
     return y_df, valid_samples
 

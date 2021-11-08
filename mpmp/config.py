@@ -68,6 +68,7 @@ rppa_data = data_dir / 'tcga_rppa_matrix_processed.tsv'
 mirna_data = data_dir / 'tcga_mirna_matrix_processed.tsv'
 mut_sigs_data = data_dir / 'tcga_wes_sbs_mutational_signatures.tsv'
 data_types = {
+    'mutation': None, # this is generated programmatically
     'expression': expression_data,
     'me_27k': methylation_27k_data,
     'me_27k_bmiq': methylation_27k_bmiq_data,

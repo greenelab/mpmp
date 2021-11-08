@@ -101,9 +101,6 @@ def process_args():
             du.load_sample_info(args.training_data, verbose=args.verbose)
         )
 
-    print(sample_info_df.head())
-    exit()
-
     tcga_cancer_types = list(np.unique(sample_info_df.cancer_type))
     tcga_cancer_types.append('pancancer')
     if 'all_cancer_types' in args.cancer_types:
