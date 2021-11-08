@@ -387,6 +387,10 @@ class TCGADataModel():
         else:
             if train_data_type == 'vogelstein_mutations':
                 self.data_df = self._load_vogelstein_mutation_matrix()
+            elif train_data_type == 'significant_mutations':
+                data_df = self._load_vogelstein_mutation_matrix()
+                sig_genes = du.load_significant_genes('methylation')
+                self.data_df = data_df.loc[:, data_df.columns.isin(sig_genes)]
             else:
                 self.data_df = du.load_raw_data(train_data_type,
                                                 verbose=self.verbose,
@@ -507,10 +511,6 @@ class TCGADataModel():
             columns=vogelstein_mutation_df.iloc[0], inplace=True)
         vogelstein_mutation_df.drop(vogelstein_mutation_df.index[0], inplace=True)
 
-        print(vogelstein_mutation_df.shape)
-        print(vogelstein_mutation_df.head())
-        exit()
-
-        return data_df
+        return vogelstein_mutation_df
 
 

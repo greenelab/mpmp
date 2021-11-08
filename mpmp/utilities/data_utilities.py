@@ -315,6 +315,14 @@ def load_sample_info_multi(train_data_types, verbose=False):
     return sample_info_df
 
 
+def load_significant_genes(sample_set='all'):
+    if sample_set == 'methylation':
+        significance_df = pd.read_csv(cfg.sig_genes_methylation, sep='\t')
+    else:
+        significance_df = pd.read_csv(cfg.sig_genes_all, sep='\t')
+    return significance_df.loc[significance_df.reject_null, 'gene'].values
+
+
 def load_purity(mut_burden_df,
                 sample_info_df,
                 classify=False,
