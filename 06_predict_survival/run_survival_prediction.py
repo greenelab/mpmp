@@ -60,6 +60,11 @@ def process_args():
                                      'experiment metadata ')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
+    opts.add_argument('--fit_ridge', action='store_true',
+                      help='if included, fit ridge-regularized survival model instead '
+                           'of elastic net model. this tends to converge slightly faster '
+                           'and more robustly on smaller feature sets, but may fit slowly '
+                           'or not at all on large sets of features')
     opts.add_argument('--n_dim', default=None,
                       help='number of compressed components/dimensions to use, '
                            'None to use raw features')
@@ -223,6 +228,7 @@ if __name__ == '__main__':
                                             # don't stratify if we're predicting survival for
                                             # a single cancer type
                                             output_survival_fn=io_args.output_survival_fn,
+                                            survival_fit_ridge=model_options.fit_ridge,
                                             stratify=(cancer_type == 'pancancer'),
                                             results_dir=experiment_dir)
                 # only save results if no exceptions
