@@ -43,7 +43,7 @@ def process_args():
                          'combining cancer types, default is all individual TCGA '
                          'cancer types + pan-cancer model')
     io.add_argument('--log_file', default=None,
-                    help='name of file to log skipped genes to')
+                    help='name of file to log skipped cancer types to')
     io.add_argument('--output_survival_fn', action='store_true')
     io.add_argument('--results_dir', default=cfg.results_dirs['survival'],
                     help='where to write results to')
@@ -154,11 +154,7 @@ if __name__ == '__main__':
         'shuffle_labels',
         'skip_reason'
     ]
-    if io_args.log_file.exists() and io_args.log_file.is_file():
-        log_df = pd.read_csv(io_args.log_file, sep='\t')
-    else:
-        log_df = pd.DataFrame(columns=log_columns)
-        log_df.to_csv(io_args.log_file, sep='\t')
+    log_df = pd.DataFrame(columns=log_columns)
 
     tcga_data = TCGADataModel(seed=model_options.seed,
                               subset_mad_genes=model_options.subset_mad_genes,
@@ -274,7 +270,6 @@ if __name__ == '__main__':
                     log_columns,
                     [cancer_type, model_options.training_data, shuffle_labels, 'no_comparable_pairs']
                 )
-
 
             if log_df is not None:
                 fu.write_log_file(log_df, io_args.log_file)
