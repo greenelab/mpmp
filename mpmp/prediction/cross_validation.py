@@ -49,7 +49,6 @@ def run_cv_stratified(data_model,
     sample_info (pd.DataFrame): df with TCGA sample information
     num_folds (int): number of cross-validation folds to run
     predictor (str): one of 'classify', 'regress', 'survival'
-    classify (bool): if True predict binary labels, else do regression
     shuffle_labels (bool): whether or not to shuffle labels (negative control)
     standardize_columns (bool): whether or not to standardize predictors
     output_preds (bool): whether or not to write predictions to file
@@ -273,7 +272,7 @@ def run_cv_stratified(data_model,
         if output_preds:
             if predictor == 'survival':
                 raise NotImplementedError
-            get_preds = clf.get_preds if classify else reg.get_preds
+            get_preds = clf.get_preds if predictor == 'classify' else reg.get_preds
             results['{}_preds'.format(exp_string)].append(
                 get_preds(X_test_df, y_test_df, cv_pipeline, fold_no)
             )
