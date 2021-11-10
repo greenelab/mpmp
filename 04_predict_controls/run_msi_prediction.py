@@ -138,11 +138,7 @@ if __name__ == '__main__':
         'shuffle_labels',
         'skip_reason'
     ]
-    if io_args.log_file.exists() and io_args.log_file.is_file():
-        log_df = pd.read_csv(io_args.log_file, sep='\t')
-    else:
-        log_df = pd.DataFrame(columns=log_columns)
-        log_df.to_csv(io_args.log_file, sep='\t')
+    log_df = None
 
     tcga_data = TCGADataModel(seed=model_options.seed,
                               subset_mad_genes=model_options.subset_mad_genes,

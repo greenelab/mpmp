@@ -144,7 +144,6 @@ if __name__ == '__main__':
         'shuffle_labels',
         'skip_reason'
     ]
-    log_df = pd.DataFrame(columns=log_columns)
 
     tcga_data = TCGADataModel(seed=model_options.seed,
                               subset_mad_genes=model_options.subset_mad_genes,
@@ -173,6 +172,7 @@ if __name__ == '__main__':
                         file=sys.stdout)
 
         for cancer_type in progress:
+            log_df = None
 
             try:
                 check_file = fu.check_output_file(experiment_dir,

@@ -134,11 +134,7 @@ if __name__ == '__main__':
         'shuffle_labels',
         'skip_reason'
     ]
-    if io_args.log_file.exists() and io_args.log_file.is_file():
-        purity_log_df = pd.read_csv(io_args.log_file, sep='\t')
-    else:
-        purity_log_df = pd.DataFrame(columns=log_columns)
-        purity_log_df.to_csv(io_args.log_file, sep='\t')
+    log_df = None
 
     tcga_data = TCGADataModel(seed=model_options.seed,
                               subset_mad_genes=model_options.subset_mad_genes,
@@ -169,11 +165,11 @@ if __name__ == '__main__':
             # run (i.e. the results file already exists)
             if io_args.verbose:
                 print('Skipping because results file exists already', file=sys.stderr)
-            purity_log_df = fu.generate_log_df(
+            log_df = fu.generate_log_df(
                 log_columns,
                 [model_options.training_data, shuffle_labels, 'file_exists']
             )
-            fu.write_log_file(purity_log_df, io_args.log_file)
+            fu.write_log_file(log_df, io_args.log_file)
             continue
 
         tcga_data.process_purity_data(experiment_dir,
@@ -205,18 +201,18 @@ if __name__ == '__main__':
         except NoTrainSamplesError:
             if io_args.verbose:
                 print('Skipping due to no train samples', file=sys.stderr)
-            purity_log_df = fu.generate_log_df(
+            log_df = fu.generate_log_df(
                 log_columns,
                 [model_options.training_data, shuffle_labels, 'no_train_samples']
             )
         except OneClassError:
             if io_args.verbose:
                 print('Skipping due to one holdout class', file=sys.stderr)
-            purity_log_df = fu.generate_log_df(
+            log_df = fu.generate_log_df(
                 log_columns,
                 [model_options.training_data, shuffle_labels, 'one_class']
             )
 
-        if purity_log_df is not None:
-            fu.write_log_file(purity_log_df, io_args.log_file)
+        if log_df is not None:
+            fu.write_log_file(log_df, io_args.log_file)
 
