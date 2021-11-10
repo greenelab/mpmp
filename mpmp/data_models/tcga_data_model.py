@@ -390,7 +390,12 @@ class TCGADataModel():
             elif train_data_type == 'significant_mutations':
                 data_df = self._load_vogelstein_mutation_matrix()
                 sig_genes = du.load_significant_genes('methylation')
-                self.data_df = data_df.loc[:, data_df.columns.isin(sig_genes)]
+                # startswith() with a tuple argument returns True if
+                # the string matches any of the prefixes in the tuple
+                # https://stackoverflow.com/a/20461857
+                self.data_df = data_df.loc[
+                    :, data_df.columns.str.startswith(tuple(sig_genes))
+                ]
             else:
                 self.data_df = du.load_raw_data(train_data_type,
                                                 verbose=self.verbose,
@@ -495,7 +500,7 @@ class TCGADataModel():
                 else:
                     assert sample_ids.equals(gene_labels.index)
                 vogelstein_mutation_df.append(
-                    [gene] + list(gene_labels.status.values)
+                    [gene + '_status'] + list(gene_labels.status.values)
                 )
 
             except KeyError:
@@ -507,9 +512,13 @@ class TCGADataModel():
                          columns=['gene'] + list(sample_ids.values))
               .transpose()
         )
-        vogelstein_mutation_df.rename(
-            columns=vogelstein_mutation_df.iloc[0], inplace=True)
-        vogelstein_mutation_df.drop(vogelstein_mutation_df.index[0], inplace=True)
+
+        vogelstein_mutation_df = (vogelstein_mutation_df
+            .rename(columns=vogelstein_mutation_df.iloc[0])
+            .drop(vogelstein_mutation_df.index[0])
+            # columns will have object type, we want to convert to int
+            .astype('uint8')
+        )
 
         return vogelstein_mutation_df
 
