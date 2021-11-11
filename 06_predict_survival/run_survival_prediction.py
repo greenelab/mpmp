@@ -83,7 +83,10 @@ def process_args():
                       choices=list(cfg.data_types.keys()) + ([
                           'baseline',
                           'vogelstein_mutations',
-                          'significant_mutations'
+                          'significant_mutations',
+                          'mutation_preds_expression',
+                          'mutation_preds_me_27k',
+                          'mutation_preds_me_450k'
                       ]),
                       help='what data type to train model on')
 
@@ -138,6 +141,8 @@ if __name__ == '__main__':
 
     # process command line arguments
     io_args, model_options, sample_info_df = process_args()
+    print(sample_info_df.head())
+    exit()
 
     # create results dir and subdir for experiment if they don't exist
     experiment_dir = Path(io_args.results_dir).resolve()
