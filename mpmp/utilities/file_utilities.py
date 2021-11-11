@@ -227,5 +227,10 @@ def generate_log_df(log_columns, log_values):
 
 def write_log_file(log_df, log_file):
     """Append log output to log file."""
-    log_df.to_csv(log_file, mode='a', sep='\t', index=False, header=False)
+    if log_file.is_file():
+        # if log file already exists append to it, without the column headers
+        log_df.to_csv(log_file, mode='a', sep='\t', index=False, header=False)
+    else:
+        # if log file doesn't exist create it, with column headers
+        log_df.to_csv(log_file, sep='\t', index=False)
 

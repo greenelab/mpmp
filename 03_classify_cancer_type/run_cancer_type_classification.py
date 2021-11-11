@@ -125,11 +125,6 @@ if __name__ == '__main__':
         'shuffle_labels',
         'skip_reason'
     ]
-    if io_args.log_file.exists() and io_args.log_file.is_file():
-        log_df = pd.read_csv(io_args.log_file, sep='\t')
-    else:
-        log_df = pd.DataFrame(columns=log_columns)
-        log_df.to_csv(io_args.log_file, sep='\t')
 
     # load data matrix for the specified data type
     tcga_data = TCGADataModel(seed=model_options.seed,
@@ -153,7 +148,7 @@ if __name__ == '__main__':
                         file=sys.stdout)
 
         for cancer_type in progress:
-            cancer_type_log_df = None
+            log_df = None
             progress.set_description('cancer type: {}'.format(cancer_type))
 
             try:
@@ -170,11 +165,11 @@ if __name__ == '__main__':
                 if io_args.verbose:
                     print('Skipping because results file exists already: '
                           'cancer type {}'.format(cancer_type), file=sys.stderr)
-                cancer_type_log_df = fu.generate_log_df(
+                log_df = fu.generate_log_df(
                     log_columns,
                     [cancer_type, model_options.training_data, shuffle_labels, 'file_exists']
                 )
-                fu.write_log_file(cancer_type_log_df, io_args.log_file)
+                fu.write_log_file(log_df, io_args.log_file)
                 continue
 
             try:
@@ -203,7 +198,7 @@ if __name__ == '__main__':
                 if io_args.verbose:
                     print('Skipping due to no test samples: cancer type '
                           '{}'.format(cancer_type), file=sys.stderr)
-                cancer_type_log_df = fu.generate_log_df(
+                log_df = fu.generate_log_df(
                     log_columns,
                     [cancer_type, model_options.training_data, shuffle_labels, 'no_test_samples']
                 )
@@ -211,11 +206,11 @@ if __name__ == '__main__':
                 if io_args.verbose:
                     print('Skipping due to one holdout class: cancer type '
                           '{}'.format(cancer_type), file=sys.stderr)
-                cancer_type_log_df = fu.generate_log_df(
+                log_df = fu.generate_log_df(
                     log_columns,
                     [cancer_type, model_options.training_data, shuffle_labels, 'one_class']
                 )
 
-            if cancer_type_log_df is not None:
-                fu.write_log_file(cancer_type_log_df, io_args.log_file)
+            if log_df is not None:
+                fu.write_log_file(log_df, io_args.log_file)
 
