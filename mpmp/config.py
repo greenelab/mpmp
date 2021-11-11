@@ -39,6 +39,9 @@ sig_genes_dir = data_dir / 'significant_genes'
 sig_genes_methylation = sig_genes_dir / 'sig_genes_me.tsv'
 sig_genes_all = sig_genes_dir / 'sig_genes_all.tsv'
 
+# directory to store information on predicted mutation status
+preds_dir = data_dir / 'vogelstein_preds'
+
 # location of sample info
 sample_info_dir = data_dir / 'sample_info'
 mutation_sample_info = sample_info_dir / 'tcga_mutation_sample_identifiers.tsv'

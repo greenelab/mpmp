@@ -1,8 +1,6 @@
 """
 Script to generate logistic regression predictions/scores for all genes in
 Vogelstein gene set.
-
-TODO don't forget to turn off cancer type filtering!!!
 """
 import sys
 import argparse
@@ -132,6 +130,10 @@ if __name__ == '__main__':
                     ncols=100,
                     file=sys.stdout)
 
+    all_genes = []
+    all_preds = []
+    sample_list = None
+
     for gene_idx, gene_series in progress:
         log_df = None
         gene = gene_series.gene
@@ -141,7 +143,8 @@ if __name__ == '__main__':
         try:
             tcga_data.process_data_for_gene(gene,
                                             classification,
-                                            experiment_dir)
+                                            experiment_dir,
+                                            filter_cancer_types=False)
         except KeyError:
             # this might happen if the given gene isn't in the mutation data
             # (or has a different alias)
@@ -167,9 +170,15 @@ if __name__ == '__main__':
                                         shuffle_labels=False,
                                         standardize_columns=standardize_columns,
                                         output_preds=True)
-            all_preds = pd.concat(results['gene_preds'])
-            print(all_preds.head())
-            print(all_preds.shape)
+            gene_preds = pd.concat(results['gene_preds'])
+            if sample_list is not None:
+                assert sample_list.equals(gene_preds.index)
+            else:
+                sample_list = gene_preds.index
+
+            all_genes.append(gene)
+            all_preds.append(gene_preds.score.tolist())
+
         except NoTrainSamplesError:
             if io_args.verbose:
                 print('Skipping due to no train samples: gene {}'.format(
@@ -189,4 +198,16 @@ if __name__ == '__main__':
 
         if log_df is not None:
             fu.write_log_file(log_df, io_args.log_file)
+
+    preds_df = pd.DataFrame(
+        all_preds,
+        index=all_genes,
+        columns=sample_list
+    ).transpose()
+
+    cfg.preds_dir.mkdir(exist_ok=True)
+    preds_df.to_csv(
+        Path(cfg.preds_dir, '{}_raw_preds.tsv'.format(model_options.training_data)),
+        sep='\t'
+    )
 
