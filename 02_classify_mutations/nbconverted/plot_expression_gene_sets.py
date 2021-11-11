@@ -155,7 +155,7 @@ plu.plot_volcano_baseline(all_results_df,
                           SIG_ALPHA,
                           metric=plot_metric,
                           verbose=True,
-                          color_overlap=True)
+                          mark_overlap=True)
 
 if SAVE_FIGS:
     images_dir.mkdir(exist_ok=True)

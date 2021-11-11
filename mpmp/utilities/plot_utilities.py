@@ -18,7 +18,7 @@ def plot_volcano_baseline(results_df,
                           xlim=None,
                           ylim=None,
                           verbose=False,
-                          color_overlap=False):
+                          mark_overlap=False):
     """Make a scatter plot comparing classifier results to shuffled baseline.
 
     Arguments
@@ -48,17 +48,23 @@ def plot_volcano_baseline(results_df,
             # no axarr.ndim => only a single axis
             ax = axarr
 
-        data_results_df = results_df[results_df.training_data == training_data]
+        data_results_df = (results_df
+            .loc[results_df.training_data == training_data, :]
+            .copy()
+        )
 
-        sns.scatterplot(data=data_results_df, x='delta_mean', y='nlog10_p', hue='reject_null',
-                        hue_order=[False, True], ax=ax, legend=(ix == 0))
-
-        if color_overlap:
+        if mark_overlap:
             overlap_genes = _get_overlap_genes(results_df,
                                                training_data)
-            overlap_df = data_results_df[data_results_df.gene.isin(overlap_genes)]
-            sns.scatterplot(data=overlap_df, x='delta_mean', y='nlog10_p',
-                            color='red', ax=ax, legend=False)
+            data_results_df['overlap'] = data_results_df.gene.isin(overlap_genes)
+            sns.scatterplot(data=data_results_df, x='delta_mean', y='nlog10_p',
+                            hue='reject_null', hue_order=[False, True],
+                            style='overlap', style_order=[False, True],
+                            ax=ax, legend=(ix == 0), s=100)
+        else:
+            sns.scatterplot(data=data_results_df, x='delta_mean', y='nlog10_p',
+                            hue='reject_null', hue_order=[False, True],
+                            ax=ax, legend=(ix == 0))
 
         # add vertical line at 0
         ax.axvline(x=0, linestyle='--', linewidth=1.25, color='black')
@@ -85,8 +91,15 @@ def plot_volcano_baseline(results_df,
 
         # only add a legend to the first subplot
         if ix == 0:
-            ax.legend(title=r'Reject $H_0$', loc='upper left',
-                      fontsize=14, title_fontsize=14)
+            if mark_overlap:
+                label_list = [t for t in ax.get_legend_handles_labels()]
+                label_list[1][0] = r'Reject $H_0$'
+                label_list[1][3] = r'Overlap'
+                ax.legend(handles=label_list[0], labels=label_list[1],
+                          loc='upper left', fontsize=14, title_fontsize=14)
+            else:
+                ax.legend(title=r'Reject $H_0$', loc='upper left',
+                          fontsize=14, title_fontsize=14)
         ax.set_title(r'{}, {} data'.format(predict_str, training_data), size=14)
 
         # label genes and adjust text to not overlap
