@@ -22,6 +22,8 @@ import mpmp.utilities.data_utilities as du
 import mpmp.utilities.file_utilities as fu
 from mpmp.utilities.tcga_utilities import check_all_data_types
 
+N_DIM = 500
+
 def process_args():
     """Parse and format command line arguments."""
 
@@ -121,6 +123,9 @@ if __name__ == '__main__':
                               subset_mad_genes=model_options.subset_mad_genes,
                               training_data=model_options.training_data,
                               overlap_data_types=model_options.overlap_data_types,
+                              load_compressed_data=True,
+                              standardize_input=True,
+                              n_dim=N_DIM,
                               sample_info_df=sample_info_df,
                               verbose=io_args.verbose)
     genes_df = tcga_data.load_gene_set('vogelstein')
@@ -168,7 +173,7 @@ if __name__ == '__main__':
                                         model_options.num_folds,
                                         predictor='classify',
                                         shuffle_labels=False,
-                                        standardize_columns=standardize_columns,
+                                        standardize_columns=False,
                                         output_preds=True)
             gene_preds = pd.concat(results['gene_preds'])
             if sample_list is not None:
@@ -207,7 +212,7 @@ if __name__ == '__main__':
 
     cfg.preds_dir.mkdir(exist_ok=True)
     preds_df.to_csv(
-        Path(cfg.preds_dir, '{}_raw_preds.tsv'.format(model_options.training_data)),
+        Path(cfg.preds_dir, '{}_n{}_raw_preds.tsv'.format(model_options.training_data, N_DIM)),
         sep='\t'
     )
 
