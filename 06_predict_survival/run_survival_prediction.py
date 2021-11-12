@@ -141,8 +141,6 @@ if __name__ == '__main__':
 
     # process command line arguments
     io_args, model_options, sample_info_df = process_args()
-    print(sample_info_df.head())
-    exit()
 
     # create results dir and subdir for experiment if they don't exist
     experiment_dir = Path(io_args.results_dir).resolve()

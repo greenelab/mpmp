@@ -397,6 +397,8 @@ class TCGADataModel():
                 self.data_df = data_df.loc[
                     :, data_df.columns.str.startswith(tuple(sig_genes))
                 ]
+            elif 'mutation_preds' in train_data_type:
+                self.data_df = du.load_mutation_predictions(train_data_type)
             else:
                 self.data_df = du.load_raw_data(train_data_type,
                                                 verbose=self.verbose,

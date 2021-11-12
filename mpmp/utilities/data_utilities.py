@@ -330,6 +330,12 @@ def load_significant_genes(sample_set='all'):
     return significance_df.loc[significance_df.reject_null, 'gene'].values
 
 
+def load_mutation_predictions(train_data_type):
+    source_data = train_data_type.replace('mutation_preds_', '')
+    return pd.read_csv(cfg.predictions[source_data],
+                       index_col=0, sep='\t')
+
+
 def load_purity(mut_burden_df,
                 sample_info_df,
                 classify=False,
