@@ -51,6 +51,9 @@ training_data_map = {
     'me_450k': '450k methylation',
     'vogelstein_mutations': 'all Vogelstein mutations',
     'significant_mutations': 'significant mutations',
+    'mutation_preds_expression': 'mutation scores, expression',
+    'mutation_preds_me_27k': 'mutation scores, 27k',
+    'mutation_preds_me_450k': 'mutation scores, 450k',
 }
 
 
@@ -59,7 +62,7 @@ training_data_map = {
 
 results_df = su.load_survival_results(results_dir)
 results_df.rename(columns={'identifier': 'cancer_type',
-                              'fold_no': 'fold'}, inplace=True)
+                           'fold_no': 'fold'}, inplace=True)
 # results_df['n_dim'] = n_dim
 results_df.training_data.replace(to_replace=training_data_map, inplace=True)
 
@@ -68,10 +71,10 @@ print(results_df.training_data.unique())
 results_df.head()
 
 
-# In[5]:
+# In[12]:
 
 
-sns.set({'figure.figsize': (11, 6)})
+sns.set({'figure.figsize': (22, 6)})
 sns.set_style('whitegrid')
 
 plot_df = results_df[(results_df.training_data != 'baseline') &
@@ -84,6 +87,8 @@ plt.xlabel('Training data', size=14)
 plt.ylabel('cindex', size=14)
 plt.title('Pan-cancer survival performance, expression/methylation', size=14)
 plt.ylim(0.6, 0.8)
+for tick in plt.gca().get_xticklabels():
+    tick.set_fontsize(13)
 
 # plot baseline mean/bootstrapped 95% CI
 baseline_df = results_df[(results_df.training_data == 'baseline') &
@@ -169,6 +174,7 @@ for ix, cancer_type in enumerate(cancer_type_cv.sort_values(ascending=False).ind
     ax.set_ylim(0.3, 1.0)
     for tick in ax.get_xticklabels():
         tick.set_rotation(75)
+        tick.set_fontsize(13)
         
     # plot baseline mean/bootstrapped 95% CI
     baseline_vals = (results_df
@@ -226,4 +232,10 @@ plt.gca().axhspan(baseline_ci[0], baseline_ci[1], facecolor='gray', alpha=0.3)
 plt.xlabel('Training data type')
 plt.ylabel('cindex')
 plt.title('Performance for varying PC count, averaged over cancer types')
+
+
+# In[ ]:
+
+
+
 
