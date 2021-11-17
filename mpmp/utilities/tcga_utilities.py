@@ -242,7 +242,11 @@ def standardize_features(X_df, gene_features):
     """Standardize real-valued features."""
     std_covariates = [(c in cfg.standardize_covariates) for c in X_df.columns]
     std_features = gene_features | std_covariates
-    return standardize_selected_features(X_df, std_features)
+    if np.any(std_features):
+        return standardize_selected_features(X_df, std_features)
+    else:
+        # if no features to standardize, return the original data
+        return X_df
 
 
 def standardize_selected_features(X_df, gene_features):
@@ -427,7 +431,10 @@ def standardize_multi_gene_features(X_df, standardize_columns, gene_features, da
     """
     # for each gene feature dataset, take top n mad genes (separately)
     datasets = []
-    for data_type in np.unique(data_types):
+
+    # process the non-gene features last
+    process_data_types = np.append(np.unique(data_types)[1:], cfg.NONGENE_FEATURE)
+    for data_type in process_data_types:
 
         # get relevant columns of X_data_df
         data_ixs = (data_types == data_type)
@@ -446,10 +453,6 @@ def standardize_multi_gene_features(X_df, standardize_columns, gene_features, da
                 X_data_df, np.ones((X_data_df.shape[1],), dtype=bool)
             )
         datasets.append(X_data_df)
-
-    # then add non-gene features, we don't standardize these
-    X_non_gene_df = X_df.loc[:, ~gene_features]
-    datasets.append(X_non_gene_df)
 
     # concatenate datasets back together and return
     return pd.concat(datasets, axis=1)
