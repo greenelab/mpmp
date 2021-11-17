@@ -33,8 +33,15 @@ random_genes = data_dir / 'random_genes.tsv'
 methylation_manifest = data_dir / 'HumanMethylation450_15017482_v1-2.csv'
 cross_reactive_probe_list = data_dir / 'cross_reactive_probes.txt'
 
+# directory/filenames to store information on genes that significantly
+# outperform shuffled baseline, in various experiments
+sig_genes_dir = data_dir / 'significant_genes'
+sig_genes_methylation = sig_genes_dir / 'sig_genes_me.tsv'
+sig_genes_all = sig_genes_dir / 'sig_genes_all.tsv'
+
 # location of sample info
 sample_info_dir = data_dir / 'sample_info'
+mutation_sample_info = sample_info_dir / 'tcga_mutation_sample_identifiers.tsv'
 expression_sample_info = sample_info_dir / 'tcga_expression_sample_identifiers.tsv'
 me_27k_sample_info = sample_info_dir / 'tcga_me_27k_sample_identifiers.tsv'
 me_450k_sample_info = sample_info_dir / 'tcga_me_450k_sample_identifiers.tsv'
@@ -42,6 +49,7 @@ rppa_sample_info = sample_info_dir / 'tcga_rppa_sample_identifiers.tsv'
 mirna_sample_info = sample_info_dir / 'tcga_mirna_sample_identifiers.tsv'
 mut_sigs_sample_info = sample_info_dir / 'tcga_mut_sigs_sample_identifiers.tsv'
 sample_infos = {
+    'mutation': mutation_sample_info,
     'expression': expression_sample_info,
     'me_27k': me_27k_sample_info,
     'me_27k_bmiq': me_27k_sample_info,
@@ -60,6 +68,7 @@ rppa_data = data_dir / 'tcga_rppa_matrix_processed.tsv'
 mirna_data = data_dir / 'tcga_mirna_matrix_processed.tsv'
 mut_sigs_data = data_dir / 'tcga_wes_sbs_mutational_signatures.tsv'
 data_types = {
+    'mutation': None, # this is generated programmatically
     'expression': expression_data,
     'me_27k': methylation_27k_data,
     'me_27k_bmiq': methylation_27k_bmiq_data,
@@ -175,6 +184,11 @@ manifest_url = (
 # data types to standardize columns for
 # currently we want to standardize all of them
 standardize_data_types = ['expression', 'rppa', 'me_27k', 'me_450k', 'mirna', 'mut_sigs']
+
+# covariates to standardize
+# other covariates (e.g. cancer type) are binary or categorical and
+# don't need standardization
+standardize_covariates = ['log10_mut', 'age']
 
 # constant for non-gene feature indices
 # this is used in multimodal prediction experiments, e.g. scripts in

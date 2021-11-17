@@ -22,6 +22,7 @@ def process_y_matrix(y_mutation,
                      filter_count,
                      filter_prop,
                      output_directory,
+                     filter_cancer_types=True,
                      hyper_filter=5,
                      test=False,
                      overlap_data_types=None):
@@ -39,8 +40,9 @@ def process_y_matrix(y_mutation,
     filter_count: the number of positives or negatives required per cancer-type
     filter_prop: the proportion of positives or negatives required per cancer-type
     output_directory: the name of the directory to store the gene summary
+    filter_cancer_types: if False, don't filter cancer types that don't meet criteria
     hyper_filter: the number of std dev above log10 mutation burden to filter
-    test: if true, don't write filtering info to disk
+    test: if True, don't write filtering info to disk
     overlap_data_types: if not None, use samples present for all included data types
 
     Returns
@@ -104,8 +106,9 @@ def process_y_matrix(y_mutation,
         filter_file = os.path.join(output_directory, filter_file)
         disease_stats_df.to_csv(filter_file, sep="\t")
 
-    use_diseases = disease_stats_df.query("disease_included").index.tolist()
-    y_df = y_df.query("DISEASE in @use_diseases")
+    if filter_cancer_types:
+        use_diseases = disease_stats_df.query("disease_included").index.tolist()
+        y_df = y_df.query("DISEASE in @use_diseases")
 
     return y_df, valid_samples
 
@@ -221,23 +224,33 @@ def preprocess_data(X_train_raw_df,
             X_train_raw_df, X_test_raw_df, gene_features, subset_mad_genes
         )
         if standardize_columns:
-            X_train_df = standardize_gene_features(X_train_raw_df, gene_features_filtered)
-            X_test_df = standardize_gene_features(X_test_raw_df, gene_features_filtered)
+            X_train_df = standardize_features(X_train_raw_df, gene_features_filtered)
+            X_test_df = standardize_features(X_test_raw_df, gene_features_filtered)
         else:
             X_train_df = X_train_raw_df
             X_test_df = X_test_raw_df
     elif standardize_columns:
-        X_train_df = standardize_gene_features(X_train_raw_df, gene_features)
-        X_test_df = standardize_gene_features(X_test_raw_df, gene_features)
+        X_train_df = standardize_features(X_train_raw_df, gene_features)
+        X_test_df = standardize_features(X_test_raw_df, gene_features)
     else:
         X_train_df = X_train_raw_df
         X_test_df = X_test_raw_df
     return X_train_df, X_test_df
 
 
+def standardize_features(X_df, gene_features):
+    """Standardize real-valued features."""
+    std_covariates = [(c in cfg.standardize_covariates) for c in X_df.columns]
+    std_features = gene_features | std_covariates
+    if np.any(std_features):
+        return standardize_selected_features(X_df, std_features)
+    else:
+        # if no features to standardize, return the original data
+        return X_df
 
-def standardize_gene_features(X_df, gene_features):
-    """Standardize (take z-scores of) real-valued gene expression features.
+
+def standardize_selected_features(X_df, gene_features):
+    """Standardize (take z-scores of) selected real-valued features.
 
     Note this should be done for train and test sets independently. Also note
     this doesn't necessarily preserve the order of features (this shouldn't
@@ -413,31 +426,33 @@ def preprocess_multi_data(X_train_raw_df,
 def standardize_multi_gene_features(X_df, standardize_columns, gene_features, data_types):
     """Standardize features for multiple data types.
 
-    Functions similarly to standardize_gene_features, but applied to each data
+    Functions similarly to standardize_features, but applied to each data
     type in data_types separately.
     """
     # for each gene feature dataset, take top n mad genes (separately)
     datasets = []
-    for data_type in np.unique(data_types):
 
-        # skip non-gene features, these shouldn't be transformed
-        if data_type == cfg.NONGENE_FEATURE: continue
+    # process the non-gene features last
+    process_data_types = np.append(np.unique(data_types)[1:], cfg.NONGENE_FEATURE)
+    for data_type in process_data_types:
 
         # get relevant columns of X_data_df
         data_ixs = (data_types == data_type)
         X_data_df = X_df.loc[:, data_ixs]
 
+        # for non-gene features, standardize_features will choose the ones to
+        # standardize, so just pass array of zeros
+        if data_type == cfg.NONGENE_FEATURE:
+            X_data_df = standardize_features(
+                X_data_df, np.zeros((X_data_df.shape[1],), dtype=bool)
+            )
         # if we don't want to standardize the current data type, just add it
         # to the list untransformed, otherwise standardize it
-        if standardize_columns[data_type]:
-            X_data_df = standardize_gene_features(
+        elif standardize_columns[data_type]:
+            X_data_df = standardize_features(
                 X_data_df, np.ones((X_data_df.shape[1],), dtype=bool)
             )
         datasets.append(X_data_df)
-
-    # then add non-gene features, we don't standardize these
-    X_non_gene_df = X_df.loc[:, ~gene_features]
-    datasets.append(X_non_gene_df)
 
     # concatenate datasets back together and return
     return pd.concat(datasets, axis=1)

@@ -32,6 +32,7 @@ def run_cv_stratified(data_model,
                       standardize_columns=False,
                       output_preds=False,
                       output_survival_fn=False,
+                      survival_fit_ridge=False,
                       stratify=True,
                       results_dir=None):
     """
@@ -147,7 +148,9 @@ def run_cv_stratified(data_model,
         # save model results for survival prediction
         if predictor == 'survival':
             from functools import partial
-            train_model = partial(train_model, output_fn=output_survival_fn)
+            train_model = partial(train_model,
+                                  output_fn=output_survival_fn,
+                                  fit_ridge=survival_fit_ridge)
         if predictor == 'survival' and cfg.survival_debug:
             debug_info = {
                 'fold_no': fold_no,

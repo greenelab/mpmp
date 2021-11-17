@@ -109,6 +109,9 @@ all_results_df = au.compare_all_data_types(results_df,
                                            SIG_ALPHA,
                                            metric=plot_metric)
 
+cfg.sig_genes_dir.mkdir(exist_ok=True)
+all_results_df.to_csv(cfg.sig_genes_methylation, index=False, sep='\t')
+
 all_results_df.sort_values(by='p_value').head(10)
 
 

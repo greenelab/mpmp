@@ -104,7 +104,7 @@ def load_compressed_data(data_type,
     return data_df
 
 
-def load_multiple_data_types(data_types, n_dims, verbose=False):
+def load_multiple_data_types(data_types, n_dims, standardize_input, verbose=False):
     """Load multiple data types and concatenate columns.
 
     Arguments
@@ -291,8 +291,16 @@ def load_pancancer_data_from_repo(subset_columns=None):
 def load_sample_info(train_data_type, verbose=False):
     if verbose:
         print('Loading sample info...', file=sys.stderr)
-    return pd.read_csv(cfg.sample_infos[train_data_type],
-                       sep='\t', index_col='sample_id')
+    try:
+        return pd.read_csv(cfg.sample_infos[train_data_type],
+                           sep='\t', index_col='sample_id')
+    except KeyError as e:
+        if 'mutations' in train_data_type:
+            return pd.read_csv(cfg.sample_infos['mutation'],
+                               sep='\t', index_col='sample_id')
+        else:
+            raise e
+
 
 def load_sample_info_multi(train_data_types, verbose=False):
     if verbose:
@@ -305,6 +313,14 @@ def load_sample_info_multi(train_data_types, verbose=False):
         add_df = add_df[~add_df.index.isin(sample_info_df.index)]
         sample_info_df = pd.concat((sample_info_df, add_df))
     return sample_info_df
+
+
+def load_significant_genes(sample_set='all'):
+    if sample_set == 'methylation':
+        significance_df = pd.read_csv(cfg.sig_genes_methylation, sep='\t')
+    else:
+        significance_df = pd.read_csv(cfg.sig_genes_all, sep='\t')
+    return significance_df.loc[significance_df.reject_null, 'gene'].values
 
 
 def load_purity(mut_burden_df,

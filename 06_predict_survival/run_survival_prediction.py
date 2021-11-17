@@ -60,6 +60,11 @@ def process_args():
                                      'experiment metadata ')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
+    opts.add_argument('--fit_ridge', action='store_true',
+                      help='if included, fit ridge-regularized survival model instead '
+                           'of elastic net model. this tends to converge slightly faster '
+                           'and more robustly on smaller feature sets, but may fit slowly '
+                           'or not at all on large sets of features')
     opts.add_argument('--n_dim', default=None,
                       help='number of compressed components/dimensions to use, '
                            'None to use raw features')
@@ -75,7 +80,11 @@ def process_args():
                       help='if included, subset gene features to this number of '
                            'features having highest mean absolute deviation')
     opts.add_argument('--training_data', type=str, default='expression',
-                      choices=list(cfg.data_types.keys()) + ['baseline'],
+                      choices=list(cfg.data_types.keys()) + ([
+                          'baseline',
+                          'vogelstein_mutations',
+                          'significant_mutations'
+                      ]),
                       help='what data type to train model on')
 
     args = parser.parse_args()
@@ -96,6 +105,7 @@ def process_args():
         sample_info_df = (
             du.load_sample_info(args.training_data, verbose=args.verbose)
         )
+
     tcga_cancer_types = list(np.unique(sample_info_df.cancer_type))
     tcga_cancer_types.append('pancancer')
     if 'all_cancer_types' in args.cancer_types:
@@ -214,6 +224,7 @@ if __name__ == '__main__':
                                             # don't stratify if we're predicting survival for
                                             # a single cancer type
                                             output_survival_fn=io_args.output_survival_fn,
+                                            survival_fit_ridge=model_options.fit_ridge,
                                             stratify=(cancer_type == 'pancancer'),
                                             results_dir=experiment_dir)
                 # only save results if no exceptions

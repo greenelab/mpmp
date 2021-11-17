@@ -12,7 +12,10 @@ from sklearn.model_selection import (
     GridSearchCV,
 )
 from sklearn.exceptions import ConvergenceWarning
-from sksurv.linear_model import CoxnetSurvivalAnalysis
+from sksurv.linear_model import (
+    CoxnetSurvivalAnalysis,
+    CoxPHSurvivalAnalysis
+)
 
 import mpmp.config as cfg
 from mpmp.exceptions import OneClassError
@@ -25,6 +28,7 @@ def train_survival(X_train,
                    seed,
                    n_folds=4,
                    max_iter=1000,
+                   fit_ridge=False,
                    output_fn=False,
                    debug_info=None):
     """
@@ -42,6 +46,11 @@ def train_survival(X_train,
     l1_ratios: list of l1 mixing parameters to perform cross validation over
     n_folds: int of how many folds of cross validation to perform
     max_iter: the maximum number of iterations to test until convergence
+    fit_ridge: if True, use ridge regularized model (CoxPHSurvivalAnalysis). This
+               uses a slightly different optimizer than CoxnetSurvivalAnalysis which
+               can be more stable, but also scales poorly to many features. If this
+               is True, l1_ratios range will be ignored, and hyperparameter search
+               will be over alphas range only.
 
     Returns
     ------
@@ -56,27 +65,38 @@ def train_survival(X_train,
         cox.fit(X_train, _y_df_to_struct(y_train))
         alphas = cox.alphas_
 
-    surv_parameters = {
-        "survival__alphas": [[a] for a in alphas],
-        "survival__l1_ratio": l1_ratios,
-    }
-
-    estimator = Pipeline(
-        steps=[
-            (
-                "survival",
-                CoxnetSurvivalAnalysis(
-                    max_iter=max_iter,
-                    tol=1e-5,
-                    # normalize input features
-                    # this seems to help with model convergence
-                    # TODO could try doing this using StandardScaler pipeline
-                    normalize=True,
-                    fit_baseline_model=output_fn
-                ),
-            )
-        ]
-    )
+    if fit_ridge:
+        surv_parameters = {
+            "survival__alpha": alphas
+        }
+        estimator = Pipeline(
+            steps=[
+                (
+                    "survival",
+                    CoxPHSurvivalAnalysis(
+                        n_iter=max_iter,
+                        tol=1e-5,
+                    ),
+                )
+            ]
+        )
+    else:
+        surv_parameters = {
+            "survival__alphas": [[a] for a in alphas],
+            "survival__l1_ratio": l1_ratios,
+        }
+        estimator = Pipeline(
+            steps=[
+                (
+                    "survival",
+                    CoxnetSurvivalAnalysis(
+                        max_iter=max_iter,
+                        tol=1e-5,
+                        fit_baseline_model=output_fn
+                    ),
+                )
+            ]
+        )
 
     cv_pipeline = GridSearchCV(
         estimator=estimator,

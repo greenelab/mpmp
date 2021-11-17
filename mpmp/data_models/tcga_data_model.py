@@ -342,45 +342,7 @@ class TCGADataModel():
         debug (bool): whether or not to subset data for faster debugging
         test (bool): whether or not to subset columns in mutation data, for testing
         """
-        # load training data
-        if not isinstance(train_data_type, str):
-            # if a list of train data types is provided, we have to load each
-            # of them and concatenate columns
-            # n_dim should be a list here
-            self.data_df, self.data_types = du.load_multiple_data_types(
-                                                train_data_type,
-                                                n_dims=n_dim,
-                                                verbose=self.verbose,
-                                                standardize_input=standardize_input)
-        elif compressed_data:
-            self.data_df = du.load_compressed_data(train_data_type,
-                                                   n_dim=n_dim,
-                                                   verbose=self.verbose,
-                                                   standardize_input=standardize_input,
-                                                   load_subset=(debug or test))
-        elif train_data_type == 'baseline':
-            # we just want to use non-omics covariates as a baseline
-            # so here, get sample list for expression data, then create an
-            # empty data frame using it as an index
-            if sample_info_df is None:
-                sample_info_df = du.load_sample_info('expression',
-                                                     verbose=self.verbose)
-            self.data_df = pd.DataFrame(index=sample_info_df.index)
-        else:
-            self.data_df = du.load_raw_data(train_data_type,
-                                            verbose=self.verbose,
-                                            load_subset=(debug or test))
-
-        if sample_info_df is None:
-            self.sample_info_df = du.load_sample_info(train_data_type,
-                                                      verbose=self.verbose)
-        else:
-            # sometimes we load sample info in the calling script as part of
-            # argument processing, etc
-            # in that case, we don't need to load it again
-            self.sample_info_df = sample_info_df
-
-        # load and unpack pancancer mutation/CNV/TMB data
+        # first load and unpack pancancer mutation/CNV/TMB data
         # this data is described in more detail in the load_pancancer_data docstring
         if test:
             # for testing, just load a subset of pancancer data,
@@ -398,6 +360,57 @@ class TCGADataModel():
          self.copy_gain_df,
          self.mut_burden_df) = pancan_data
 
+        # now load training data
+        if not isinstance(train_data_type, str):
+            # if a list of train data types is provided, we have to load each
+            # of them and concatenate columns
+            # n_dim should be a list here
+            self.data_df, self.data_types = du.load_multiple_data_types(
+                                                train_data_type,
+                                                n_dims=n_dim,
+                                                standardize_input=standardize_input,
+                                                verbose=self.verbose)
+        elif compressed_data:
+            self.data_df = du.load_compressed_data(train_data_type,
+                                                   n_dim=n_dim,
+                                                   verbose=self.verbose,
+                                                   standardize_input=standardize_input,
+                                                   load_subset=(debug or test))
+        elif train_data_type == 'baseline':
+            # we just want to use non-omics covariates as a baseline
+            # so here, get sample list for expression data, then create an
+            # empty data frame using it as an index
+            if sample_info_df is None:
+                sample_info_df = du.load_sample_info('expression',
+                                                     verbose=self.verbose)
+            self.data_df = pd.DataFrame(index=sample_info_df.index)
+        else:
+            if train_data_type == 'vogelstein_mutations':
+                self.data_df = self._load_vogelstein_mutation_matrix()
+            elif train_data_type == 'significant_mutations':
+                data_df = self._load_vogelstein_mutation_matrix()
+                sig_genes = du.load_significant_genes('methylation')
+                # startswith() with a tuple argument returns True if
+                # the string matches any of the prefixes in the tuple
+                # https://stackoverflow.com/a/20461857
+                self.data_df = data_df.loc[
+                    :, data_df.columns.str.startswith(tuple(sig_genes))
+                ]
+            else:
+                self.data_df = du.load_raw_data(train_data_type,
+                                                verbose=self.verbose,
+                                                load_subset=(debug or test))
+
+        if sample_info_df is None:
+            self.sample_info_df = du.load_sample_info(train_data_type,
+                                                      verbose=self.verbose)
+        else:
+            # sometimes we load sample info in the calling script as part of
+            # argument processing, etc
+            # in that case, we don't need to load it again
+            self.sample_info_df = sample_info_df
+
+
     def _generate_cancer_type_labels(self, cancer_type):
         y_df, count_df = process_y_matrix_cancertype(
             acronym=cancer_type,
@@ -407,7 +420,12 @@ class TCGADataModel():
         )
         return y_df
 
-    def _generate_gene_labels(self, gene, classification, gene_dir):
+    def _generate_gene_labels(self,
+                              gene,
+                              classification,
+                              gene_dir,
+                              filter_cancer_types=True):
+
         # process the y matrix for the given gene or pathway
         y_mutation_df = self.mutation_df.loc[:, gene]
 
@@ -431,6 +449,7 @@ class TCGADataModel():
             gene=gene,
             sample_freeze=self.sample_freeze_df,
             mutation_burden=self.mut_burden_df,
+            filter_cancer_types=filter_cancer_types,
             filter_count=cfg.filter_count,
             filter_prop=cfg.filter_prop,
             output_directory=gene_dir,
@@ -453,5 +472,54 @@ class TCGADataModel():
             add_age_covariate=add_age_covariate
         )
         return data_df, y_df, gene_features
+
+    def _load_vogelstein_mutation_matrix(self):
+        """Load mutation info for all Vogelstein genes, to be used as predictors."""
+
+        if self.verbose:
+            print('Loading Vogelstein mutation matrix...', file=sys.stderr)
+
+        vogelstein_mutation_df = []
+        sample_ids = None
+
+        genes_df = du.load_vogelstein()
+        for gene_idx, gene_series in genes_df.iterrows():
+
+            gene = gene_series.gene
+            classification = gene_series.classification
+
+            # construct labels from mutation/CNV information
+            # crucially, we *do not* want to filter cancer types with extreme
+            # label imbalance here, since we want to have a square matrix of
+            # predictors (i.e. data for all cancer types in survival dataset)
+            try:
+                gene_labels, _ = self._generate_gene_labels(
+                    gene, classification, gene_dir=None, filter_cancer_types=False)
+                if sample_ids is None:
+                    sample_ids = gene_labels.index
+                else:
+                    assert sample_ids.equals(gene_labels.index)
+                vogelstein_mutation_df.append(
+                    [gene + '_status'] + list(gene_labels.status.values)
+                )
+
+            except KeyError:
+                # just skip genes that don't have mutation data
+                continue
+
+        vogelstein_mutation_df = (
+            pd.DataFrame(vogelstein_mutation_df,
+                         columns=['gene'] + list(sample_ids.values))
+              .transpose()
+        )
+
+        vogelstein_mutation_df = (vogelstein_mutation_df
+            .rename(columns=vogelstein_mutation_df.iloc[0])
+            .drop(vogelstein_mutation_df.index[0])
+            # columns will have object type, we want to convert to int
+            .astype('uint8')
+        )
+
+        return vogelstein_mutation_df
 
 
