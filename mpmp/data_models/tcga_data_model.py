@@ -368,8 +368,8 @@ class TCGADataModel():
             self.data_df, self.data_types = du.load_multiple_data_types(
                                                 train_data_type,
                                                 n_dims=n_dim,
-                                                verbose=self.verbose,
-                                                standardize_input=standardize_input)
+                                                standardize_input=standardize_input,
+                                                verbose=self.verbose)
         elif compressed_data:
             self.data_df = du.load_compressed_data(train_data_type,
                                                    n_dim=n_dim,

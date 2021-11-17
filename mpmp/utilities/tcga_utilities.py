@@ -224,23 +224,29 @@ def preprocess_data(X_train_raw_df,
             X_train_raw_df, X_test_raw_df, gene_features, subset_mad_genes
         )
         if standardize_columns:
-            X_train_df = standardize_gene_features(X_train_raw_df, gene_features_filtered)
-            X_test_df = standardize_gene_features(X_test_raw_df, gene_features_filtered)
+            X_train_df = standardize_features(X_train_raw_df, gene_features_filtered)
+            X_test_df = standardize_features(X_test_raw_df, gene_features_filtered)
         else:
             X_train_df = X_train_raw_df
             X_test_df = X_test_raw_df
     elif standardize_columns:
-        X_train_df = standardize_gene_features(X_train_raw_df, gene_features)
-        X_test_df = standardize_gene_features(X_test_raw_df, gene_features)
+        X_train_df = standardize_features(X_train_raw_df, gene_features)
+        X_test_df = standardize_features(X_test_raw_df, gene_features)
     else:
         X_train_df = X_train_raw_df
         X_test_df = X_test_raw_df
     return X_train_df, X_test_df
 
 
+def standardize_features(X_df, gene_features):
+    """Standardize real-valued features."""
+    std_covariates = [(c in cfg.standardize_covariates) for c in X_df.columns]
+    std_features = gene_features | std_covariates
+    return standardize_selected_features(X_df, std_features)
 
-def standardize_gene_features(X_df, gene_features):
-    """Standardize (take z-scores of) real-valued gene expression features.
+
+def standardize_selected_features(X_df, gene_features):
+    """Standardize (take z-scores of) selected real-valued features.
 
     Note this should be done for train and test sets independently. Also note
     this doesn't necessarily preserve the order of features (this shouldn't
@@ -416,24 +422,27 @@ def preprocess_multi_data(X_train_raw_df,
 def standardize_multi_gene_features(X_df, standardize_columns, gene_features, data_types):
     """Standardize features for multiple data types.
 
-    Functions similarly to standardize_gene_features, but applied to each data
+    Functions similarly to standardize_features, but applied to each data
     type in data_types separately.
     """
     # for each gene feature dataset, take top n mad genes (separately)
     datasets = []
     for data_type in np.unique(data_types):
 
-        # skip non-gene features, these shouldn't be transformed
-        if data_type == cfg.NONGENE_FEATURE: continue
-
         # get relevant columns of X_data_df
         data_ixs = (data_types == data_type)
         X_data_df = X_df.loc[:, data_ixs]
 
+        # for non-gene features, standardize_features will choose the ones to
+        # standardize, so just pass array of zeros
+        if data_type == cfg.NONGENE_FEATURE:
+            X_data_df = standardize_features(
+                X_data_df, np.zeros((X_data_df.shape[1],), dtype=bool)
+            )
         # if we don't want to standardize the current data type, just add it
         # to the list untransformed, otherwise standardize it
-        if standardize_columns[data_type]:
-            X_data_df = standardize_gene_features(
+        elif standardize_columns[data_type]:
+            X_data_df = standardize_features(
                 X_data_df, np.ones((X_data_df.shape[1],), dtype=bool)
             )
         datasets.append(X_data_df)

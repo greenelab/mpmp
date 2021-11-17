@@ -104,7 +104,7 @@ def load_compressed_data(data_type,
     return data_df
 
 
-def load_multiple_data_types(data_types, n_dims, verbose=False):
+def load_multiple_data_types(data_types, n_dims, standardize_input, verbose=False):
     """Load multiple data types and concatenate columns.
 
     Arguments

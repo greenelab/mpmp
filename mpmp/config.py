@@ -185,6 +185,11 @@ manifest_url = (
 # currently we want to standardize all of them
 standardize_data_types = ['expression', 'rppa', 'me_27k', 'me_450k', 'mirna', 'mut_sigs']
 
+# covariates to standardize
+# other covariates (e.g. cancer type) are binary or categorical and
+# don't need standardization
+standardize_covariates = ['log10_mut', 'age']
+
 # constant for non-gene feature indices
 # this is used in multimodal prediction experiments, e.g. scripts in
 # 05_classify_mutations_multimodal directory
