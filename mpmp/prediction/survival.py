@@ -73,8 +73,6 @@ def train_survival(X_train,
             steps=[
                 (
                     "survival",
-                    # TODO this isn't currently normalizing features, might want
-                    # to call StandardScaler before this
                     CoxPHSurvivalAnalysis(
                         n_iter=max_iter,
                         tol=1e-5,
@@ -94,10 +92,6 @@ def train_survival(X_train,
                     CoxnetSurvivalAnalysis(
                         max_iter=max_iter,
                         tol=1e-5,
-                        # normalize input features
-                        # this seems to help with model convergence
-                        # TODO could try doing this using StandardScaler pipeline
-                        normalize=True,
                         fit_baseline_model=output_fn
                     ),
                 )

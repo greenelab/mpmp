@@ -209,6 +209,11 @@ standardize_data_types = [
     'mutation_preds_me_450k'
 ]
 
+# covariates to standardize
+# other covariates (e.g. cancer type) are binary or categorical and
+# don't need standardization
+standardize_covariates = ['log10_mut', 'age']
+
 # constant for non-gene feature indices
 # this is used in multimodal prediction experiments, e.g. scripts in
 # 05_classify_mutations_multimodal directory
