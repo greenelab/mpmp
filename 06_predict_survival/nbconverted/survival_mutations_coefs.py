@@ -54,6 +54,9 @@ training_data_map = {
 
 
 def is_feature_covariate(features):
+    # Label "covariate" features (i.e. features that are not derived
+    # from -omics data; this includes cancer type indicators and
+    # clinical features such as age)
     sample_info_df = du.load_sample_info('expression')
     cancer_types = list(sample_info_df.cancer_type.unique())
     covariate_names = cancer_types + ['age', 'log10_mut']
@@ -64,7 +67,7 @@ def is_feature_covariate(features):
 
 
 cancer_type = 'pancancer'
-training_data = 'mutation_preds_me_450k'
+training_data = 'mutation_preds_expression'
 seed = 42
 fold = 0
 
@@ -79,6 +82,12 @@ coefs_df.head()
 
 
 # In[6]:
+
+
+coefs_df[coefs_df.is_covariate].head()
+
+
+# In[7]:
 
 
 sns.set({'figure.figsize': (20, 5)})
@@ -97,7 +106,7 @@ for tick in plt.gca().get_xticklabels():
     tick.set_rotation(45)
 
 
-# In[7]:
+# In[8]:
 
 
 data_type = training_data.replace('mutation_preds_', '')
@@ -109,7 +118,7 @@ print(preds_df.shape)
 preds_df.head()
 
 
-# In[8]:
+# In[9]:
 
 
 pancan_data = du.load_pancancer_data(verbose=True)
@@ -118,10 +127,9 @@ print(mutation_df.shape)
 mutation_df.iloc[:5, :5]
 
 
-# In[11]:
+# In[10]:
 
 
-# gene = 'IDH1'
 gene = 'CARD11'
 plot_df = preds_df[[gene]].merge(mutation_df[[gene]],
                                  left_index=True, right_index=True)
@@ -135,7 +143,7 @@ print(plot_df.pred_prob.max())
 plot_df.head()
 
 
-# In[12]:
+# In[11]:
 
 
 sns.set({'figure.figsize': (10, 6)})
@@ -144,3 +152,7 @@ plt.title(gene)
 plt.xlabel('True mutation status')
 plt.ylabel('Predicted mutation probability')
 
+
+# CARD11 is the most predictive gene feature for some of the pan-cancer prediction models - it's interesting to see that the model is not very confident in its predictions (lots of overlap for the score distributions for true positives and true negatives).
+# 
+# Not sure why this would be an informative feature, biologically - maybe a question for future work.
