@@ -175,6 +175,7 @@ if __name__ == '__main__':
                                         standardize_columns=False,
                                         output_preds=True)
             gene_preds = pd.concat(results['gene_preds'])
+            # Ensure sample ids are the same across all iterations
             if sample_list is not None:
                 assert sample_list.equals(gene_preds.index)
             else:
