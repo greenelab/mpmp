@@ -33,12 +33,6 @@ random_genes = data_dir / 'random_genes.tsv'
 methylation_manifest = data_dir / 'HumanMethylation450_15017482_v1-2.csv'
 cross_reactive_probe_list = data_dir / 'cross_reactive_probes.txt'
 
-# directory/filenames to store information on genes that significantly
-# outperform shuffled baseline, in various experiments
-sig_genes_dir = data_dir / 'significant_genes'
-sig_genes_methylation = sig_genes_dir / 'sig_genes_me.tsv'
-sig_genes_all = sig_genes_dir / 'sig_genes_all.tsv'
-
 # location of sample info
 sample_info_dir = data_dir / 'sample_info'
 mutation_sample_info = sample_info_dir / 'tcga_mutation_sample_identifiers.tsv'
@@ -77,6 +71,26 @@ data_types = {
     'mirna': mirna_data,
     'mut_sigs': mut_sigs_data,
 }
+
+# directory/filenames to store information on genes that significantly
+# outperform shuffled baseline, in various experiments
+sig_genes_dir = data_dir / 'significant_genes'
+sig_genes_methylation = sig_genes_dir / 'sig_genes_me.tsv'
+sig_genes_all = sig_genes_dir / 'sig_genes_all.tsv'
+
+# directory to store information on predicted mutation status
+preds_dir = data_dir / 'vogelstein_preds'
+
+# locations of mutation predictions, used in survival analyses as predictors
+expression_preds = preds_dir / 'expression_n500_raw_preds.tsv'
+me_27k_preds = preds_dir / 'me_27k_n500_raw_preds.tsv'
+me_450k_preds = preds_dir / 'me_450k_n500_raw_preds.tsv'
+predictions = {
+    'expression': expression_preds,
+    'me_27k': me_27k_preds,
+    'me_450k': me_450k_preds,
+}
+
 
 # locations of compressed multimodal data files
 compressed_data_dir = data_dir / 'compressed_data'
@@ -183,7 +197,17 @@ manifest_url = (
 
 # data types to standardize columns for
 # currently we want to standardize all of them
-standardize_data_types = ['expression', 'rppa', 'me_27k', 'me_450k', 'mirna', 'mut_sigs']
+standardize_data_types = [
+    'expression',
+    'me_27k',
+    'me_450k',
+    'rppa',
+    'mirna',
+    'mut_sigs',
+    'mutation_preds_expression',
+    'mutation_preds_me_27k',
+    'mutation_preds_me_450k'
+]
 
 # covariates to standardize
 # other covariates (e.g. cancer type) are binary or categorical and

@@ -298,6 +298,13 @@ def load_sample_info(train_data_type, verbose=False):
         if 'mutations' in train_data_type:
             return pd.read_csv(cfg.sample_infos['mutation'],
                                sep='\t', index_col='sample_id')
+        elif 'mutation_preds' in train_data_type:
+            # if we're using predicted mutation scores, just get the sample
+            # info from the source data type
+            return pd.read_csv(
+                cfg.sample_infos[train_data_type.replace('mutation_preds_', '')],
+                sep='\t', index_col='sample_id'
+            )
         else:
             raise e
 
@@ -321,6 +328,12 @@ def load_significant_genes(sample_set='all'):
     else:
         significance_df = pd.read_csv(cfg.sig_genes_all, sep='\t')
     return significance_df.loc[significance_df.reject_null, 'gene'].values
+
+
+def load_mutation_predictions(train_data_type):
+    source_data = train_data_type.replace('mutation_preds_', '')
+    return pd.read_csv(cfg.predictions[source_data],
+                       index_col=0, sep='\t')
 
 
 def load_purity(mut_burden_df,

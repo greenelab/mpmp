@@ -181,8 +181,7 @@ if __name__ == '__main__':
                 fu.write_log_file(log_df, io_args.log_file)
                 continue
             except KeyError:
-                # this might happen if the given gene isn't in the mutation data
-                # (or has a different alias, TODO we could check for this later)
+                # this can happen if the given gene isn't in the mutation data
                 print('Gene {} not found in mutation data, skipping'.format(gene),
                       file=sys.stderr)
                 log_df = fu.generate_log_df(
@@ -193,7 +192,6 @@ if __name__ == '__main__':
                 continue
 
             try:
-                # for now, don't standardize methylation data
                 standardize_columns = (model_options.training_data in
                                        cfg.standardize_data_types)
                 results = run_cv_stratified(tcga_data,

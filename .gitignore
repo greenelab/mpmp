@@ -27,6 +27,7 @@ data/tcga_expression_matrix_processed.tsv.gz
 data/tcga_methylation_matrix_processed.tsv.gz
 data/tcga_wes_sbs_mutational_signatures.tsv
 data/pancancer_data.pkl
+data/vogelstein_preds/*
 
 # don't track images files
 figures/*

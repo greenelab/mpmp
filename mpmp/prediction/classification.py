@@ -105,6 +105,7 @@ def get_preds(X_test_df, y_test_df, cv_pipeline, fold_no):
     """
 
     # get probability of belonging to positive class
+    y_scores_test = cv_pipeline.decision_function(X_test_df)
     y_probs_test = cv_pipeline.predict_proba(X_test_df)
 
     # make sure we're actually looking at positive class prob
@@ -114,6 +115,7 @@ def get_preds(X_test_df, y_test_df, cv_pipeline, fold_no):
     return pd.DataFrame({
         'fold_no': fold_no,
         'true_class': y_test_df.status,
+        'score': y_scores_test,
         'positive_prob': y_probs_test[:, 1]
     }, index=y_test_df.index)
 

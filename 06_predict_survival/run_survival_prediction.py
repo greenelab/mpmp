@@ -83,7 +83,10 @@ def process_args():
                       choices=list(cfg.data_types.keys()) + ([
                           'baseline',
                           'vogelstein_mutations',
-                          'significant_mutations'
+                          'significant_mutations',
+                          'mutation_preds_expression',
+                          'mutation_preds_me_27k',
+                          'mutation_preds_me_450k'
                       ]),
                       help='what data type to train model on')
 

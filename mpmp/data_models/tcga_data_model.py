@@ -157,7 +157,8 @@ class TCGADataModel():
                               gene,
                               classification,
                               gene_dir,
-                              use_pancancer=False):
+                              use_pancancer=False,
+                              filter_cancer_types=True):
         """
         Prepare to run mutation prediction experiments for a given gene.
 
@@ -170,7 +171,7 @@ class TCGADataModel():
         use_pancancer (bool): whether or not to use pancancer data
         """
         y_df_raw, valid_samples = self._generate_gene_labels(
-                gene, classification, gene_dir)
+                gene, classification, gene_dir, filter_cancer_types)
 
         filtered_data = self._filter_data(
             self.data_df,
@@ -396,6 +397,8 @@ class TCGADataModel():
                 self.data_df = data_df.loc[
                     :, data_df.columns.str.startswith(tuple(sig_genes))
                 ]
+            elif 'mutation_preds' in train_data_type:
+                self.data_df = du.load_mutation_predictions(train_data_type)
             else:
                 self.data_df = du.load_raw_data(train_data_type,
                                                 verbose=self.verbose,
