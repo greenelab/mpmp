@@ -181,8 +181,7 @@ if __name__ == '__main__':
                 fu.write_log_file(log_df, io_args.log_file)
                 continue
             except KeyError:
-                # this might happen if the given gene isn't in the mutation data
-                # (or has a different alias)
+                # this can happen if the given gene isn't in the mutation data
                 print('Gene {} not found in mutation data, skipping'.format(gene),
                       file=sys.stderr)
                 log_df = fu.generate_log_df(

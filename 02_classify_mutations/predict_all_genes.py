@@ -151,8 +151,7 @@ if __name__ == '__main__':
                                             experiment_dir,
                                             filter_cancer_types=False)
         except KeyError:
-            # this might happen if the given gene isn't in the mutation data
-            # (or has a different alias)
+            # this can happen if the given gene isn't in the mutation data
             print('Gene {} not found in mutation data, skipping'.format(gene),
                   file=sys.stderr)
             log_df = fu.generate_log_df(
