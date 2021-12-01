@@ -58,6 +58,10 @@ def process_args():
                                      'parameters for training/evaluating model, '
                                      'these will affect output and are saved as '
                                      'experiment metadata ')
+    opts.add_argument('--batch_correction', action='store_true',
+                      help='if included, use limma to remove linear signal, '
+                           'this is useful to determine how much non-linear signal '
+                           'exists in the data')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
     opts.add_argument('--num_folds', type=int, default=4,
@@ -167,7 +171,8 @@ if __name__ == '__main__':
                                                   model_options)
                 tcga_data.process_data_for_gene(gene,
                                                 classification,
-                                                gene_dir)
+                                                gene_dir,
+                                                batch_correction=model_options.batch_correction)
             except ResultsFileExistsError:
                 # this happens if cross-validation for this gene has already been
                 # run (i.e. the results file already exists)
