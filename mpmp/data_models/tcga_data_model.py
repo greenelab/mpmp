@@ -159,7 +159,8 @@ class TCGADataModel():
                               gene_dir,
                               use_pancancer=False,
                               filter_cancer_types=True,
-                              batch_correction=False):
+                              batch_correction=False,
+                              batch_correction_covariates=False):
         """
         Prepare to run mutation prediction experiments for a given gene.
 
@@ -212,6 +213,7 @@ class TCGADataModel():
                 train_filtered_df,
                 y_filtered_df.status.astype(str).values,
                 gene_features,
+                batch_correction_covariates,
                 self.verbose)
 
         self.X_df = train_filtered_df
