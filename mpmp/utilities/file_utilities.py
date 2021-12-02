@@ -173,9 +173,14 @@ def save_results(output_dir,
             output_file, sep="\t", index=False, float_format="%.5g"
         )
 
-    coef_df = pd.concat(results[
-        '{}_coef'.format(exp_string)
-    ])
+    if '{}_coef'.format(exp_string) in results:
+        coef_df = pd.concat(results[
+            '{}_coef'.format(exp_string)
+        ])
+        coef_df.to_csv(
+            check_file, sep="\t", index=False, float_format="%.5g"
+        )
+
     metrics_df = pd.concat(results[
         '{}_metrics'.format(exp_string)
     ])
@@ -186,10 +191,6 @@ def save_results(output_dir,
         ])
     else:
         preds_df = None
-
-    coef_df.to_csv(
-        check_file, sep="\t", index=False, float_format="%.5g"
-    )
 
     output_file = construct_filename(output_dir,
                                      'metrics',

@@ -49,20 +49,19 @@ def train_classifier(X_train,
     """
     # Setup the classifier parameters
     clf_parameters = {
-        "classify__loss": ["log"],
-        "classify__penalty": ["elasticnet"],
-        "classify__alpha": alphas,
-        "classify__l1_ratio": l1_ratios,
+        'classify__alpha': alphas,
+        'classify__l1_ratio': l1_ratios,
     }
 
     estimator = Pipeline(
         steps=[
             (
-                "classify",
+                'classify',
                 SGDClassifier(
                     random_state=seed,
-                    class_weight="balanced",
-                    loss="log",
+                    class_weight='balanced',
+                    loss='log',
+                    penalty='elasticnet',
                     max_iter=max_iter,
                     tol=1e-3,
                 ),
@@ -75,7 +74,7 @@ def train_classifier(X_train,
         param_grid=clf_parameters,
         n_jobs=-1,
         cv=n_folds,
-        scoring="average_precision",
+        scoring='average_precision',
         return_train_score=True,
     )
 
@@ -88,7 +87,83 @@ def train_classifier(X_train,
         X=X_train,
         y=y_train.status,
         cv=n_folds,
-        method="decision_function",
+        method='decision_function',
+    )
+
+    # Get all performance results
+    y_predict_train = cv_pipeline.decision_function(X_train)
+    y_predict_test = cv_pipeline.decision_function(X_test)
+
+    return cv_pipeline, y_predict_train, y_predict_test, y_cv
+
+
+def train_gb_classifier(X_train,
+                        X_test,
+                        y_train,
+                        learning_rates,
+                        n_estimators,
+                        max_depths,
+                        seed,
+                        n_folds=4,
+                        max_iter=1000):
+    """
+    Fit gradient-boosted tree classifier to training data, and generate predictions
+    for test data.
+
+    Arguments
+    ---------
+    X_train: pandas DataFrame of feature matrix for training data
+    X_test: pandas DataFrame of feature matrix for testing data
+    y_train: pandas DataFrame of processed y matrix (output from align_matrices())
+    n_folds: int of how many folds of cross validation to perform
+    max_iter: the maximum number of iterations to test until convergence
+
+    Returns
+    ------
+    The full pipeline sklearn object and y matrix predictions for training, testing,
+    and cross validation
+    """
+    from sklearn.ensemble import GradientBoostingClassifier
+
+    # Setup the classifier parameters
+    clf_parameters = {
+        'classify__learning_rate': learning_rates,
+        'classify__n_estimators': n_estimators,
+        'classify__max_depth': max_depths,
+    }
+
+    estimator = Pipeline(
+        steps=[
+            (
+                'classify',
+                GradientBoostingClassifier(
+                    random_state=seed,
+                    loss='deviance',
+                    n_estimators=100,
+                ),
+            )
+        ]
+    )
+
+    cv_pipeline = GridSearchCV(
+        estimator=estimator,
+        param_grid=clf_parameters,
+        n_jobs=-1,
+        cv=n_folds,
+        scoring='average_precision',
+        return_train_score=True,
+    )
+
+    # Fit the model
+    cv_pipeline.fit(X=X_train, y=y_train.status)
+
+    # Obtain cross validation results
+    y_cv = cross_val_predict(
+        cv_pipeline.best_estimator_,
+        X=X_train,
+        y=y_train.status,
+        cv=n_folds,
+        method='decision_function',
     )
 
     # Get all performance results

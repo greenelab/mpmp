@@ -69,6 +69,9 @@ def process_args():
                       help='use subset of data for fast debugging')
     opts.add_argument('--num_folds', type=int, default=4,
                       help='number of folds of cross-validation to run')
+    opts.add_argument('--nonlinear', action='store_true',
+                      help='use gradient-boosted classifier instead of the '
+                           'default elastic net classifier')
     opts.add_argument('--overlap_data_types', nargs='*',
                       default=['expression'],
                       help='data types to define set of samples to use; e.g. '
@@ -205,15 +208,18 @@ if __name__ == '__main__':
             try:
                 standardize_columns = (model_options.training_data in
                                        cfg.standardize_data_types)
-                results = run_cv_stratified(tcga_data,
-                                            'gene',
-                                            gene,
-                                            model_options.training_data,
-                                            sample_info_df,
-                                            model_options.num_folds,
-                                            'classify',
-                                            shuffle_labels,
-                                            standardize_columns)
+                results = run_cv_stratified(
+                    tcga_data,
+                    'gene',
+                    gene,
+                    model_options.training_data,
+                    sample_info_df,
+                    model_options.num_folds,
+                    predictor='classify',
+                    shuffle_labels=shuffle_labels,
+                    standardize_columns=standardize_columns,
+                    nonlinear=model_options.nonlinear
+                )
                 # only save results if no exceptions
                 fu.save_results(gene_dir,
                                 check_file,
