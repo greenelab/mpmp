@@ -137,9 +137,8 @@ alphas = [1e-4, 0.001, 0.01, 0.1, 1, 10]
 l1_ratios = [0.0, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0]
 
 # hyperparameters for non-linear classification experiments
-gb_learning_rates = [0.25, 0.1, 0.01, 0.001]
-gb_n_estimators = [5, 10, 25, 50, 100, 200]
-gb_max_depths = [2, 3, 4, 5, 6, 10]
+learning_rates = [0.1, 0.01, 0.001, 1e-4]
+lambdas = [1e-4, 0.001, 0.01, 0.1, 1, 10]
 
 # hyperparameters for regression experiments
 # these ranges (particularly for l1_ratios) are loosely based on sklearn

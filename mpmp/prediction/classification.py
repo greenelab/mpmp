@@ -101,8 +101,8 @@ def train_gb_classifier(X_train,
                         X_test,
                         y_train,
                         learning_rates,
-                        n_estimators,
-                        max_depths,
+                        alphas,
+                        lambdas,
                         seed,
                         n_folds=4,
                         max_iter=1000):
@@ -123,23 +123,24 @@ def train_gb_classifier(X_train,
     The full pipeline sklearn object and y matrix predictions for training, testing,
     and cross validation
     """
-    from sklearn.ensemble import GradientBoostingClassifier
+    from lightgbm import LGBMClassifier
 
-    # Setup the classifier parameters
     clf_parameters = {
         'classify__learning_rate': learning_rates,
-        'classify__n_estimators': n_estimators,
-        'classify__max_depth': max_depths,
-    }
+        'classify__reg_alpha': alphas,
+        'classify__reg_lambda': lambdas,
+     }
 
     estimator = Pipeline(
         steps=[
             (
                 'classify',
-                GradientBoostingClassifier(
+                LGBMClassifier(
                     random_state=seed,
-                    loss='deviance',
+                    class_weight='balanced',
+                    max_depth=5,
                     n_estimators=100,
+                    colsample_bytree=0.35
                 ),
             )
         ]
@@ -163,12 +164,12 @@ def train_gb_classifier(X_train,
         X=X_train,
         y=y_train.status,
         cv=n_folds,
-        method='decision_function',
-    )
+        method='predict_proba',
+    )[:, 1]
 
     # Get all performance results
-    y_predict_train = cv_pipeline.decision_function(X_train)
-    y_predict_test = cv_pipeline.decision_function(X_test)
+    y_predict_train = cv_pipeline.predict_proba(X_train)[:, 1]
+    y_predict_test = cv_pipeline.predict_proba(X_test)[:, 1]
 
     return cv_pipeline, y_predict_train, y_predict_test, y_cv
 

@@ -431,9 +431,9 @@ def apply_model_params(train_model, predictor, nonlinear):
         # pass them through here
         return partial(
             train_model,
-            learning_rates=cfg.gb_learning_rates,
-            n_estimators=cfg.gb_n_estimators,
-            max_depths=cfg.gb_max_depths,
+            learning_rates=cfg.learning_rates,
+            alphas=cfg.alphas,
+            lambdas=cfg.lambdas,
         )
     else:
         # all other models use alphas and l1_ratios
