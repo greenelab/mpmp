@@ -202,24 +202,24 @@ def run_cv_stratified(data_model,
          y_cv_df) = model_results
 
         # get coefficients
-        if not nonlinear:
-            coef_df = extract_coefficients(
-                cv_pipeline=cv_pipeline,
-                feature_names=X_train_df.columns,
-                signal=signal,
-                seed=data_model.seed,
-                name=predictor
-            )
-            coef_df = coef_df.assign(identifier=identifier)
-            if isinstance(training_data, str):
-                coef_df = coef_df.assign(training_data=training_data)
-            else:
-                coef_df = coef_df.assign(training_data='.'.join(training_data))
-            coef_df = coef_df.assign(fold=fold_no)
-            if '{}_coef'.format(exp_string) not in results:
-                results['{}_coef'.format(exp_string)] = [coef_df]
-            else:
-                results['{}_coef'.format(exp_string)].append(coef_df)
+        coef_df = extract_coefficients(
+            cv_pipeline=cv_pipeline,
+            feature_names=X_train_df.columns,
+            signal=signal,
+            seed=data_model.seed,
+            name=predictor,
+            nonlinear=nonlinear
+        )
+        coef_df = coef_df.assign(identifier=identifier)
+        if isinstance(training_data, str):
+            coef_df = coef_df.assign(training_data=training_data)
+        else:
+            coef_df = coef_df.assign(training_data='.'.join(training_data))
+        coef_df = coef_df.assign(fold=fold_no)
+        if '{}_coef'.format(exp_string) not in results:
+            results['{}_coef'.format(exp_string)] = [coef_df]
+        else:
+            results['{}_coef'.format(exp_string)].append(coef_df)
 
         # get relevant metrics
         if predictor == 'classify':
@@ -365,7 +365,8 @@ def extract_coefficients(cv_pipeline,
                          feature_names,
                          signal,
                          seed,
-                         name='classify'):
+                         name='classify',
+                         nonlinear=False):
     """
     Pull out the coefficients from the trained models
 
@@ -382,6 +383,9 @@ def extract_coefficients(cv_pipeline,
 
     if name == 'survival':
         weights = final_classifier.coef_.flatten()
+    elif nonlinear:
+        # use information gain for feature importance with nonlinear classifier
+        weights = final_classifier.booster_.feature_importance(importance_type='gain')
     else:
         weights = final_classifier.coef_[0]
 
