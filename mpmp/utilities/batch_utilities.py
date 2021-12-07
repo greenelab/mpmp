@@ -8,7 +8,7 @@ import numpy as np
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.packages import importr
 
-def run_limma(data, batches, gene_features, correct_covariates, verbose=False):
+def run_limma(data, batches, gene_features, correct_covariates=True, verbose=False):
     """ Use limma to correct for batch effects.
 
     Adapted from:

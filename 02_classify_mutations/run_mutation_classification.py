@@ -62,9 +62,6 @@ def process_args():
                       help='if included, use limma to remove linear signal, '
                            'this is useful to determine how much non-linear signal '
                            'exists in the data')
-    opts.add_argument('--batch_correction_covariates', action='store_true',
-                      help='if included with batch_correction flag, apply batch '
-                           'correction to non-gene covariates too')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
     opts.add_argument('--num_folds', type=int, default=4,
@@ -179,8 +176,7 @@ if __name__ == '__main__':
                     gene,
                     classification,
                     gene_dir,
-                    batch_correction=model_options.batch_correction,
-                    batch_correction_covariates=model_options.batch_correction_covariates
+                    batch_correction=model_options.batch_correction
                 )
             except ResultsFileExistsError:
                 # this happens if cross-validation for this gene has already been
