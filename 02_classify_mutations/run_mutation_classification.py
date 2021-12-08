@@ -62,6 +62,8 @@ def process_args():
                       help='if included, use limma to remove linear signal, '
                            'this is useful to determine how much non-linear signal '
                            'exists in the data')
+    opts.add_argument('--bc_cancer_type', action='store_true',
+                      help='if included, use limma to remove linear cancer type signal')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
     opts.add_argument('--num_folds', type=int, default=4,
@@ -176,7 +178,8 @@ if __name__ == '__main__':
                     gene,
                     classification,
                     gene_dir,
-                    batch_correction=model_options.batch_correction
+                    batch_correction=model_options.batch_correction,
+                    bc_cancer_type=model_options.bc_cancer_type
                 )
             except ResultsFileExistsError:
                 # this happens if cross-validation for this gene has already been
