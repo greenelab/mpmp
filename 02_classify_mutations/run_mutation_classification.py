@@ -64,6 +64,9 @@ def process_args():
                            'exists in the data')
     opts.add_argument('--bc_cancer_type', action='store_true',
                       help='if included, use limma to remove linear cancer type signal')
+    opts.add_argument('--bc_train_test', action='store_true',
+                      help='if included, fit BE correction model on train set, '
+                           'then apply to test set')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
     opts.add_argument('--num_folds', type=int, default=4,
@@ -217,7 +220,8 @@ if __name__ == '__main__':
                     predictor='classify',
                     shuffle_labels=shuffle_labels,
                     standardize_columns=standardize_columns,
-                    nonlinear=model_options.nonlinear
+                    nonlinear=model_options.nonlinear,
+                    bc_train_test=model_options.bc_train_test
                 )
                 # only save results if no exceptions
                 fu.save_results(gene_dir,

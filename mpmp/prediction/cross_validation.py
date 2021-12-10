@@ -36,6 +36,7 @@ def run_cv_stratified(data_model,
                       survival_fit_ridge=False,
                       stratify=True,
                       nonlinear=False,
+                      bc_train_test=False,
                       results_dir=None):
     """
     Run stratified cross-validation experiments for a given dataset, then write
@@ -97,6 +98,19 @@ def run_cv_stratified(data_model,
 
         y_train_df = data_model.y_df.reindex(X_train_raw_df.index)
         y_test_df = data_model.y_df.reindex(X_test_raw_df.index)
+
+        # correct for batch effects for train/test sets separately
+        # we want to do this before standardization/subsetting
+        if bc_train_test:
+            import mpmp.utilities.batch_utilities as bu
+            print(X_train_raw_df.iloc[:5, :5])
+            print(X_test_raw_df.iloc[:5, :5])
+            X_train_raw_df, X_test_raw_df = bu.limma_train_test(
+                X_train_raw_df,
+                X_test_raw_df,
+                y_train_df.status.astype(str).values,
+                y_test_df.status.astype(str).values
+            )
 
         # shuffle labels for train/test sets separately
         # this ensures that overall label balance isn't affected
