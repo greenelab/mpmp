@@ -6,8 +6,6 @@ import sys
 
 import numpy as np
 import pandas as pd
-from rpy2.robjects import pandas2ri
-from rpy2.robjects.packages import importr
 
 def run_limma(data, batches, gene_features, correct_covariates=True, verbose=False):
     """ Use limma to correct for batch effects.
@@ -31,33 +29,19 @@ def run_limma(data, batches, gene_features, correct_covariates=True, verbose=Fal
     if verbose:
         print('Correcting for batch effects using limma...', file=sys.stderr)
 
-    limma = importr('limma')
-
     # limma expects data in features x samples format
     if correct_covariates:
-        values_to_correct = data.copy().values.T
+        values_to_correct = data.copy().values
     else:
-        values_to_correct = data.loc[:, gene_features].copy().values.T
+        values_to_correct = data.loc[:, gene_features].copy().values
 
-    pandas2ri.activate()
-
-    # print(values_to_correct.T[:5, :5])
-
-    corrected_values = limma.removeBatchEffect(values_to_correct, batches)
-    corrected_2 = remove_batch_effect(values_to_correct.T, batches)
-
-    print(corrected_values[:5, :5])
-    print(corrected_2.T[:5, :5])
-    print(corrected_values.shape)
-    print(corrected_2.T.shape)
-    exit()
-
+    corrected_values = remove_batch_effect(values_to_correct, batches)
     corrected_data = data.copy()
 
     if correct_covariates:
-        corrected_data.loc[:, :] = corrected_values.T
+        corrected_data.loc[:, :] = corrected_values
     else:
-        corrected_data.loc[:, gene_features] = corrected_values.T
+        corrected_data.loc[:, gene_features] = corrected_values
 
     # TODO: maybe add unit test for this?
     assert corrected_data.columns.equals(data.columns)
