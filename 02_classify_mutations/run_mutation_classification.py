@@ -58,10 +58,19 @@ def process_args():
                                      'parameters for training/evaluating model, '
                                      'these will affect output and are saved as '
                                      'experiment metadata ')
+    opts.add_argument('--batch_correction', action='store_true',
+                      help='if included, use limma to remove linear signal, '
+                           'this is useful to determine how much non-linear signal '
+                           'exists in the data')
+    opts.add_argument('--bc_cancer_type', action='store_true',
+                      help='if included, use limma to remove linear cancer type signal')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
     opts.add_argument('--num_folds', type=int, default=4,
                       help='number of folds of cross-validation to run')
+    opts.add_argument('--nonlinear', action='store_true',
+                      help='use gradient-boosted classifier instead of the '
+                           'default elastic net classifier')
     opts.add_argument('--overlap_data_types', nargs='*',
                       default=['expression'],
                       help='data types to define set of samples to use; e.g. '
@@ -165,9 +174,13 @@ if __name__ == '__main__':
                                                   gene,
                                                   shuffle_labels,
                                                   model_options)
-                tcga_data.process_data_for_gene(gene,
-                                                classification,
-                                                gene_dir)
+                tcga_data.process_data_for_gene(
+                    gene,
+                    classification,
+                    gene_dir,
+                    batch_correction=model_options.batch_correction,
+                    bc_cancer_type=model_options.bc_cancer_type
+                )
             except ResultsFileExistsError:
                 # this happens if cross-validation for this gene has already been
                 # run (i.e. the results file already exists)
@@ -194,15 +207,18 @@ if __name__ == '__main__':
             try:
                 standardize_columns = (model_options.training_data in
                                        cfg.standardize_data_types)
-                results = run_cv_stratified(tcga_data,
-                                            'gene',
-                                            gene,
-                                            model_options.training_data,
-                                            sample_info_df,
-                                            model_options.num_folds,
-                                            'classify',
-                                            shuffle_labels,
-                                            standardize_columns)
+                results = run_cv_stratified(
+                    tcga_data,
+                    'gene',
+                    gene,
+                    model_options.training_data,
+                    sample_info_df,
+                    model_options.num_folds,
+                    predictor='classify',
+                    shuffle_labels=shuffle_labels,
+                    standardize_columns=standardize_columns,
+                    nonlinear=model_options.nonlinear
+                )
                 # only save results if no exceptions
                 fu.save_results(gene_dir,
                                 check_file,

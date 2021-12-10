@@ -4,6 +4,7 @@ Functions to split data for cross-validation.
 """
 import warnings
 import contextlib
+from functools import partial
 
 import numpy as np
 import pandas as pd
@@ -34,6 +35,7 @@ def run_cv_stratified(data_model,
                       output_survival_fn=False,
                       survival_fit_ridge=False,
                       stratify=True,
+                      nonlinear=False,
                       results_dir=None):
     """
     Run stratified cross-validation experiments for a given dataset, then write
@@ -62,7 +64,6 @@ def run_cv_stratified(data_model,
             '{}_metrics'.format(exp_string): [],
             '{}_auc'.format(exp_string): [],
             '{}_aupr'.format(exp_string): [],
-            '{}_coef'.format(exp_string): [],
         }
     else:
         results = {
@@ -138,7 +139,8 @@ def run_cv_stratified(data_model,
                                                        data_model.subset_mad_genes)
 
         models_list = {
-            'classify': clf.train_classifier,
+            'classify': (clf.train_gb_classifier if nonlinear
+                         else clf.train_classifier),
             'regress': reg.train_regressor,
             'survival': surv.train_survival
         }
@@ -146,7 +148,6 @@ def run_cv_stratified(data_model,
 
         # save model results for survival prediction
         if predictor == 'survival':
-            from functools import partial
             train_model = partial(train_model,
                                   output_fn=output_survival_fn,
                                   fit_ridge=survival_fit_ridge)
@@ -158,19 +159,19 @@ def run_cv_stratified(data_model,
                 ),
                 'signal': signal
             }
-            from functools import partial
             # the non-survival model training functions don't take a debug_info
             # parameter, so we do a partial function application to make all the
             # model training functions take the same arguments
             train_model = partial(train_model, debug_info=debug_info)
 
+        # set the hyperparameters
+        train_model_params = apply_model_params(train_model, predictor, nonlinear)
+
         try:
-            model_results = train_model(
+            model_results = train_model_params(
                 X_train=X_train_df,
                 X_test=X_test_df,
                 y_train=y_train_df,
-                alphas=cfg.alphas_map[predictor],
-                l1_ratios=cfg.l1_ratios_map[predictor],
                 seed=data_model.seed,
                 n_folds=cfg.folds,
                 max_iter=cfg.max_iter_map[predictor],
@@ -206,7 +207,8 @@ def run_cv_stratified(data_model,
             feature_names=X_train_df.columns,
             signal=signal,
             seed=data_model.seed,
-            name=predictor
+            name=predictor,
+            nonlinear=nonlinear
         )
         coef_df = coef_df.assign(identifier=identifier)
         if isinstance(training_data, str):
@@ -214,7 +216,10 @@ def run_cv_stratified(data_model,
         else:
             coef_df = coef_df.assign(training_data='.'.join(training_data))
         coef_df = coef_df.assign(fold=fold_no)
-        results['{}_coef'.format(exp_string)].append(coef_df)
+        if '{}_coef'.format(exp_string) not in results:
+            results['{}_coef'.format(exp_string)] = [coef_df]
+        else:
+            results['{}_coef'.format(exp_string)].append(coef_df)
 
         # get relevant metrics
         if predictor == 'classify':
@@ -360,7 +365,8 @@ def extract_coefficients(cv_pipeline,
                          feature_names,
                          signal,
                          seed,
-                         name='classify'):
+                         name='classify',
+                         nonlinear=False):
     """
     Pull out the coefficients from the trained models
 
@@ -377,6 +383,9 @@ def extract_coefficients(cv_pipeline,
 
     if name == 'survival':
         weights = final_classifier.coef_.flatten()
+    elif nonlinear:
+        # use information gain for feature importance with nonlinear classifier
+        weights = final_classifier.booster_.feature_importance(importance_type='gain')
     else:
         weights = final_classifier.coef_[0]
 
@@ -404,6 +413,7 @@ def shuffle_by_cancer_type(y_df, seed):
             )
     return y_copy_df.status.values
 
+
 @contextlib.contextmanager
 def temp_seed(cntxt_seed):
     """Set a temporary np.random seed in the resulting context.
@@ -417,5 +427,25 @@ def temp_seed(cntxt_seed):
         yield
     finally:
         np.random.set_state(state)
+
+
+def apply_model_params(train_model, predictor, nonlinear):
+    if predictor == 'classify' and nonlinear:
+        # non-linear classifier takes different hyperparameters,
+        # pass them through here
+        return partial(
+            train_model,
+            learning_rates=cfg.learning_rates,
+            alphas=cfg.alphas,
+            lambdas=cfg.lambdas,
+        )
+    else:
+        # all other models use alphas and l1_ratios
+        # (i.e. elastic net hyperparameters)
+        return partial(
+            train_model,
+            alphas=cfg.alphas_map[predictor],
+            l1_ratios=cfg.l1_ratios_map[predictor],
+        )
 
 

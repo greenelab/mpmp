@@ -158,7 +158,9 @@ class TCGADataModel():
                               classification,
                               gene_dir,
                               use_pancancer=False,
-                              filter_cancer_types=True):
+                              filter_cancer_types=True,
+                              batch_correction=False,
+                              bc_cancer_type=False):
         """
         Prepare to run mutation prediction experiments for a given gene.
 
@@ -201,6 +203,28 @@ class TCGADataModel():
             use_subsampled=(self.debug or self.test),
             verbose=self.verbose
         )
+
+        if batch_correction:
+            import mpmp.utilities.batch_utilities as bu
+            # we're using the mutation as a batch indicator
+            # this will effectively remove all linear signal in the dataset
+            # related to presence/absence of the mutation
+            train_filtered_df = bu.run_limma(
+                train_filtered_df,
+                y_filtered_df.status.astype(str).values,
+                gene_features,
+                self.verbose)
+        elif bc_cancer_type:
+            import mpmp.utilities.batch_utilities as bu
+            # we're using the cancer type as a batch indicator
+            cancer_type_to_index = {
+                ct: ix for ix, ct in enumerate(y_filtered_df.DISEASE.unique())
+            }
+            train_filtered_df = bu.run_limma(
+                train_filtered_df,
+                np.array([cancer_type_to_index[ct] for ct in y_filtered_df.DISEASE]),
+                gene_features,
+                self.verbose)
 
         self.X_df = train_filtered_df
         self.y_df = y_filtered_df

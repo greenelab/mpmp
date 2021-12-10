@@ -49,20 +49,19 @@ def train_classifier(X_train,
     """
     # Setup the classifier parameters
     clf_parameters = {
-        "classify__loss": ["log"],
-        "classify__penalty": ["elasticnet"],
-        "classify__alpha": alphas,
-        "classify__l1_ratio": l1_ratios,
+        'classify__alpha': alphas,
+        'classify__l1_ratio': l1_ratios,
     }
 
     estimator = Pipeline(
         steps=[
             (
-                "classify",
+                'classify',
                 SGDClassifier(
                     random_state=seed,
-                    class_weight="balanced",
-                    loss="log",
+                    class_weight='balanced',
+                    loss='log',
+                    penalty='elasticnet',
                     max_iter=max_iter,
                     tol=1e-3,
                 ),
@@ -75,7 +74,7 @@ def train_classifier(X_train,
         param_grid=clf_parameters,
         n_jobs=-1,
         cv=n_folds,
-        scoring="average_precision",
+        scoring='average_precision',
         return_train_score=True,
     )
 
@@ -88,12 +87,89 @@ def train_classifier(X_train,
         X=X_train,
         y=y_train.status,
         cv=n_folds,
-        method="decision_function",
+        method='decision_function',
     )
 
     # Get all performance results
     y_predict_train = cv_pipeline.decision_function(X_train)
     y_predict_test = cv_pipeline.decision_function(X_test)
+
+    return cv_pipeline, y_predict_train, y_predict_test, y_cv
+
+
+def train_gb_classifier(X_train,
+                        X_test,
+                        y_train,
+                        learning_rates,
+                        alphas,
+                        lambdas,
+                        seed,
+                        n_folds=4,
+                        max_iter=1000):
+    """
+    Fit gradient-boosted tree classifier to training data, and generate predictions
+    for test data.
+
+    Arguments
+    ---------
+    X_train: pandas DataFrame of feature matrix for training data
+    X_test: pandas DataFrame of feature matrix for testing data
+    y_train: pandas DataFrame of processed y matrix (output from align_matrices())
+    n_folds: int of how many folds of cross validation to perform
+    max_iter: the maximum number of iterations to test until convergence
+
+    Returns
+    ------
+    The full pipeline sklearn object and y matrix predictions for training, testing,
+    and cross validation
+    """
+    from lightgbm import LGBMClassifier
+
+    clf_parameters = {
+        'classify__learning_rate': learning_rates,
+        'classify__reg_alpha': alphas,
+        'classify__reg_lambda': lambdas,
+     }
+
+    estimator = Pipeline(
+        steps=[
+            (
+                'classify',
+                LGBMClassifier(
+                    random_state=seed,
+                    class_weight='balanced',
+                    max_depth=5,
+                    n_estimators=100,
+                    colsample_bytree=0.35
+                ),
+            )
+        ]
+    )
+
+    cv_pipeline = GridSearchCV(
+        estimator=estimator,
+        param_grid=clf_parameters,
+        n_jobs=-1,
+        cv=n_folds,
+        scoring='average_precision',
+        return_train_score=True,
+    )
+
+    # Fit the model
+    cv_pipeline.fit(X=X_train, y=y_train.status)
+
+    # Obtain cross validation results
+    y_cv = cross_val_predict(
+        cv_pipeline.best_estimator_,
+        X=X_train,
+        y=y_train.status,
+        cv=n_folds,
+        method='predict_proba',
+    )[:, 1]
+
+    # Get all performance results
+    y_predict_train = cv_pipeline.predict_proba(X_train)[:, 1]
+    y_predict_test = cv_pipeline.predict_proba(X_test)[:, 1]
 
     return cv_pipeline, y_predict_train, y_predict_test, y_cv
 
