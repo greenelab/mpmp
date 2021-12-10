@@ -5,6 +5,7 @@ Functions for batch correction
 import sys
 
 import numpy as np
+import pandas as pd
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.packages import importr
 
@@ -42,11 +43,8 @@ def run_limma(data, batches, gene_features, correct_covariates=True, verbose=Fal
 
     # print(values_to_correct.T[:5, :5])
 
-    corrected_values = limma.removeBatchEffect(values_to_correct,
-                                               (batches.astype(int) + 1))
-    code_batches = batches[:].astype(int)
-    code_batches[code_batches == 0] = -1
-    corrected_2 = remove_batch_effect(values_to_correct.T, code_batches.reshape(-1, 1))
+    corrected_values = limma.removeBatchEffect(values_to_correct, batches)
+    corrected_2 = remove_batch_effect(values_to_correct.T, batches)
 
     print(corrected_values[:5, :5])
     print(corrected_2.T[:5, :5])
@@ -67,20 +65,36 @@ def run_limma(data, batches, gene_features, correct_covariates=True, verbose=Fal
 
     return corrected_data
 
+
 def remove_batch_effect(X, batches):
     """Python version of limma::removeBatchEffect.
 
     This should duplicate the original R code here (for the case
     where there is only a single vector of batches):
     https://rdrr.io/bioc/limma/src/R/removeBatchEffect.R
+
+    For now, batches needs to be integer indexes.
     """
+    from patsy.contrasts import Sum
     from sklearn.linear_model import LinearRegression
+
+    # use sum coding to code batches, this is what limma does
+    # https://www.statsmodels.org/dev/examples/notebooks/generated/contrasts.html#Sum-(Deviation)-Coding
+    # this is something that is actually easier in R, due to its
+    # built-in factor type, but we can sort of emulate it here
+    # with pandas categorical data
+    batches_df = pd.Series(batches, dtype='category')
+    contrast = Sum().code_without_intercept(
+        list(batches_df.cat.categories)
+    )
+    design = contrast.matrix[batches.astype(int), :]
+
     # X is an n x p matrix
-    # batches is a n x 1 vector of batch indicators
-    # we want to find a 1 x p vector of coefficients
-    reg = LinearRegression().fit(batches, X)
-    # per sklearn documentation, for multiple targets this is always an
-    # (n_targets, n_features) array
-    assert reg.coef_.shape == (X.shape[1], 1)
-    return X - (batches.astype(float) @ reg.coef_.T)
+    # batches is a n x m vector of batch indicators
+    # we want to find a m x p vector of coefficients
+    reg = LinearRegression().fit(design, X)
+    # per sklearn documentation, for multiple targets the coef_ is
+    # always an (n_targets, n_features) array (i.e. m x p)
+    assert reg.coef_.shape == (X.shape[1], design.shape[1])
+    return X - (design.astype(float) @ reg.coef_.T)
 
