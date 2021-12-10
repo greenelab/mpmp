@@ -40,7 +40,19 @@ def run_limma(data, batches, gene_features, correct_covariates=True, verbose=Fal
 
     pandas2ri.activate()
 
-    corrected_values = limma.removeBatchEffect(values_to_correct, batches)
+    # print(values_to_correct.T[:5, :5])
+
+    corrected_values = limma.removeBatchEffect(values_to_correct,
+                                               (batches.astype(int) + 1))
+    code_batches = batches[:].astype(int)
+    code_batches[code_batches == 0] = -1
+    corrected_2 = remove_batch_effect(values_to_correct.T, code_batches.reshape(-1, 1))
+
+    print(corrected_values[:5, :5])
+    print(corrected_2.T[:5, :5])
+    print(corrected_values.shape)
+    print(corrected_2.T.shape)
+    exit()
 
     corrected_data = data.copy()
 
@@ -54,3 +66,21 @@ def run_limma(data, batches, gene_features, correct_covariates=True, verbose=Fal
     assert corrected_data.shape == data.shape
 
     return corrected_data
+
+def remove_batch_effect(X, batches):
+    """Python version of limma::removeBatchEffect.
+
+    This should duplicate the original R code here (for the case
+    where there is only a single vector of batches):
+    https://rdrr.io/bioc/limma/src/R/removeBatchEffect.R
+    """
+    from sklearn.linear_model import LinearRegression
+    # X is an n x p matrix
+    # batches is a n x 1 vector of batch indicators
+    # we want to find a 1 x p vector of coefficients
+    reg = LinearRegression().fit(batches, X)
+    # per sklearn documentation, for multiple targets this is always an
+    # (n_targets, n_features) array
+    assert reg.coef_.shape == (X.shape[1], 1)
+    return X - (batches.astype(float) @ reg.coef_.T)
+
