@@ -29,7 +29,9 @@ def run_limma(data, batches, coefs=None, verbose=False):
 
     values_to_correct = data.copy().values
 
-    corrected_values, coefs = remove_batch_effect(values_to_correct, batches)
+    corrected_values, coefs = remove_batch_effect(values_to_correct,
+                                                  batches,
+                                                  coefs=coefs)
     corrected_data = data.copy()
 
     corrected_data.loc[:, :] = corrected_values
