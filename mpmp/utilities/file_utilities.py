@@ -43,6 +43,7 @@ def construct_filename(output_dir,
         return Path(output_dir,
                     '{}_{}{}'.format('_'.join([f'{k}{v}' for k, v in kwargs.items()
                                                              if v is not None]),
+
                                      file_descriptor,
                                      extension))
     elif len(kwargs) == 0:
@@ -127,7 +128,8 @@ def save_results(output_dir,
                  identifier,
                  shuffle_labels,
                  model_options,
-                 predictor='classify'):
+                 predictor='classify',
+                 titration_ratio=None):
     """Save results of a single experiment for a single identifier."""
 
     signal = 'shuffled' if shuffle_labels else 'signal'
@@ -153,7 +155,8 @@ def save_results(output_dir,
                                          training_data,
                                          signal,
                                          s=model_options.seed,
-                                         n=n_dim)
+                                         n=n_dim,
+                                         t=titration_ratio)
         auc_df.to_csv(
             output_file, sep="\t", index=False, float_format="%.5g"
         )
@@ -168,7 +171,8 @@ def save_results(output_dir,
                                          training_data,
                                          signal,
                                          s=model_options.seed,
-                                         n=n_dim)
+                                         n=n_dim,
+                                         t=titration_ratio)
         aupr_df.to_csv(
             output_file, sep="\t", index=False, float_format="%.5g"
         )
@@ -200,8 +204,8 @@ def save_results(output_dir,
                                      signal,
                                      predictor,
                                      s=model_options.seed,
-
-                                     n=n_dim)
+                                     n=n_dim,
+                                     t=titration_ratio)
     metrics_df.to_csv(
         output_file, sep="\t", index=False, float_format="%.5g"
     )
@@ -215,7 +219,8 @@ def save_results(output_dir,
                                          signal,
                                          predictor,
                                          s=model_options.seed,
-                                         n=n_dim)
+                                         n=n_dim,
+                                         t=titration_ratio)
         preds_df.to_csv(
             output_file, sep="\t", float_format="%.5g"
         )

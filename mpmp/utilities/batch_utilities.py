@@ -7,7 +7,7 @@ import sys
 import numpy as np
 import pandas as pd
 
-def run_limma(data, batches, coefs=None, verbose=False):
+def run_limma(data, batches, columns=None, coefs=None, verbose=False):
     """ Use limma to correct for batch effects.
 
     Arguments
@@ -15,6 +15,7 @@ def run_limma(data, batches, coefs=None, verbose=False):
     data (np.array): a samples x features matrix to be corrected
     batches (np.array): the batch, e.g. platform, study, or experiment
                         that each sample came from, in order
+    columns (np.array): bool array of columns to use, if None use all of them
     coefs (np.array): existing coefficients to use for batch correction, if
                       None fit a model on provided data to get coefs
     verbose: if True, print verbose output
@@ -27,29 +28,26 @@ def run_limma(data, batches, coefs=None, verbose=False):
     if verbose:
         print('Correcting for batch effects using limma...', file=sys.stderr)
 
-    values_to_correct = data.copy().values
+    if columns is not None:
+        values_to_correct = data.loc[:, columns].copy().values
+    else:
+        values_to_correct = data.copy().values
 
-    corrected_values, coefs = remove_batch_effect(values_to_correct, batches)
+    corrected_values, coefs = remove_batch_effect(values_to_correct,
+                                                  batches,
+                                                  coefs=coefs)
     corrected_data = data.copy()
 
-    corrected_data.loc[:, :] = corrected_values
+    if columns is not None:
+        corrected_data.loc[:, columns] = corrected_values
+    else:
+        corrected_data.loc[:, :] = corrected_values
 
     # TODO: maybe add unit test for this?
     assert corrected_data.columns.equals(data.columns)
     assert corrected_data.shape == data.shape
 
     return corrected_data, coefs
-
-
-def limma_train_test(X_train, X_test, batches_train, batches_test):
-    """Fit batch correction model on training data, then apply to test data.
-
-    X_train and X_test should have the same set of features, but they can have
-    different numbers of samples.
-    """
-    X_train_adj, coefs = run_limma(X_train, batches_train)
-    X_test_adj, _ = run_limma(X_test, batches_test, coefs=coefs)
-    return X_train_adj, X_test_adj
 
 
 def remove_batch_effect(X, batches, coefs=None):
@@ -91,4 +89,24 @@ def remove_batch_effect(X, batches, coefs=None):
         coefs = reg.coef_
 
     return X - (design.astype(float) @ coefs.T), coefs
+
+
+def limma_train_test(X_train, X_test, batches_train, batches_test, columns=None):
+    """Fit batch correction model on training data, then apply to test data.
+
+    X_train and X_test should have the same set of features, but they can have
+    different numbers of samples.
+    """
+    X_train_adj, coefs = run_limma(X_train, batches_train, columns=columns)
+    X_test_adj, _ = run_limma(X_test, batches_test, columns=columns, coefs=coefs)
+    return X_train_adj, X_test_adj
+
+
+def limma_ratio(X_train, X_test, batches_train, batches_test, ratio, seed):
+    # select columns to batch correct at random
+    col_subset = X_train.columns.to_series().sample(frac=ratio, random_state=seed)
+    col_select = X_train.columns.isin(col_subset)
+    # call limma_train_test with the selected subset
+    return limma_train_test(X_train, X_test, batches_train, batches_test,
+                            columns=col_select)
 

@@ -37,6 +37,7 @@ def run_cv_stratified(data_model,
                       stratify=True,
                       nonlinear=False,
                       bc_train_test=False,
+                      bc_titration_ratio=None,
                       results_dir=None):
     """
     Run stratified cross-validation experiments for a given dataset, then write
@@ -103,14 +104,22 @@ def run_cv_stratified(data_model,
         # we want to do this before standardization/subsetting
         if bc_train_test:
             import mpmp.utilities.batch_utilities as bu
-            print(X_train_raw_df.iloc[:5, :5])
-            print(X_test_raw_df.iloc[:5, :5])
-            X_train_raw_df, X_test_raw_df = bu.limma_train_test(
-                X_train_raw_df,
-                X_test_raw_df,
-                y_train_df.status.astype(str).values,
-                y_test_df.status.astype(str).values
-            )
+            if bc_titration_ratio is not None:
+                X_train_raw_df, X_test_raw_df = bu.limma_ratio(
+                    X_train_raw_df,
+                    X_test_raw_df,
+                    y_train_df.status.astype(str).values,
+                    y_test_df.status.astype(str).values,
+                    bc_titration_ratio,
+                    seed=data_model.seed
+                )
+            else:
+                X_train_raw_df, X_test_raw_df = bu.limma_train_test(
+                    X_train_raw_df,
+                    X_test_raw_df,
+                    y_train_df.status.astype(str).values,
+                    y_test_df.status.astype(str).values
+                )
 
         # shuffle labels for train/test sets separately
         # this ensures that overall label balance isn't affected
