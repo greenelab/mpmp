@@ -150,10 +150,6 @@ if __name__ == '__main__':
 
             try:
                 gene_dir = fu.make_output_dir(experiment_dir, gene)
-                check_file = fu.check_output_file(gene_dir,
-                                                  gene,
-                                                  shuffle_labels,
-                                                  model_options)
                 tcga_data.process_data_for_gene(
                     gene,
                     classification,
@@ -191,6 +187,11 @@ if __name__ == '__main__':
             for titration_ratio in inner_progress:
                 inner_progress.set_description('ratio: {}'.format(titration_ratio))
                 try:
+                    check_file = fu.check_output_file(gene_dir,
+                                                      gene,
+                                                      shuffle_labels,
+                                                      model_options,
+                                                      titration_ratio=titration_ratio)
                     standardize_columns = (model_options.training_data in
                                            cfg.standardize_data_types)
                     results = run_cv_stratified(

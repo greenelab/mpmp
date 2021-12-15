@@ -103,6 +103,8 @@ def limma_train_test(X_train, X_test, batches_train, batches_test, columns=None)
 
 
 def limma_ratio(X_train, X_test, batches_train, batches_test, ratio, seed):
+    if ratio == 0.0:
+        return X_train, X_test
     # select columns to batch correct at random
     col_subset = X_train.columns.to_series().sample(frac=ratio, random_state=seed)
     col_select = X_train.columns.isin(col_subset)

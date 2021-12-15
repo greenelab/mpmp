@@ -86,7 +86,8 @@ def check_output_file(output_dir,
                       identifier,
                       shuffle_labels,
                       model_options,
-                      predictor='classify'):
+                      predictor='classify',
+                      titration_ratio=None):
     """Check if results already exist for a given experiment identifier.
 
     If the file does not exist, return the filename.
@@ -112,7 +113,8 @@ def check_output_file(output_dir,
                                     signal,
                                     predictor,
                                     s=model_options.seed,
-                                    n=n_dim)
+                                    n=n_dim,
+                                    t=titration_ratio)
     if check_file.is_file():
         raise ResultsFileExistsError(
             'Results file already exists for identifier: {}\n'.format(
