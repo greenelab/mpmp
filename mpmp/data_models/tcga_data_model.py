@@ -209,10 +209,17 @@ class TCGADataModel():
             # we're using the mutation as a batch indicator
             # this will effectively remove all linear signal in the dataset
             # related to presence/absence of the mutation
-            train_filtered_df, _ = bu.run_limma(
-                train_filtered_df,
-                y_filtered_df.status.astype(str).values,
-                verbose=self.verbose)
+            if cfg.bc_covariates:
+                train_filtered_df, _ = bu.run_limma(
+                    train_filtered_df,
+                    y_filtered_df.status.astype(str).values,
+                    verbose=self.verbose)
+            else:
+                train_filtered_df, _ = bu.run_limma(
+                    train_filtered_df,
+                    y_filtered_df.status.astype(str).values,
+                    columns=gene_features,
+                    verbose=self.verbose)
         elif bc_cancer_type:
             import mpmp.utilities.batch_utilities as bu
             # we're using the cancer type as a batch indicator

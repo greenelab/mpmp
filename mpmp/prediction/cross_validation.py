@@ -113,12 +113,20 @@ def run_cv_stratified(data_model,
                     bc_titration_ratio,
                     seed=data_model.seed
                 )
-            else:
+            elif cfg.bc_covariates:
                 X_train_raw_df, X_test_raw_df = bu.limma_train_test(
                     X_train_raw_df,
                     X_test_raw_df,
                     y_train_df.status.astype(str).values,
                     y_test_df.status.astype(str).values
+                )
+            else:
+                X_train_raw_df, X_test_raw_df = bu.limma_train_test(
+                    X_train_raw_df,
+                    X_test_raw_df,
+                    y_train_df.status.astype(str).values,
+                    y_test_df.status.astype(str).values,
+                    columns=data_model.gene_features
                 )
 
         # shuffle labels for train/test sets separately
