@@ -6,6 +6,7 @@ import sys
 import argparse
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
@@ -51,15 +52,6 @@ def process_args():
                                      'parameters for training/evaluating model, '
                                      'these will affect output and are saved as '
                                      'experiment metadata ')
-    opts.add_argument('--batch_correction', action='store_true',
-                      help='if included, use limma to remove linear signal, '
-                           'this is useful to determine how much non-linear signal '
-                           'exists in the data')
-    opts.add_argument('--bc_cancer_type', action='store_true',
-                      help='if included, use limma to remove linear cancer type signal')
-    opts.add_argument('--bc_train_test', action='store_true',
-                      help='if included, fit BE correction model on train set, '
-                           'then apply to test set')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
     opts.add_argument('--num_folds', type=int, default=4,
@@ -93,6 +85,7 @@ def process_args():
     model_options.shuffle_by_cancer_type = cfg.shuffle_by_cancer_type
     model_options.training_data = 'expression'
     model_options.overlap_data_types = ['expression']
+    model_options.bc_titration = True
 
     return io_args, model_options
 
@@ -154,8 +147,6 @@ if __name__ == '__main__':
                     gene,
                     classification,
                     gene_dir,
-                    batch_correction=model_options.batch_correction,
-                    bc_cancer_type=model_options.bc_cancer_type
                 )
             except ResultsFileExistsError:
                 # this happens if cross-validation for this gene has already been
@@ -180,8 +171,11 @@ if __name__ == '__main__':
                 fu.write_log_file(log_df, io_args.log_file)
                 continue
 
-            inner_progress = tqdm(cfg.titration_ratios,
-                                  total=len(cfg.titration_ratios),
+            num_feats = (model_options.subset_mad_genes +
+                         np.count_nonzero(~tcga_data.gene_features))
+            titration_ratios = [n / num_feats for n in range(0, num_feats+1)]
+            inner_progress = tqdm(titration_ratios,
+                                  total=len(titration_ratios),
                                   ncols=100,
                                   file=sys.stdout)
             for titration_ratio in inner_progress:
@@ -191,7 +185,7 @@ if __name__ == '__main__':
                                                       gene,
                                                       shuffle_labels,
                                                       model_options,
-                                                      titration_ratio=titration_ratio)
+                                                      titration_ratio=titration_ratio*num_feats)
                     standardize_columns = (model_options.training_data in
                                            cfg.standardize_data_types)
                     results = run_cv_stratified(
@@ -205,7 +199,6 @@ if __name__ == '__main__':
                         shuffle_labels=shuffle_labels,
                         standardize_columns=standardize_columns,
                         nonlinear=model_options.nonlinear,
-                        bc_train_test=model_options.bc_train_test,
                         bc_titration_ratio=titration_ratio
                     )
                     # only save results if no exceptions
@@ -216,7 +209,7 @@ if __name__ == '__main__':
                                     gene,
                                     shuffle_labels,
                                     model_options,
-                                    titration_ratio=titration_ratio)
+                                    titration_ratio=titration_ratio*num_feats)
                 except NoTrainSamplesError:
                     if io_args.verbose:
                         print('Skipping due to no train samples: gene {}'.format(
