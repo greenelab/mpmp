@@ -100,35 +100,6 @@ def run_cv_stratified(data_model,
         y_train_df = data_model.y_df.reindex(X_train_raw_df.index)
         y_test_df = data_model.y_df.reindex(X_test_raw_df.index)
 
-        # correct for batch effects for train/test sets separately
-        # we want to do this before standardization/subsetting
-        if bc_train_test:
-            import mpmp.utilities.batch_utilities as bu
-            if bc_titration_ratio is not None:
-                X_train_raw_df, X_test_raw_df = bu.limma_ratio(
-                    X_train_raw_df,
-                    X_test_raw_df,
-                    y_train_df.status.astype(str).values,
-                    y_test_df.status.astype(str).values,
-                    bc_titration_ratio,
-                    seed=data_model.seed
-                )
-            elif cfg.bc_covariates:
-                X_train_raw_df, X_test_raw_df = bu.limma_train_test(
-                    X_train_raw_df,
-                    X_test_raw_df,
-                    y_train_df.status.astype(str).values,
-                    y_test_df.status.astype(str).values
-                )
-            else:
-                X_train_raw_df, X_test_raw_df = bu.limma_train_test(
-                    X_train_raw_df,
-                    X_test_raw_df,
-                    y_train_df.status.astype(str).values,
-                    y_test_df.status.astype(str).values,
-                    columns=data_model.gene_features
-                )
-
         # shuffle labels for train/test sets separately
         # this ensures that overall label balance isn't affected
         # (see https://github.com/greenelab/mpmp/issues/44)
@@ -153,6 +124,26 @@ def run_cv_stratified(data_model,
                     y_train_df.status = np.random.permutation(y_train_df.status.values)
                     y_test_df.status = np.random.permutation(y_test_df.status.values)
 
+        # correct for batch effects for train/test sets separately
+        # we want to do this before standardization/subsetting
+        if bc_train_test:
+            import mpmp.utilities.batch_utilities as bu
+            if cfg.bc_covariates:
+                X_train_raw_df, X_test_raw_df = bu.limma_train_test(
+                    X_train_raw_df,
+                    X_test_raw_df,
+                    y_train_df.status.astype(str).values,
+                    y_test_df.status.astype(str).values
+                )
+            else:
+                X_train_raw_df, X_test_raw_df = bu.limma_train_test(
+                    X_train_raw_df,
+                    X_test_raw_df,
+                    y_train_df.status.astype(str).values,
+                    y_test_df.status.astype(str).values,
+                    columns=data_model.gene_features
+                )
+
         # choose single-omics or multi-omics preprocessing function based on
         # data_model.gene_data_types class attribute
         if hasattr(data_model, 'gene_data_types'):
@@ -163,11 +154,24 @@ def run_cv_stratified(data_model,
                                                              standardize_columns,
                                                              data_model.subset_mad_genes)
         else:
-            X_train_df, X_test_df = tu.preprocess_data(X_train_raw_df,
-                                                       X_test_raw_df,
-                                                       data_model.gene_features,
-                                                       standardize_columns,
-                                                       data_model.subset_mad_genes)
+            import mpmp.utilities.batch_utilities as bu
+            # TODO should probably do all batch correction after subset_mad_genes
+            if bc_titration_ratio is not None:
+                X_train_df, X_test_df = tu.preprocess_data(X_train_raw_df,
+                                                           X_test_raw_df,
+                                                           data_model.gene_features,
+                                                           standardize_columns,
+                                                           data_model.subset_mad_genes,
+                                                           bc_titration_ratio,
+                                                           y_train_df.status.astype(str).values,
+                                                           y_test_df.status.astype(str).values,
+                                                           data_model.seed)
+            else:
+                X_train_df, X_test_df = tu.preprocess_data(X_train_raw_df,
+                                                           X_test_raw_df,
+                                                           data_model.gene_features,
+                                                           standardize_columns,
+                                                           data_model.subset_mad_genes)
 
         models_list = {
             'classify': (clf.train_gb_classifier if nonlinear

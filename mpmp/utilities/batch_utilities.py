@@ -102,12 +102,26 @@ def limma_train_test(X_train, X_test, batches_train, batches_test, columns=None)
     return X_train_adj, X_test_adj
 
 
-def limma_ratio(X_train, X_test, batches_train, batches_test, ratio, seed):
+def limma_ratio(X_train, X_test, batches_train, batches_test, ratio, seed, columns=None):
+
     if ratio == 0.0:
         return X_train, X_test
+
+    if columns is not None:
+        valid_columns = X_train.columns[columns].to_series()
+    else:
+        valid_columns = X_train.columns.to_series()
+
     # select columns to batch correct at random
-    col_subset = X_train.columns.to_series().sample(frac=ratio, random_state=seed)
+    col_subset = valid_columns.sample(frac=ratio, random_state=seed)
     col_select = X_train.columns.isin(col_subset)
+
+    # make sure we selected at least one column in columns to batch correct
+    if columns is not None:
+        assert np.count_nonzero(columns & col_select) != 0
+    else:
+        assert np.count_nonzero(col_select) != 0
+
     # call limma_train_test with the selected subset
     return limma_train_test(X_train, X_test, batches_train, batches_test,
                             columns=col_select)
