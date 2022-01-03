@@ -43,7 +43,6 @@ def construct_filename(output_dir,
         return Path(output_dir,
                     '{}_{}{}'.format('_'.join([f'{k}{v}' for k, v in kwargs.items()
                                                              if v is not None]),
-
                                      file_descriptor,
                                      extension))
     elif len(kwargs) == 0:

@@ -222,11 +222,12 @@ def preprocess_data(X_train_raw_df,
 
     Note this needs to happen for train and test sets independently.
     """
+    # first subset to top MAD genes (if necessary)
     if subset_mad_genes > 0:
         X_train_raw_df, X_test_raw_df, gene_features = subset_by_mad(
             X_train_raw_df, X_test_raw_df, gene_features, subset_mad_genes
         )
-    # TODO this code can definitely be cleaned up if we keep it
+    # then batch correct some of the features (if necessary)
     if bc_titration_ratio is not None:
         import mpmp.utilities.batch_utilities as bu
         if cfg.bc_covariates:
@@ -249,6 +250,7 @@ def preprocess_data(X_train_raw_df,
                 columns=gene_features,
                 seed=seed
             )
+    # then standardize each column (if necessary)
     if standardize_columns:
         X_train_df = standardize_features(X_train_raw_df, gene_features)
         X_test_df = standardize_features(X_test_raw_df, gene_features)

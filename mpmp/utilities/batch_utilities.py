@@ -103,6 +103,11 @@ def limma_train_test(X_train, X_test, batches_train, batches_test, columns=None)
 
 
 def limma_ratio(X_train, X_test, batches_train, batches_test, ratio, seed, columns=None):
+    """Batch correct a specified ratio of features, selected at random.
+
+    This function will fit the batch correction model on training data, then
+    apply it to test data (using the limma_train_test function).
+    """
 
     if ratio == 0.0:
         return X_train, X_test
