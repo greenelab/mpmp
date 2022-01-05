@@ -39,7 +39,7 @@ for gene in $genes; do
         results_dir=./02_classify_mutations/results/bc_titration_small/linear_bc_${num_feats}
         errors_dir=./linear_bc_titration_${num_feats}_errors
         mkdir -p $errors_dir
-        cmd="python 02_classify_mutations/batch_correction_titration.py "
+        cmd="python 02_classify_mutations/batch_effects/batch_correction_titration.py "
         cmd+="--gene $gene "
         cmd+="--results_dir $results_dir "
         cmd+="--subset_mad_genes $num_feats "
@@ -51,7 +51,7 @@ for gene in $genes; do
         results_dir=./02_classify_mutations/results/bc_titration_small/nonlinear_bc_${num_feats}
         errors_dir=./nonlinear_bc_titration_${num_feats}_errors
         mkdir -p $errors_dir
-        cmd="python 02_classify_mutations/batch_correction_titration.py "
+        cmd="python 02_classify_mutations/batch_effects/batch_correction_titration.py "
         cmd+="--gene $gene "
         cmd+="--results_dir $results_dir "
         cmd+="--subset_mad_genes $num_feats "
