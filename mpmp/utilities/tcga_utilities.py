@@ -212,24 +212,46 @@ def preprocess_data(X_train_raw_df,
                     X_test_raw_df,
                     gene_features,
                     standardize_columns=True,
-                    subset_mad_genes=-1):
+                    subset_mad_genes=-1,
+                    bc_titration_ratio=None,
+                    train_batches=None,
+                    test_batches=None,
+                    seed=cfg.default_seed):
     """
     Data processing and feature selection, if applicable.
 
     Note this needs to happen for train and test sets independently.
     """
-    # TODO: this logic can probably be simplified
+    # first subset to top MAD genes (if necessary)
     if subset_mad_genes > 0:
-        X_train_raw_df, X_test_raw_df, gene_features_filtered = subset_by_mad(
+        X_train_raw_df, X_test_raw_df, gene_features = subset_by_mad(
             X_train_raw_df, X_test_raw_df, gene_features, subset_mad_genes
         )
-        if standardize_columns:
-            X_train_df = standardize_features(X_train_raw_df, gene_features_filtered)
-            X_test_df = standardize_features(X_test_raw_df, gene_features_filtered)
+    # then batch correct some of the features (if necessary)
+    if bc_titration_ratio is not None:
+        import mpmp.utilities.batch_utilities as bu
+        if cfg.bc_covariates:
+            X_train_raw_df, X_test_raw_df = bu.limma_ratio(
+                X_train_raw_df,
+                X_test_raw_df,
+                train_batches,
+                test_batches,
+                bc_titration_ratio,
+                columns=None,
+                seed=seed
+            )
         else:
-            X_train_df = X_train_raw_df
-            X_test_df = X_test_raw_df
-    elif standardize_columns:
+            X_train_raw_df, X_test_raw_df = bu.limma_ratio(
+                X_train_raw_df,
+                X_test_raw_df,
+                train_batches,
+                test_batches,
+                bc_titration_ratio,
+                columns=gene_features,
+                seed=seed
+            )
+    # then standardize each column (if necessary)
+    if standardize_columns:
         X_train_df = standardize_features(X_train_raw_df, gene_features)
         X_test_df = standardize_features(X_test_raw_df, gene_features)
     else:

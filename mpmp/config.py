@@ -237,3 +237,9 @@ msi_cancer_types = ['COADREAD', 'STAD', 'UCEC']
 
 # if true, shuffle labels within cancer types to preserve number of mutations
 shuffle_by_cancer_type = True
+
+# titration ratios for batch correction titration experiment
+titration_ratios = [0.0, 0.25, 0.5, 0.75, 1.]
+
+# whether or not to batch correct covariates
+bc_covariates = False
