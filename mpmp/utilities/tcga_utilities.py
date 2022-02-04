@@ -211,8 +211,10 @@ def align_matrices(x_file_or_df,
 def preprocess_data(X_train_raw_df,
                     X_test_raw_df,
                     gene_features,
+                    y_train_df=None,
                     standardize_columns=True,
-                    subset_mad_genes=-1,
+                    feature_selection='mad',
+                    num_features=-1,
                     bc_titration_ratio=None,
                     train_batches=None,
                     test_batches=None,
@@ -222,11 +224,17 @@ def preprocess_data(X_train_raw_df,
 
     Note this needs to happen for train and test sets independently.
     """
-    # first subset to top MAD genes (if necessary)
-    if subset_mad_genes > 0:
+    # first do feature selection
+    if feature_selection == 'mad' and num_features > 0:
+        # subset to top MAD genes (if necessary)
         X_train_raw_df, X_test_raw_df, gene_features = subset_by_mad(
-            X_train_raw_df, X_test_raw_df, gene_features, subset_mad_genes
+            X_train_raw_df, X_test_raw_df, gene_features, num_features
         )
+    elif feature_selection == 'f_test' and num_features > 0:
+        X_train_raw_df, X_test_raw_df, gene_features = subset_f_test(
+            X_train_raw_df, X_test_raw_df, y_train_df, gene_features, num_features
+        )
+
     # then batch correct some of the features (if necessary)
     if bc_titration_ratio is not None:
         import mpmp.utilities.batch_utilities as bu
@@ -327,6 +335,64 @@ def subset_by_mad(X_train_df, X_test_df, gene_features, subset_mad_genes, verbos
     ))
     train_df = X_train_df.reindex(valid_features, axis='columns')
     test_df = X_test_df.reindex(valid_features, axis='columns')
+    return train_df, test_df, gene_features
+
+
+def subset_f_test(X_train_df,
+                  X_test_df,
+                  y_train_df,
+                  gene_features,
+                  num_features,
+                  verbose=False):
+    """Subset features using univariate f-test p-values with the training labels.
+
+    Takes the top num_features features.
+
+    Arguments
+    ---------
+    X_train_df: training data, samples x genes
+    X_test_df: test data, samples x genes
+    y_train_df: training labels, samples x 1
+    gene_features: numpy bool array, indicating which features are genes
+                   (and should be included in feature selection)
+    num_features (int): number of features to select
+
+    Returns
+    -------
+    (train_df, test_df, gene_features) datasets with filtered features
+    """
+    from sklearn.feature_selection import f_classif, SelectKBest
+
+    if y_train_df is None:
+        # TODO actual error handling?
+        print('y_train_df cannot be none', file=sys.stderr)
+        exit()
+
+    if verbose:
+        print('Performing feature selection using f-test', file=sys.stderr)
+
+    # TODO sandbox this
+    X_gene_train_df = X_train_df.loc[:, gene_features]
+    X_gene_test_df = X_test_df.loc[:, gene_features]
+    X_non_gene_train_df = X_train_df.loc[:, ~gene_features]
+    X_non_gene_test_df = X_test_df.loc[:, ~gene_features]
+
+    selector = SelectKBest(f_classif, k=num_features)
+    selector.fit(X_gene_train_df, y_train_df)
+    select_cols = selector.get_support(indices=True)
+
+    train_df = pd.concat(
+        (X_gene_train_df.iloc[:, select_cols], X_non_gene_train_df),
+        axis='columns'
+    )
+    test_df = pd.concat(
+        (X_gene_test_df.iloc[:, select_cols], X_non_gene_test_df),
+        axis='columns'
+    )
+    gene_features = np.concatenate((
+        np.ones(num_features).astype('bool'),
+        np.zeros(np.count_nonzero(~gene_features)).astype('bool')
+    ))
     return train_df, test_df, gene_features
 
 
