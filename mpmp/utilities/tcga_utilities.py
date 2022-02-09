@@ -710,4 +710,49 @@ def compress_and_save_data(data_type,
     return transformed_data_df
 
 
+def drop_target_from_data(data_df, target_gene):
+    """Drop target gene from feature set."""
+    symbol_map, update_map = get_symbol_map()
+
+    target_feature = symbol_map[target_gene]
+    if target_feature in update_map.keys():
+        target_feature = update_map[target_gene]
+
+    print(target_gene, target_feature)
+    exit()
+
+
+def only_target_from_data(data_df, target_gene, gene_features):
+    """Reduce feature set to only target gene."""
+    symbol_map, update_map = get_symbol_map()
+
+    target_feature = symbol_map[target_gene]
+    if target_feature in update_map.keys():
+        target_feature = update_map[target_gene]
+
+    print(target_gene, target_feature)
+    exit()
+
+
+def get_symbol_map():
+
+    # TODO move these urls to config
+    genes_commit = 'ad9631bb4e77e2cdc5413b0d77cb8f7e93fc5bee'
+    url = 'https://raw.githubusercontent.com/cognoma/genes/{}/data/genes.tsv'.format(genes_commit)
+    gene_df = (
+        pd.read_csv(url, sep='\t')
+          # only consider protein-coding genes
+          .query("gene_type == 'protein-coding'")
+    )
+    # load gene updater - define up to date Entrez gene identifiers where appropriate
+    url = 'https://raw.githubusercontent.com/cognoma/genes/{}/data/updater.tsv'.format(genes_commit)
+    updater_df = pd.read_csv(url, sep='\t')
+
+    symbol_to_entrez = dict(zip(gene_df.symbol,
+                                gene_df.entrez_gene_id))
+
+    old_to_new_entrez = dict(zip(updater_df.old_entrez_gene_id,
+                                 updater_df.new_entrez_gene_id))
+
+    return symbol_to_entrez, old_to_new_entrez
 

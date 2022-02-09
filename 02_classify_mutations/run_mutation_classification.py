@@ -194,7 +194,9 @@ if __name__ == '__main__':
                     classification,
                     gene_dir,
                     batch_correction=model_options.batch_correction,
-                    bc_cancer_type=model_options.bc_cancer_type
+                    bc_cancer_type=model_options.bc_cancer_type,
+                    drop_target=model_options.drop_target,
+                    only_target=model_options.only_target
                 )
             except ResultsFileExistsError:
                 # this happens if cross-validation for this gene has already been
