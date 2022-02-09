@@ -69,11 +69,17 @@ def process_args():
                            'then apply to test set')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
+    opts.add_argument('--drop_target', action='store_true',
+                      help='drop target gene from feature set, '
+                           'currently only implemented for expression data')
     opts.add_argument('--num_folds', type=int, default=4,
                       help='number of folds of cross-validation to run')
     opts.add_argument('--nonlinear', action='store_true',
                       help='use gradient-boosted classifier instead of the '
                            'default elastic net classifier')
+    opts.add_argument('--only_target', action='store_true',
+                      help='use only target gene + non-gene covariates, '
+                           'currently only implemented for expression data')
     opts.add_argument('--overlap_data_types', nargs='*',
                       default=['expression'],
                       help='data types to define set of samples to use; e.g. '
@@ -101,6 +107,12 @@ def process_args():
         del args.custom_genes
     elif (args.gene_set != 'custom' and args.custom_genes is not None):
         parser.error('must use option --gene_set=\'custom\' if custom genes are included')
+
+    if args.drop_target and args.only_target:
+        parser.error('drop_target and only_target are mutually exclusive')
+
+    if (args.drop_target or args.only_target) and (args.training_data != 'expression'):
+        parser.error('drop_target and only_target only implemented for expression data')
 
     # check that all data types in overlap_data_types are valid
     check_all_data_types(parser, args.overlap_data_types, args.debug)
