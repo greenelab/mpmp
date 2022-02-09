@@ -364,14 +364,12 @@ def subset_f_test(X_train_df,
     from sklearn.feature_selection import f_classif, SelectKBest
 
     if y_train_df is None:
-        # TODO actual error handling?
-        print('y_train_df cannot be none', file=sys.stderr)
-        exit()
+        print('y_train_df must be included for feature selection by f-test',
+               file=sys.stderr)
 
     if verbose:
         print('Performing feature selection using f-test', file=sys.stderr)
 
-    # TODO sandbox this
     X_gene_train_df = X_train_df.loc[:, gene_features]
     X_gene_test_df = X_test_df.loc[:, gene_features]
     X_non_gene_train_df = X_train_df.loc[:, ~gene_features]
