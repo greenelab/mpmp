@@ -235,13 +235,22 @@ class TCGADataModel():
                 np.array([cancer_type_to_index[ct] for ct in y_filtered_df.DISEASE]),
                 verbose=self.verbose)
 
+        print(train_filtered_df.shape)
+        print(gene_features.shape)
+
         if drop_target:
-            train_filtered_df = drop_target_from_data(
-                    train_filtered_df, gene)
+            train_filtered_df, gene_features = drop_target_from_data(
+                    train_filtered_df, gene, gene_features)
+            print
 
         if only_target:
-            train_filtered_df = only_target_from_data(
+            train_filtered_df, gene_features = only_target_from_data(
                     train_filtered_df, gene, gene_features)
+
+        print(train_filtered_df.shape)
+        print(gene_features.shape)
+        print(gene_features[:10])
+        exit()
 
         self.X_df = train_filtered_df
         self.y_df = y_filtered_df
