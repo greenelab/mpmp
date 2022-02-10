@@ -714,10 +714,14 @@ def drop_target_from_data(data_df, target_gene, gene_features):
     """Drop target gene from feature set."""
     symbol_map, update_map = get_symbol_map()
 
-    target_feature = symbol_map[target_gene]
-    if target_feature in update_map.keys():
-        target_feature = update_map[target_gene]
-    target_feature = str(target_feature)
+    try:
+        target_feature = symbol_map[target_gene]
+        if target_feature in update_map.keys():
+            target_feature = update_map[target_gene]
+        target_feature = str(target_feature)
+    except KeyError:
+        # if not found in symbol_map, just use raw feature
+        target_feature = str(target_gene)
 
     # update data by removing target
     data_df_updated = data_df.drop(columns=target_feature)
@@ -733,15 +737,19 @@ def only_target_from_data(data_df, target_gene, gene_features):
     """Reduce feature set to only target gene."""
     symbol_map, update_map = get_symbol_map()
 
-    target_feature = symbol_map[target_gene]
-    if target_feature in update_map.keys():
-        target_feature = update_map[target_gene]
-    target_feature = str(target_feature)
+    try:
+        target_feature = symbol_map[target_gene]
+        if target_feature in update_map.keys():
+            target_feature = update_map[target_gene]
+        target_feature = str(target_feature)
+    except KeyError:
+        # if not found in symbol_map, just use raw feature
+        target_feature = str(target_gene)
 
     # update data by removing all but target
     non_gene_df = data_df.loc[:, ~gene_features]
     gene_df = data_df.loc[:, target_feature]
-    data_df_updated = pd.concat((non_gene_df, gene_df), axis='columns')
+    data_df_updated = pd.concat((gene_df, non_gene_df), axis='columns')
 
     # update gene features array, there's only one gene feature now
     gene_features_updated = np.array(
