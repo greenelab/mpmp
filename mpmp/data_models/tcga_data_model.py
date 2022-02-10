@@ -240,17 +240,11 @@ class TCGADataModel():
 
         if drop_target:
             train_filtered_df, gene_features = drop_target_from_data(
-                    train_filtered_df, gene, gene_features)
-            print
+                train_filtered_df, gene, gene_features)
 
         if only_target:
             train_filtered_df, gene_features = only_target_from_data(
                     train_filtered_df, gene, gene_features)
-
-        print(train_filtered_df.shape)
-        print(gene_features.shape)
-        print(gene_features[:10])
-        exit()
 
         self.X_df = train_filtered_df
         self.y_df = y_filtered_df
