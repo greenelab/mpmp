@@ -234,6 +234,10 @@ def preprocess_data(X_train_raw_df,
         X_train_raw_df, X_test_raw_df, gene_features = subset_f_test(
             X_train_raw_df, X_test_raw_df, y_train_df, gene_features, num_features
         )
+    elif feature_selection == 'random' and num_features > 0:
+        X_train_raw_df, X_test_raw_df, gene_features = subset_random(
+            X_train_raw_df, X_test_raw_df, gene_features, num_features, seed=seed
+        )
 
     # then batch correct some of the features (if necessary)
     if bc_titration_ratio is not None:
@@ -378,6 +382,57 @@ def subset_f_test(X_train_df,
     selector = SelectKBest(f_classif, k=num_features)
     selector.fit(X_gene_train_df, y_train_df)
     select_cols = selector.get_support(indices=True)
+
+    train_df = pd.concat(
+        (X_gene_train_df.iloc[:, select_cols], X_non_gene_train_df),
+        axis='columns'
+    )
+    test_df = pd.concat(
+        (X_gene_test_df.iloc[:, select_cols], X_non_gene_test_df),
+        axis='columns'
+    )
+    gene_features = np.concatenate((
+        np.ones(num_features).astype('bool'),
+        np.zeros(np.count_nonzero(~gene_features)).astype('bool')
+    ))
+    return train_df, test_df, gene_features
+
+
+def subset_random(X_train_df,
+                  X_test_df,
+                  gene_features,
+                  num_features,
+                  seed=cfg.default_seed,
+                  verbose=False):
+    """Subset gene features randomly, to num_features total features.
+
+    Arguments
+    ---------
+    X_train_df: training data, samples x genes
+    X_test_df: test data, samples x genes
+    gene_features: numpy bool array, indicating which features are genes
+                   (and should be included in feature selection)
+    num_features (int): number of features to select
+
+    Returns
+    -------
+    (train_df, test_df, gene_features) datasets with filtered features
+    """
+    if verbose:
+        print('Performing feature selection randomly', file=sys.stderr)
+
+    X_gene_train_df = X_train_df.loc[:, gene_features]
+    X_gene_test_df = X_test_df.loc[:, gene_features]
+    X_non_gene_train_df = X_train_df.loc[:, ~gene_features]
+    X_non_gene_test_df = X_test_df.loc[:, ~gene_features]
+
+    from mpmp.prediction.cross_validation import temp_seed
+
+    # set a temp seed so these columns are the same between signal/shuffled
+    with temp_seed(seed):
+        select_cols = np.random.choice(
+            np.arange(X_gene_train_df.shape[1]), size=(num_features,)
+        )
 
     train_df = pd.concat(
         (X_gene_train_df.iloc[:, select_cols], X_non_gene_train_df),

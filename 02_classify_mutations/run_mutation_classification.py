@@ -69,7 +69,7 @@ def process_args():
                            'then apply to test set')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
-    opts.add_argument('--feature_selection', choices=['f_test', 'mad'],
+    opts.add_argument('--feature_selection', choices=['f_test', 'mad', 'random'],
                       help='method to use for feature selection, only applied if '
                            '0 > num_features > total number of columns')
     opts.add_argument('--num_features', type=int, default=cfg.num_features_raw,
