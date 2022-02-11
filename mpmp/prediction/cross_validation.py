@@ -31,6 +31,8 @@ def run_cv_stratified(data_model,
                       predictor='classify',
                       shuffle_labels=False,
                       standardize_columns=False,
+                      num_features=-1,
+                      feature_selection_method='mad',
                       output_preds=False,
                       output_survival_fn=False,
                       survival_fit_ridge=False,
@@ -152,7 +154,7 @@ def run_cv_stratified(data_model,
                                                              data_model.gene_features,
                                                              data_model.gene_data_types,
                                                              standardize_columns,
-                                                             data_model.subset_mad_genes)
+                                                             num_features)
         else:
             import mpmp.utilities.batch_utilities as bu
             # TODO should probably do all batch correction after subset_mad_genes
@@ -161,7 +163,8 @@ def run_cv_stratified(data_model,
                                                            X_test_raw_df,
                                                            data_model.gene_features,
                                                            standardize_columns,
-                                                           data_model.subset_mad_genes,
+                                                           feature_selection_method,
+                                                           num_features,
                                                            bc_titration_ratio,
                                                            y_train_df.status.astype(str).values,
                                                            y_test_df.status.astype(str).values,
@@ -170,8 +173,10 @@ def run_cv_stratified(data_model,
                 X_train_df, X_test_df = tu.preprocess_data(X_train_raw_df,
                                                            X_test_raw_df,
                                                            data_model.gene_features,
+                                                           y_train_df.status,
                                                            standardize_columns,
-                                                           data_model.subset_mad_genes)
+                                                           feature_selection_method,
+                                                           num_features)
 
         models_list = {
             'classify': (clf.train_gb_classifier if nonlinear

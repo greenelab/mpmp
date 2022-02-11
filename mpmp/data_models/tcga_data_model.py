@@ -26,7 +26,6 @@ class TCGADataModel():
 
     def __init__(self,
                  seed=cfg.default_seed,
-                 subset_mad_genes=-1,
                  training_data='expression',
                  overlap_data_types=None,
                  load_compressed_data=False,
@@ -42,8 +41,6 @@ class TCGADataModel():
         Arguments
         ---------
         seed (int): seed for random number generator
-        subset_mad_genes (int): how many genes to keep (top by mean absolute deviation).
-                                -1 doesn't do any filtering (all genes will be kept).
         training_data (str): what data type to train the model on
         overlap_data_types (list): what data types to use to determine sample set
         load_compressed_data (bool): whether or not to use compressed data
@@ -56,7 +53,6 @@ class TCGADataModel():
         # save relevant parameters
         np.random.seed(seed)
         self.seed = seed
-        self.subset_mad_genes = subset_mad_genes
         self.compressed_data = load_compressed_data
         self.overlap_data_types = overlap_data_types
         self.n_dim = n_dim
