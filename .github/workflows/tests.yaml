@@ -16,7 +16,7 @@ jobs:
               with:
                 python-version: 3.7
 
-            - name: Setup conda environment
+            - name: Set up conda environment
               run: |
                 $CONDA/bin/conda env update --file tests/test_env.yml --name base
                 $CONDA/bin/pip install -e .
