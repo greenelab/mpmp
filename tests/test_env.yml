@@ -1,6 +1,7 @@
 name: mpmp
 channels:
   - conda-forge
+  - sebp
 dependencies:
   - numpy=1.19.2
   - openpyxl=3.0.7
@@ -8,5 +9,6 @@ dependencies:
   - python=3.7.9
   - pytest=6.2.1
   - scikit-learn=0.23.2
+  - scikit-survival=0.14.0
   - statsmodels=0.12.1
 
