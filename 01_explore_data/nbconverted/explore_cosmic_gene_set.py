@@ -37,13 +37,13 @@ cosmic_df.head()
 
 # ### Clean up the oncogene/TSG annotations
 # 
-# We need each gene to be annotated as _either_ an oncogene or TSG, so we know whether to use copy gain or copy loss data to define relevant CNV info. 
+# We want as many genes as possible to be annotated as _either_ an oncogene or TSG, so we know whether to use copy gain or copy loss data to define relevant CNV info. 
 # 
 # So, here, we will:
 # 
 # 1) drop genes that are annotated only as fusion genes (since we're not calling fusions at this time)  
 # 2) try to resolve genes that are annotated as both oncogene/TSG (usually context/cancer type specific) into their most likely pan-cancer category  
-# 3) for genes that can't be resolved confidently, we'll keep them as "oncogene, TSG" and run our scripts for both conditions downstream.
+# 3) for genes that can't be resolved confidently, we'll keep them as "oncogene, TSG" and run our scripts using both copy gain and copy loss downstream.
 
 # In[3]:
 
@@ -53,11 +53,10 @@ print(cosmic_df['Role in Cancer'].unique())
 # if a gene is annotated as an oncogene/TSG and a fusion gene, just
 # get rid of the fusion component
 cosmic_df['Role in Cancer'] = cosmic_df['Role in Cancer'].str.replace(', fusion', '')
-
 print(cosmic_df['Role in Cancer'].unique())
 
 
-# In[6]:
+# In[4]:
 
 
 # how to resolve genes annotated as both oncogene and TSG?
@@ -67,7 +66,7 @@ print(cosmic_dual_df.index)
 cosmic_dual_df.head()
 
 
-# In[10]:
+# In[5]:
 
 
 # load Bailey et al. data
@@ -85,14 +84,70 @@ print(class_df.shape)
 class_df.head()
 
 
-# In[20]:
+# In[6]:
 
 
+# TODO: should we use genes that aren't labeled as pan-cancer drivers here?
 bailey_predicted_df = (
     class_df[((class_df.Cancer == 'PANCAN') &
-              (class_df.Gene.isin(cosmic_dual_df.index)) &
-              (~class_df.classification.isna()))]
-)
-print(bailey_predicted_df.shape)
-bailey_predicted_df.head(20)
+             (class_df.Gene.isin(cosmic_dual_df.index)) &
+             (~class_df.classification.isna()))]
+).copy()
 
+# this is the best classification we have to go on in these cases, so if something
+# is labeled as "possible X", we'll just consider it X
+bailey_predicted_df['classification'] = (
+    bailey_predicted_df['classification'].str.replace('possible ', '')
+                                         .replace('tsg', 'TSG')
+)
+
+print(bailey_predicted_df.shape)
+bailey_predicted_df.head()
+
+
+# In[7]:
+
+
+cosmic_clean_df = (cosmic_dual_df.loc[:, ['Role in Cancer']]
+    .merge(bailey_predicted_df.loc[:, ['Gene', 'classification']],
+           left_index=True, right_on='Gene')
+    .set_index('Gene')
+)
+cosmic_clean_df.head(10)
+
+
+# In[8]:
+
+
+# TP53 should be labeled as "oncogene, TSG"
+# (see, e.g. https://www.nature.com/articles/cdd201553)
+cosmic_df.loc[cosmic_df.index == 'TP53', ['Role in Cancer']]
+
+
+# In[9]:
+
+
+cosmic_df.loc[cosmic_clean_df.index, 'Role in Cancer'] = cosmic_clean_df.classification
+print(cosmic_df.shape)
+cosmic_df.head()
+
+
+# In[10]:
+
+
+# TP53 should be labeled as TSG now, even though it can act as an oncogene sometimes
+cosmic_df.loc[cosmic_df.index == 'TP53', ['Role in Cancer']]
+
+
+# In[11]:
+
+
+# save cleaned up annotations to use in our classifiers
+cosmic_df.loc[:, ['Role in Cancer']].to_csv(
+    cfg.cosmic_with_annotations, sep='\t'
+)
+
+
+# ### Overlap between COSMIC/Bailey/Vogelstein
+# 
+# Is COSMIC a strict subset of the Bailey and Vogelstein cancer driver datasets? Or are there genes in the latter two that are not in COSMIC?
