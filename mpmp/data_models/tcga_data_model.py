@@ -464,6 +464,13 @@ class TCGADataModel():
             y_copy_number_df = self.copy_gain_df.loc[:, gene]
         elif classification == "TSG":
             y_copy_number_df = self.copy_loss_df.loc[:, gene]
+        elif classification == "Oncogene, TSG":
+            # some genes may act as both (i.e. in a cancer type-specific
+            # or tissue-specific manner), in this case we'll just use the
+            # union of the gain/loss dfs to define positive labeled samples
+            y_copy_number_df = (
+                self.copy_gain_df.loc[:, gene] | self.copy_loss_df.loc[:, gene]
+            )
         else:
             y_copy_number_df = pd.DataFrame()
             include_copy = False

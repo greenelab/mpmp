@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ## Download and explore COSMIC cancer genes
+# 
+# We want to download the set of cancer-associated genes from the [COSMIC Cancer Gene Census](https://cancer.sanger.ac.uk/cosmic/census), in order to use these genes in our experiments as a comparison/complement to the Vogelstein et al. gene set.
+
 # In[1]:
 
 
@@ -14,6 +18,10 @@ import mpmp.utilities.data_utilities as du
 get_ipython().run_line_magic('load_ext', 'autoreload')
 get_ipython().run_line_magic('autoreload', '2')
 
+
+# ### Load and process raw COSMIC data
+# 
+# This has to be downloaded directly from the CGC website linked above - you need an account there to download the .tsv file, so we can't do it programmatically.
 
 # In[2]:
 
@@ -100,6 +108,7 @@ bailey_predicted_df = (
 bailey_predicted_df['classification'] = (
     bailey_predicted_df['classification'].str.replace('possible ', '')
                                          .replace('tsg', 'TSG')
+                                         .replace('oncogene', 'Oncogene')
 )
 
 print(bailey_predicted_df.shape)
@@ -140,10 +149,14 @@ cosmic_df.head()
 cosmic_df.loc[cosmic_df.index == 'TP53', ['Role in Cancer']]
 
 
-# In[15]:
+# In[11]:
 
 
 # save cleaned up annotations to use in our classifiers
+cosmic_df['Role in Cancer'] = cosmic_df['Role in Cancer'].str.replace(
+    'oncogene', 'Oncogene'
+)
+
 (cosmic_df
     .loc[:, ['Role in Cancer']]
     .rename(columns={'Role in Cancer': 'classification'})
@@ -188,36 +201,43 @@ plt.title('Overlap between cancer gene sets', size=13)
 # 
 # Or, in other words, how many genes will we need to run our classifiers for?
 
-# In[20]:
+# In[17]:
 
 
 import sys
 
 from mpmp.data_models.tcga_data_model import TCGADataModel
 
-def calculate_gene_count(genes_df):
+def calculate_gene_count(genes_df, verbose):
     """For a set of data types, calculate the number of valid genes."""
     gene_list = []
     sample_info_df = du.load_sample_info('expression')
-    tcga_data = TCGADataModel(seed=cfg.default_seed)
+    tcga_data = TCGADataModel(seed=cfg.default_seed, verbose=verbose)
     for gene_ix, gene_series in genes_df.iterrows():
-        print(gene_series.gene, gene_series.classification, file=sys.stderr)
-        # try:
-        #     tcga_data.process_data_for_gene(gene_series.gene,
-        #                                     gene_series.classification,
-        #                                     None)
-        # except KeyError: continue
+        try:
+            if gene_ix % 10 == 0:
+                print(gene_ix, '/', genes_df.shape[0], file=sys.stderr)
+            tcga_data.process_data_for_gene(gene_series.gene,
+                                            gene_series.classification,
+                                            None)
+        except KeyError:
+            print('key error:', gene_series.gene)
+            continue
+        gene_list.append((gene_series.gene, tcga_data.X_df.shape[0]))
+    return gene_list
 
 
-# In[ ]:
+# In[18]:
 
 
 genes_df = pd.read_csv(cfg.cosmic_with_annotations, sep='\t')
-calculate_gene_count(genes_df)
+genes_df.head()
 
 
-# In[ ]:
+# In[20]:
 
 
-
+gene_list = calculate_gene_count(genes_df, verbose=False)
+nonzero_genes = [g for g, c in gene_list if c > 0]
+print('Nonzero genes:', len(nonzero_genes), '/', len(gene_list))
 
