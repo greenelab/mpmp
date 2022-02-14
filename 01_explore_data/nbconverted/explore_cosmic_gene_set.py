@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[14]:
+# In[1]:
 
 
 from pathlib import Path
@@ -140,12 +140,15 @@ cosmic_df.head()
 cosmic_df.loc[cosmic_df.index == 'TP53', ['Role in Cancer']]
 
 
-# In[11]:
+# In[15]:
 
 
 # save cleaned up annotations to use in our classifiers
-cosmic_df.loc[:, ['Role in Cancer']].to_csv(
-    cfg.cosmic_with_annotations, sep='\t'
+(cosmic_df
+    .loc[:, ['Role in Cancer']]
+    .rename(columns={'Role in Cancer': 'classification'})
+    .rename_axis('gene')
+    .to_csv(cfg.cosmic_with_annotations, sep='\t')
 )
 
 
@@ -153,7 +156,7 @@ cosmic_df.loc[:, ['Role in Cancer']].to_csv(
 # 
 # Is COSMIC a strict subset of the Bailey and Vogelstein cancer driver datasets? Or are there genes in the latter two that are not in COSMIC?
 
-# In[19]:
+# In[12]:
 
 
 cosmic_genes = set(cosmic_df.index.values)
@@ -163,7 +166,7 @@ vogelstein_df = du.load_vogelstein()
 vogelstein_genes = set(vogelstein_df.gene.values)
 
 
-# In[26]:
+# In[13]:
 
 
 from venn import venn
@@ -179,4 +182,42 @@ label_map = {
 }
 venn(label_map)
 plt.title('Overlap between cancer gene sets', size=13)
+
+
+# ### How many COSMIC genes have at least one valid cancer type?
+# 
+# Or, in other words, how many genes will we need to run our classifiers for?
+
+# In[20]:
+
+
+import sys
+
+from mpmp.data_models.tcga_data_model import TCGADataModel
+
+def calculate_gene_count(genes_df):
+    """For a set of data types, calculate the number of valid genes."""
+    gene_list = []
+    sample_info_df = du.load_sample_info('expression')
+    tcga_data = TCGADataModel(seed=cfg.default_seed)
+    for gene_ix, gene_series in genes_df.iterrows():
+        print(gene_series.gene, gene_series.classification, file=sys.stderr)
+        # try:
+        #     tcga_data.process_data_for_gene(gene_series.gene,
+        #                                     gene_series.classification,
+        #                                     None)
+        # except KeyError: continue
+
+
+# In[ ]:
+
+
+genes_df = pd.read_csv(cfg.cosmic_with_annotations, sep='\t')
+calculate_gene_count(genes_df)
+
+
+# In[ ]:
+
+
+
 
