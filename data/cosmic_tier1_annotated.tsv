@@ -1,0 +1,446 @@
+Gene Symbol	Role in Cancer
+ABI1	TSG
+ABL1	oncogene
+ABL2	oncogene
+ACKR3	oncogene
+ACVR1	oncogene
+ACVR2A	TSG
+AFDN	oncogene
+AFF3	oncogene
+AFF4	oncogene
+AKT1	oncogene
+AKT2	oncogene
+ALK	oncogene
+AMER1	TSG
+APC	TSG
+AR	oncogene
+ARHGAP26	TSG
+ARHGAP35	TSG
+ARHGEF12	TSG
+ARID1A	TSG
+ARID1B	TSG
+ARID2	TSG
+ARNT	oncogene, TSG
+ASXL1	TSG
+ATF1	oncogene
+ATM	TSG
+ATP1A1	oncogene, TSG
+ATP2B3	TSG
+ATR	TSG
+ATRX	TSG
+AXIN1	TSG
+AXIN2	TSG
+B2M	TSG
+BAP1	TSG
+BARD1	TSG
+BAX	TSG
+BCL10	TSG
+BCL11A	oncogene
+BCL11B	oncogene, TSG
+BCL2	oncogene
+BCL3	oncogene
+BCL6	oncogene
+BCL9	oncogene
+BCL9L	oncogene, TSG
+BCOR	TSG
+BCORL1	oncogene, TSG
+BIRC3	oncogene, TSG
+BRAF	oncogene
+BRCA1	TSG
+BRCA2	TSG
+BRD3	oncogene
+BRD4	oncogene
+BTG1	TSG
+BTK	oncogene, TSG
+CACNA1D	oncogene
+CALR	oncogene
+CAMTA1	TSG
+CARD11	oncogene
+CARS	TSG
+CASP8	TSG
+CBFA2T3	TSG
+CBFB	TSG
+CBL	oncogene, TSG
+CBLB	TSG
+CBLC	oncogene, TSG
+CCDC6	TSG
+CCNB1IP1	TSG
+CCND1	oncogene
+CCND2	oncogene
+CCND3	oncogene
+CCNE1	oncogene
+CD274	TSG
+CD74	oncogene
+CD79A	oncogene
+CD79B	oncogene
+CDC73	TSG
+CDH1	TSG
+CDH11	TSG
+CDK12	TSG
+CDK6	oncogene
+CDKN1B	TSG
+CDKN2A	TSG
+CDKN2C	TSG
+CDX2	TSG
+CEBPA	TSG
+CHD4	oncogene
+CIC	TSG
+CIITA	TSG
+CLTC	TSG
+CLTCL1	TSG
+CNBP	TSG
+CNOT3	TSG
+CREB1	oncogene
+CREB3L1	TSG
+CREB3L2	oncogene
+CREBBP	TSG
+CRLF2	oncogene
+CRTC1	oncogene
+CSF3R	oncogene
+CTCF	TSG
+CTNNB1	oncogene
+CUX1	oncogene, TSG
+CXCR4	oncogene
+CYLD	TSG
+DAXX	oncogene, TSG
+DDIT3	oncogene
+DDR2	oncogene
+DDX10	TSG
+DDX3X	TSG
+DDX5	oncogene
+DDX6	oncogene
+DEK	oncogene
+DICER1	TSG
+DNM2	TSG
+DNMT3A	TSG
+DROSHA	TSG
+EBF1	TSG
+EGFR	oncogene
+EIF3E	TSG
+ELF4	oncogene, TSG
+ELK4	oncogene
+ELL	TSG
+EP300	TSG
+EPAS1	oncogene, TSG
+EPS15	TSG
+ERBB2	oncogene
+ERBB3	oncogene
+ERBB4	oncogene, TSG
+ERG	oncogene
+ESR1	oncogene, TSG
+ETNK1	TSG
+ETV1	oncogene
+ETV4	oncogene
+ETV5	oncogene
+ETV6	TSG
+EWSR1	oncogene
+EZH2	oncogene, TSG
+FAS	TSG
+FAT1	TSG
+FAT4	TSG
+FBXO11	TSG
+FBXW7	TSG
+FCGR2B	oncogene
+FCRL4	oncogene
+FES	oncogene, TSG
+FEV	oncogene
+FGFR1	oncogene
+FGFR2	oncogene
+FGFR3	oncogene
+FGFR4	oncogene
+FHIT	TSG
+FLI1	oncogene
+FLT3	oncogene
+FLT4	oncogene
+FOXA1	oncogene
+FOXL2	oncogene, TSG
+FOXO1	oncogene, TSG
+FOXO3	oncogene, TSG
+FOXO4	oncogene, TSG
+FOXP1	oncogene
+FSTL3	oncogene
+FUBP1	oncogene
+FUS	TSG
+GATA1	oncogene, TSG
+GATA2	oncogene
+GATA3	TSG
+GNA11	oncogene
+GNAQ	oncogene
+GNAS	oncogene
+GRIN2A	TSG
+H3F3A	oncogene
+H3F3B	oncogene
+HEY1	oncogene
+HIF1A	oncogene
+HIP1	oncogene
+HIST1H3B	oncogene
+HLF	oncogene
+HMGA1	oncogene
+HMGA2	oncogene
+HNF1A	TSG
+HNRNPA2B1	oncogene
+HOXA11	oncogene, TSG
+HOXA13	oncogene
+HOXA9	oncogene, TSG
+HOXC11	oncogene
+HOXC13	oncogene
+HOXD11	oncogene
+HOXD13	oncogene
+HRAS	oncogene
+IDH1	oncogene
+IDH2	oncogene
+IKBKB	oncogene
+IKZF1	TSG
+IKZF3	oncogene, TSG
+IL6ST	oncogene
+IL7R	oncogene
+IRF4	oncogene, TSG
+IRS4	oncogene, TSG
+JAK1	TSG
+JAK2	oncogene
+JAK3	oncogene
+JUN	oncogene
+KAT6A	oncogene
+KAT6B	TSG
+KCNJ5	oncogene
+KDM5A	oncogene
+KDM5C	TSG
+KDM6A	TSG
+KDR	oncogene
+KEAP1	TSG
+KIT	oncogene
+KLF4	oncogene, TSG
+KLF6	TSG
+KMT2A	oncogene
+KMT2C	TSG
+KMT2D	TSG
+KNL1	TSG
+KRAS	oncogene
+LATS1	TSG
+LATS2	TSG
+LCK	oncogene
+LEF1	oncogene, TSG
+LMO1	oncogene
+LMO2	oncogene
+LPP	oncogene
+LRIG3	TSG
+LRP1B	TSG
+LYL1	oncogene
+LZTR1	TSG
+MAF	oncogene
+MAFB	oncogene
+MALT1	oncogene
+MAML2	oncogene
+MAP2K1	oncogene
+MAP2K2	oncogene
+MAP2K4	TSG
+MAP3K1	TSG
+MAP3K13	oncogene, TSG
+MAPK1	oncogene
+MAX	TSG
+MDM2	oncogene
+MDM4	oncogene
+MECOM	oncogene
+MED12	TSG
+MEN1	TSG
+MET	oncogene
+MITF	oncogene
+MLF1	TSG
+MLH1	TSG
+MLLT10	oncogene
+MN1	oncogene
+MPL	oncogene
+MRTFA	oncogene, TSG
+MSH2	TSG
+MSH6	TSG
+MSI2	oncogene
+MTCP1	oncogene
+MTOR	oncogene
+MYB	oncogene
+MYC	oncogene
+MYCL	oncogene
+MYCN	oncogene
+MYD88	oncogene
+MYH9	TSG
+MYOD1	oncogene
+NAB2	TSG
+NCOA2	oncogene
+NCOA4	TSG
+NCOR1	TSG
+NCOR2	TSG
+NDRG1	TSG
+NF1	TSG
+NF2	TSG
+NFATC2	oncogene
+NFE2L2	oncogene
+NFKB2	oncogene, TSG
+NFKBIE	TSG
+NKX2-1	oncogene, TSG
+NOTCH1	TSG
+NOTCH2	oncogene, TSG
+NPM1	oncogene
+NR4A3	oncogene
+NRAS	oncogene
+NRG1	TSG
+NSD2	oncogene
+NSD3	oncogene
+NT5C2	oncogene
+NTRK1	oncogene, TSG
+NTRK3	oncogene
+NUP98	oncogene
+NUTM1	oncogene
+OLIG2	oncogene
+P2RY8	oncogene
+PATZ1	TSG
+PAX3	oncogene
+PAX5	oncogene, TSG
+PBRM1	TSG
+PBX1	oncogene
+PDCD1LG2	oncogene
+PDGFB	oncogene
+PDGFRA	oncogene
+PDGFRB	oncogene
+PER1	TSG
+PHF6	TSG
+PHOX2B	TSG
+PIK3CA	oncogene
+PIK3CB	oncogene
+PIK3R1	TSG
+PIM1	oncogene
+PLAG1	oncogene
+PLCG1	oncogene
+PML	TSG
+POLD1	TSG
+POLE	TSG
+POLQ	oncogene, TSG
+POT1	TSG
+POU2AF1	oncogene
+POU5F1	oncogene
+PPARG	TSG
+PPM1D	oncogene
+PPP2R1A	TSG
+PPP6C	TSG
+PRDM1	TSG
+PRDM16	oncogene
+PREX2	oncogene
+PRKACA	oncogene
+PRKAR1A	oncogene, TSG
+PSIP1	oncogene
+PTCH1	TSG
+PTEN	TSG
+PTK6	oncogene, TSG
+PTPN11	oncogene
+PTPN13	TSG
+PTPRB	TSG
+PTPRC	TSG
+PTPRK	TSG
+PTPRT	TSG
+QKI	oncogene, TSG
+RAC1	oncogene
+RAD21	oncogene, TSG
+RAD51B	TSG
+RAF1	oncogene
+RANBP2	TSG
+RAP1GDS1	oncogene
+RARA	oncogene
+RB1	TSG
+RBM10	TSG
+REL	oncogene
+RET	oncogene
+RHOA	oncogene
+RHOH	TSG
+RMI2	TSG
+RNF43	TSG
+ROS1	oncogene
+RPL10	TSG
+RPL22	TSG
+RPL5	TSG
+RSPO2	TSG
+RSPO3	oncogene
+RUNX1	TSG
+RUNX1T1	oncogene, TSG
+SALL4	oncogene
+SDHA	TSG
+SET	oncogene
+SETBP1	oncogene
+SETD2	TSG
+SF3B1	oncogene
+SFPQ	TSG
+SFRP4	TSG
+SH2B3	TSG
+SH3GL1	oncogene
+SIX1	oncogene
+SLC34A2	TSG
+SMAD2	TSG
+SMAD3	TSG
+SMAD4	TSG
+SMARCA4	TSG
+SMARCB1	TSG
+SMARCD1	TSG
+SMO	oncogene
+SND1	oncogene
+SOCS1	TSG
+SOX2	oncogene
+SPEN	TSG
+SPOP	TSG
+SRC	oncogene
+SRSF2	oncogene
+SRSF3	oncogene
+SSX1	oncogene
+SSX2	oncogene
+SSX4	oncogene
+STAG2	TSG
+STAT3	oncogene
+STAT5B	oncogene, TSG
+STAT6	oncogene
+STIL	oncogene
+STK11	TSG
+SUFU	TSG
+SUZ12	oncogene, TSG
+SYK	oncogene
+TAF15	oncogene
+TAL1	oncogene
+TAL2	oncogene
+TBL1XR1	TSG
+TBX3	TSG
+TCF3	oncogene, TSG
+TCF7L2	oncogene
+TCL1A	oncogene
+TENT5C	TSG
+TERT	oncogene, TSG
+TET1	oncogene, TSG
+TET2	TSG
+TFE3	oncogene
+TFEB	oncogene
+TGFBR2	TSG
+TLX1	oncogene
+TLX3	oncogene
+TNFAIP3	TSG
+TNFRSF14	TSG
+TNFRSF17	oncogene
+TP53	TSG
+TP63	oncogene, TSG
+TPM3	TSG
+TRAF7	TSG
+TRIM24	oncogene, TSG
+TRIM27	oncogene
+TRIM33	TSG
+TRRAP	oncogene
+TSC1	TSG
+TSC2	TSG
+TSHR	oncogene
+U2AF1	oncogene
+UBR5	oncogene
+USP6	oncogene
+USP8	oncogene
+VHL	TSG
+WIF1	TSG
+WT1	oncogene
+WWTR1	oncogene
+XPO1	oncogene
+YWHAE	TSG
+ZBTB16	TSG
+ZFHX3	TSG
+ZNF331	TSG
+ZNF521	oncogene
+ZRSR2	TSG
