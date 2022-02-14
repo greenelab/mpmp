@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[14]:
 
 
 from pathlib import Path
@@ -9,6 +9,7 @@ from pathlib import Path
 import pandas as pd
 
 import mpmp.config as cfg
+import mpmp.utilities.data_utilities as du
 
 get_ipython().run_line_magic('load_ext', 'autoreload')
 get_ipython().run_line_magic('autoreload', '2')
@@ -151,3 +152,31 @@ cosmic_df.loc[:, ['Role in Cancer']].to_csv(
 # ### Overlap between COSMIC/Bailey/Vogelstein
 # 
 # Is COSMIC a strict subset of the Bailey and Vogelstein cancer driver datasets? Or are there genes in the latter two that are not in COSMIC?
+
+# In[19]:
+
+
+cosmic_genes = set(cosmic_df.index.values)
+bailey_genes = set(class_df[class_df.Cancer == 'PANCAN'].Gene.values)
+
+vogelstein_df = du.load_vogelstein()
+vogelstein_genes = set(vogelstein_df.gene.values)
+
+
+# In[26]:
+
+
+from venn import venn
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+sns.set_style('white')
+
+label_map = {
+    'cosmic': cosmic_genes,
+    'bailey': bailey_genes,
+    'vogelstein': vogelstein_genes
+}
+venn(label_map)
+plt.title('Overlap between cancer gene sets', size=13)
+
