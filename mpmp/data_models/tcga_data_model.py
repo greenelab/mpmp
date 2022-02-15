@@ -90,6 +90,8 @@ class TCGADataModel():
             genes_df = du.load_vogelstein()
         elif gene_set == '50_random':
             genes_df = du.load_random_genes()
+        elif gene_set == 'cosmic':
+            genes_df = du.load_cosmic()
         else:
             from mpmp.exceptions import GenesNotFoundError
             assert isinstance(gene_set, typing.List)

@@ -216,8 +216,8 @@ def load_random_genes():
 
 
 def load_vogelstein():
-    """Load list of cancer-relevant genes from Vogelstein and Kinzler,
-    Nature Medicine 2004 (https://doi.org/10.1038/nm1087)
+    """Load list of cancer-relevant genes from Vogelstein et al. 2013
+    (https://doi.org/10.1126/science.1235122).
 
     These genes and their oncogene or TSG status were precomputed in
     the pancancer repo, so we just load them from there.
@@ -231,6 +231,21 @@ def load_vogelstein():
                            'Classification*': 'classification'})
     )
     # some genes in vogelstein set have different names in mutation data
+    genes_df.gene.replace(to_replace=cfg.gene_aliases, inplace=True)
+    return genes_df
+
+
+def load_cosmic():
+    """Load list of cancer-relevant genes from COSMIC Cancer Gene Census
+    (https://cancer.sanger.ac.uk/cosmic/census?tier=1).
+
+    These genes and their oncogene or TSG status are precomputed in
+    the explore_cosmic_gene_set notebook.
+    """
+
+    genes_df = pd.read_csv(cfg.cosmic_with_annotations, sep='\t')
+
+    # some genes in cosmic set have different names in mutation data
     genes_df.gene.replace(to_replace=cfg.gene_aliases, inplace=True)
     return genes_df
 

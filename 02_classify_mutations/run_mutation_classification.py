@@ -38,7 +38,7 @@ def process_args():
     io.add_argument('--custom_genes', nargs='*', default=None,
                     help='currently this needs to be a subset of top_50')
     io.add_argument('--gene_set', type=str,
-                    choices=['top_50', 'vogelstein', '50_random', 'custom'],
+                    choices=['top_50', 'vogelstein', '50_random', 'cosmic', 'custom'],
                     default='top_50',
                     help='choose which gene set to use. top_50 and vogelstein are '
                          'predefined gene sets (see data_utilities), and custom allows '
