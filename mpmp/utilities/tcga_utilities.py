@@ -642,7 +642,6 @@ def get_cross_data_samples(data_types=None,
         data_samples = get_all_samples(use_subsampled)
 
     # get intersection of samples in all training datasets
-    # TODO: make sure sample intersections for experiments are the same as before
     valid_samples = None
     for data_type, samples_file in data_samples.items():
         # get sample IDs for the given data type/processed data file
@@ -880,17 +879,15 @@ def only_target_from_data(data_df, target_gene, gene_features):
 
 def get_symbol_map():
 
-    # TODO move these urls to config
-    genes_commit = 'ad9631bb4e77e2cdc5413b0d77cb8f7e93fc5bee'
-    url = 'https://raw.githubusercontent.com/cognoma/genes/{}/data/genes.tsv'.format(genes_commit)
+    genes_url = '/'.join((cfg.genes_base_url, cfg.genes_commit, 'data', 'genes.tsv'))
     gene_df = (
-        pd.read_csv(url, sep='\t')
+        pd.read_csv(genes_url, sep='\t')
           # only consider protein-coding genes
           .query("gene_type == 'protein-coding'")
     )
     # load gene updater - define up to date Entrez gene identifiers where appropriate
-    url = 'https://raw.githubusercontent.com/cognoma/genes/{}/data/updater.tsv'.format(genes_commit)
-    updater_df = pd.read_csv(url, sep='\t')
+    updater_url = '/'.join((cfg.genes_base_url, cfg.genes_commit, 'data', 'updater.tsv'))
+    updater_df = pd.read_csv(updater_url, sep='\t')
 
     symbol_to_entrez = dict(zip(gene_df.symbol.values,
                                 gene_df.entrez_gene_id.values))
