@@ -175,10 +175,12 @@ l1_ratios_map = {
 
 # repo/commit information to retrieve precomputed cancer gene information
 # this is used in data_utilities.py
-top50_base_url = "https://github.com/greenelab/BioBombe/raw"
-top50_commit = "aedc9dfd0503edfc5f25611f5eb112675b99edc9"
-vogelstein_base_url = "https://github.com/greenelab/pancancer/raw"
-vogelstein_commit = "2a0683b68017fb226f4053e63415e4356191734f"
+top50_base_url = 'https://github.com/greenelab/BioBombe/raw'
+top50_commit = 'aedc9dfd0503edfc5f25611f5eb112675b99edc9'
+vogelstein_base_url = 'https://github.com/greenelab/pancancer/raw'
+vogelstein_commit = '2a0683b68017fb226f4053e63415e4356191734f'
+genes_base_url = 'https://raw.githubusercontent.com/cognoma/genes/'
+genes_commit = 'ad9631bb4e77e2cdc5413b0d77cb8f7e93fc5bee'
 
 # location of COSMIC gene info
 cosmic_genes_file = data_dir / 'cosmic_cgc_tier1_2_7_2022.tsv'

@@ -642,7 +642,6 @@ def get_cross_data_samples(data_types=None,
         data_samples = get_all_samples(use_subsampled)
 
     # get intersection of samples in all training datasets
-    # TODO: make sure sample intersections for experiments are the same as before
     valid_samples = None
     for data_type, samples_file in data_samples.items():
         # get sample IDs for the given data type/processed data file
@@ -829,4 +828,72 @@ def compress_and_save_data(data_type,
     return transformed_data_df
 
 
+def drop_target_from_data(data_df, target_gene, gene_features):
+    """Drop target gene from feature set."""
+    symbol_map, update_map = get_symbol_map()
+
+    try:
+        target_feature = symbol_map[target_gene]
+        if target_feature in update_map.keys():
+            target_feature = update_map[target_gene]
+        target_feature = str(target_feature)
+    except KeyError:
+        # if not found in symbol_map, just use raw feature
+        target_feature = str(target_gene)
+
+    # update data by removing target
+    data_df_updated = data_df.drop(columns=target_feature)
+
+    # update gene features array
+    target_ix = data_df.columns.get_loc(target_feature)
+    gene_features_updated = np.delete(gene_features, target_ix)
+
+    return data_df_updated, gene_features_updated
+
+
+def only_target_from_data(data_df, target_gene, gene_features):
+    """Reduce feature set to only target gene."""
+    symbol_map, update_map = get_symbol_map()
+
+    try:
+        target_feature = symbol_map[target_gene]
+        if target_feature in update_map.keys():
+            target_feature = update_map[target_gene]
+        target_feature = str(target_feature)
+    except KeyError:
+        # if not found in symbol_map, just use raw feature
+        target_feature = str(target_gene)
+
+    # update data by removing all but target
+    non_gene_df = data_df.loc[:, ~gene_features]
+    gene_df = data_df.loc[:, target_feature]
+    data_df_updated = pd.concat((gene_df, non_gene_df), axis='columns')
+
+    # update gene features array, there's only one gene feature now
+    gene_features_updated = np.array(
+        [True] + ([False] * non_gene_df.shape[1])
+    )
+
+    return data_df_updated, gene_features_updated
+
+
+def get_symbol_map():
+
+    genes_url = '/'.join((cfg.genes_base_url, cfg.genes_commit, 'data', 'genes.tsv'))
+    gene_df = (
+        pd.read_csv(genes_url, sep='\t')
+          # only consider protein-coding genes
+          .query("gene_type == 'protein-coding'")
+    )
+    # load gene updater - define up to date Entrez gene identifiers where appropriate
+    updater_url = '/'.join((cfg.genes_base_url, cfg.genes_commit, 'data', 'updater.tsv'))
+    updater_df = pd.read_csv(updater_url, sep='\t')
+
+    symbol_to_entrez = dict(zip(gene_df.symbol.values,
+                                gene_df.entrez_gene_id.values))
+
+    old_to_new_entrez = dict(zip(updater_df.old_entrez_gene_id.values,
+                                 updater_df.new_entrez_gene_id.values))
+
+    return symbol_to_entrez, old_to_new_entrez
 

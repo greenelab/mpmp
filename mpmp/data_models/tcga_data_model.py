@@ -11,6 +11,8 @@ from mpmp.utilities.tcga_utilities import (
     process_y_matrix_cancertype,
     align_matrices,
     filter_to_cross_data_samples,
+    drop_target_from_data,
+    only_target_from_data,
 )
 
 class TCGADataModel():
@@ -139,7 +141,9 @@ class TCGADataModel():
                               use_pancancer=False,
                               filter_cancer_types=True,
                               batch_correction=False,
-                              bc_cancer_type=False):
+                              bc_cancer_type=False,
+                              drop_target=False,
+                              only_target=False):
         """
         Prepare to run mutation prediction experiments for a given gene.
 
@@ -209,6 +213,14 @@ class TCGADataModel():
                 train_filtered_df,
                 np.array([cancer_type_to_index[ct] for ct in y_filtered_df.DISEASE]),
                 verbose=self.verbose)
+
+        if drop_target:
+            train_filtered_df, gene_features = drop_target_from_data(
+                train_filtered_df, gene, gene_features)
+
+        if only_target:
+            train_filtered_df, gene_features = only_target_from_data(
+                    train_filtered_df, gene, gene_features)
 
         self.X_df = train_filtered_df
         self.y_df = y_filtered_df
