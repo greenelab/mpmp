@@ -30,16 +30,24 @@ get_ipython().run_line_magic('autoreload', '2')
 # In[2]:
 
 
-# set results directory
-results_dir = Path(cfg.results_dirs['mutation'],
-                   'all_data_types_results_shuffle_cancer_type',
-                   'gene').resolve()
+# if True, plot results for COSMIC CGC gene set
+# if False, plot results for Vogelstein et al. 2013 gene set
+cosmic_genes = True
+
+if cosmic_genes:
+    results_dir = Path(cfg.results_dirs['mutation'], 'cosmic_all', 'gene').resolve()
+    # if True, save figures to ./images directory
+    # set this to False for cosmic genes, for now
+    SAVE_FIGS = False
+else:
+    results_dir = Path(cfg.results_dirs['mutation'],
+                       'all_data_types_results_shuffle_cancer_type',
+                       'gene').resolve()
+    # currently we're using the vogelstein figures for the paper
+    SAVE_FIGS = True
 
 # set significance cutoff after FDR correction
 SIG_ALPHA = 0.001
-
-# if True, save figures to ./images directory
-SAVE_FIGS = True
 
 # if True, plot AUROC instead of AUPR
 PLOT_AUROC = False
@@ -301,10 +309,15 @@ heatmap_df = (all_results_df
 heatmap_df.iloc[:, :5]
 
 
-# In[16]:
+# In[19]:
 
 
-sns.set({'figure.figsize': (28, 6)})
+if cosmic_genes:
+    # there are way more cosmic genes so we need a bigger figure
+    sns.set({'figure.figsize': (52, 6)})
+else:
+    sns.set({'figure.figsize': (28, 6)})
+    
 sns.set_context('notebook', font_scale=1.5)
 
 ax = plu.plot_heatmap(heatmap_df,
