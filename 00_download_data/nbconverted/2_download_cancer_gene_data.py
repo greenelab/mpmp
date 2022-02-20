@@ -119,10 +119,10 @@ vogelstein_df.head()
 # 
 # So, here, we will:
 # 
-# 1) drop genes that are annotated only as fusion genes (since we're not calling fusions at this time)  
-# 2) try to resolve genes that are annotated as both oncogene/TSG (usually context/cancer type specific) into their most likely pan-cancer category  
-# 3) for genes that can't be resolved confidently, we'll keep them as "oncogene, TSG" and run our scripts using both copy gain and copy loss downstream.
-# 4) merge the three datasets together, ensuring that annotations are concordant (or resolving them if not)
+# 1. Drop genes that are annotated only as fusion genes (since we're not calling fusions at this time)  
+# 2. Try to resolve genes that are annotated as both oncogene/TSG (usually context/cancer type specific) into their most likely pan-cancer category  
+# 3. For genes that can't be resolved confidently, we'll keep them as "oncogene, TSG" and run our scripts using both copy gain and copy loss downstream.
+# 4. Merge the three datasets together, ensuring that annotations are concordant (or resolving them if not)
 
 # In[7]:
 
@@ -141,7 +141,7 @@ print(bailey_df.classification.unique())
 bailey_df.head()
 
 
-# In[16]:
+# In[9]:
 
 
 # first merge dataframes, then resolve classifications
@@ -158,7 +158,7 @@ print(vogelstein_bailey_df.shape)
 vogelstein_bailey_df.head()
 
 
-# In[18]:
+# In[10]:
 
 
 def merge_classifications(row):
@@ -184,14 +184,14 @@ print(vogelstein_bailey_df.classification.unique())
 vogelstein_bailey_df.head()
 
 
-# In[15]:
+# In[11]:
 
 
 # examples where the datasets disagree
 vogelstein_bailey_df[vogelstein_bailey_df.classification == 'check'].head()
 
 
-# In[22]:
+# In[12]:
 
 
 # COSMIC CGC classifies DNMT3A as a TSG at the pan-cancer level,
@@ -224,4 +224,63 @@ vogelstein_bailey_df.drop(
 )
 print(vogelstein_bailey_df.classification.unique())
 vogelstein_bailey_df.head()
+
+
+# In[13]:
+
+
+# now merge with cosmic CGC genes
+merged_df = (vogelstein_bailey_df
+  .merge(cosmic_df.loc[:, ['Role in Cancer']],
+         how='outer', left_index=True, right_index=True)
+  .rename(columns={'classification': 'vb_classification',
+                   'Role in Cancer': 'cosmic_classification'})
+)
+merged_df['cosmic_classification'] = (
+    merged_df['cosmic_classification'].str.replace('oncogene', 'Oncogene')
+)
+
+print(merged_df.shape)
+merged_df.head()
+
+
+# In[14]:
+
+
+def merge_all(row):
+    if row['vb_classification'] == row['cosmic_classification']:
+        return row['vb_classification']
+    elif pd.isna(row['vb_classification']):
+        return row['cosmic_classification']
+    elif pd.isna(row['cosmic_classification']):
+        return row['vb_classification']
+    elif row['cosmic_classification'] == 'Oncogene, TSG':
+        # for ambiguous cosmic examples, just go with the
+        # bailey/vogelstein annotation
+        return row['vb_classification']
+    elif row['vb_classification'] != row['cosmic_classification']:
+        # if the datasets disagree, go with the cosmic annotation
+        # these are typically manually curated and likely to be more
+        # generally applicable
+        return row['cosmic_classification']
+    else:
+        # not sure how this would happen
+        return pd.NA
+    
+merged_df['classification'] = (
+    merged_df.apply(merge_all, axis='columns')
+)
+
+print(merged_df.classification.unique())
+merged_df.head()
+
+
+# In[15]:
+
+
+(merged_df
+  .loc[:, 'classification']
+  .rename_axis('gene')
+  .to_csv(cfg.merged_cancer_genes, sep='\t')
+)
 
