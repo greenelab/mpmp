@@ -87,18 +87,18 @@ class TCGADataModel():
 
         if gene_set == 'top_50':
             genes_df = du.load_top_genes()
-        elif gene_set == 'vogelstein':
-            genes_df = du.load_vogelstein()
         elif gene_set == '50_random':
             genes_df = du.load_random_genes()
+        elif gene_set == 'merged':
+            genes_df = du.load_merged_genes()
+        elif gene_set == 'vogelstein':
+            genes_df = du.load_vogelstein()
         elif gene_set == 'cosmic':
             genes_df = du.load_cosmic()
         else:
             genes_df = du.load_custom_genes(gene_set)
 
         return genes_df
-
-
 
     def process_data_for_cancer_type(self,
                                      cancer_type,
