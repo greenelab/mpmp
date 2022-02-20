@@ -27,7 +27,7 @@ get_ipython().run_line_magic('autoreload', '2')
 
 
 cosmic_df = pd.read_csv(
-    cfg.cosmic_genes_file, sep='\t', index_col=0
+    cfg.cosmic_raw_file, sep='\t', index_col=0
 )
 
 cosmic_df = cosmic_df[
@@ -60,13 +60,13 @@ print(cosmic_df['Role in Cancer'].unique())
 # 
 # This is a supplementary table from [the TCGA Pan-Cancer Atlas driver gene analysis](https://www.sciencedirect.com/science/article/pii/S009286741830237X). The table contains genes identified as cancer drivers by taking the consensus of existing driver identification methods, in addition to manual curation as described in the paper. The table also contains oncogene/TSG predictions for these genes, using the [20/20+ method](https://2020plus.readthedocs.io/en/latest/).
 # 
-# This table (Excel file) was also directly downloaded from the paper's supplementary data, as Cell doesn't seem to provide a straightforward API (that I'm able to find).
+# This table (Excel file) was also directly downloaded from the paper's supplementary data, as Cell doesn't seem to provide a straightforward API (to my knowledge anyway).
 
 # In[4]:
 
 
 class_df = pd.read_excel(
-    cfg.data_dir / '1-s2.0-S009286741830237X-mmc1.xlsx', 
+    cfg.bailey_raw_file,
     engine='openpyxl', sheet_name='Table S1', index_col='KEY', header=3
 )
 class_df.rename(columns={'Tumor suppressor or oncogene prediction (by 20/20+)':
@@ -83,6 +83,7 @@ class_df.head()
 bailey_df = (
     class_df[((class_df.Cancer == 'PANCAN') &
              (~class_df.classification.isna()))]
+      .set_index('Gene')
 ).copy()
 
 # this is the best classification we have to go on for these genes, so if
@@ -99,7 +100,7 @@ bailey_df.head()
 
 # ### Load Vogelstein et al. data
 # 
-# This data originally came from [Vogelstein et al. 2013](https://www.science.org/doi/10.1126/science.1235122). Oncogene/TSG annotations also come from 20/20+ predictions.
+# This data originally came from [Vogelstein et al. 2013](https://www.science.org/doi/10.1126/science.1235122), and is available as a tsv in [the `pancancer` repo](https://github.com/greenelab/pancancer/blob/master/data/vogelstein_cancergenes.tsv). Oncogene/TSG annotations are also 20/20+ predictions.
 
 # In[6]:
 
@@ -110,4 +111,117 @@ vogelstein_df = du.load_vogelstein()
 
 print(vogelstein_df.shape)
 vogelstein_df.head()
+
+
+# ### Clean up oncogene/TSG annotations and merge datasets
+# 
+# We want as many genes as possible to be annotated as _either_ an oncogene or TSG, so we know whether to use copy gain or copy loss data to define relevant CNV info. 
+# 
+# So, here, we will:
+# 
+# 1) drop genes that are annotated only as fusion genes (since we're not calling fusions at this time)  
+# 2) try to resolve genes that are annotated as both oncogene/TSG (usually context/cancer type specific) into their most likely pan-cancer category  
+# 3) for genes that can't be resolved confidently, we'll keep them as "oncogene, TSG" and run our scripts using both copy gain and copy loss downstream.
+# 4) merge the three datasets together, ensuring that annotations are concordant (or resolving them if not)
+
+# In[7]:
+
+
+# first merge bailey and vogelstein datasets
+# these are both "confidently" annotated (everything is either an oncogene or TSG),
+# so we don't need to worry about resolving ambiguous annotations
+print(vogelstein_df.classification.unique())
+vogelstein_df.head()
+
+
+# In[8]:
+
+
+print(bailey_df.classification.unique())
+bailey_df.head()
+
+
+# In[16]:
+
+
+# first merge dataframes, then resolve classifications
+vogelstein_bailey_df = (
+    vogelstein_df.loc[:, ['gene', 'classification']]
+      .set_index('gene')
+      .merge(bailey_df.loc[:, ['classification']],
+             how='outer', left_index=True, right_index=True)
+      .rename(columns={'classification_x': 'vogelstein_classification',
+                       'classification_y': 'bailey_classification'})
+)
+
+print(vogelstein_bailey_df.shape)
+vogelstein_bailey_df.head()
+
+
+# In[18]:
+
+
+def merge_classifications(row):
+    if row['vogelstein_classification'] == row['bailey_classification']:
+        return row['vogelstein_classification']
+    elif pd.isna(row['vogelstein_classification']):
+        return row['bailey_classification']
+    elif pd.isna(row['bailey_classification']):
+        return row['vogelstein_classification']
+    elif row['vogelstein_classification'] != row['bailey_classification']:
+        # if the datasets disagree, we can resolve these manually
+        # or just run them as "oncogene, TSG"
+        return 'check'
+    else:
+        # not sure how this would happen
+        return pd.NA
+    
+vogelstein_bailey_df['classification'] = (
+    vogelstein_bailey_df.apply(merge_classifications, axis='columns')
+)
+
+print(vogelstein_bailey_df.classification.unique())
+vogelstein_bailey_df.head()
+
+
+# In[15]:
+
+
+# examples where the datasets disagree
+vogelstein_bailey_df[vogelstein_bailey_df.classification == 'check'].head()
+
+
+# In[22]:
+
+
+# COSMIC CGC classifies DNMT3A as a TSG at the pan-cancer level,
+# so we'll go with that
+# https://cancer.sanger.ac.uk/cosmic/census-page/DNMT3A
+vogelstein_bailey_df.loc['DNMT3A', 'classification'] = 'TSG'
+
+# COSMIC CGC says JAK1 can act as either a TSG or an oncogene, so
+# we'll run it as both
+# https://cancer.sanger.ac.uk/cosmic/census-page/JAK1
+vogelstein_bailey_df.loc['JAK1', 'classification'] = 'Oncogene, TSG'
+
+# SMARCA4 has been characterized as both a tumor suppressor and an
+# oncogene, depending on context
+# https://www.nature.com/articles/s41388-021-01875-6
+# https://www.frontiersin.org/articles/10.3389/fimmu.2021.762598/full
+vogelstein_bailey_df.loc['SMARCA4', 'classification'] = 'Oncogene, TSG'
+
+# WT1 can also act as either a TSG or an oncogene depending on the
+# cancer type/context:
+# https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4352850/
+# or even within the same cancer type:
+# https://www.nature.com/articles/2404624
+vogelstein_bailey_df.loc['WT1', 'classification'] = 'Oncogene, TSG'
+
+
+vogelstein_bailey_df.drop(
+    columns=['vogelstein_classification', 'bailey_classification'],
+    inplace=True
+)
+print(vogelstein_bailey_df.classification.unique())
+vogelstein_bailey_df.head()
 

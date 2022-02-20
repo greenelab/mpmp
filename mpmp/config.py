@@ -182,8 +182,20 @@ vogelstein_commit = '2a0683b68017fb226f4053e63415e4356191734f'
 genes_base_url = 'https://raw.githubusercontent.com/cognoma/genes/'
 genes_commit = 'ad9631bb4e77e2cdc5413b0d77cb8f7e93fc5bee'
 
-# location of COSMIC gene info
-cosmic_genes_file = data_dir / 'cosmic_cgc_tier1_2_7_2022.tsv'
+# location of cancer gene info
+cancer_genes_dir = data_dir / 'cancer_genes'
+cancer_genes_raw_dir = cancer_genes_dir / 'raw'
+cosmic_raw_file = cancer_genes_raw_dir / 'cosmic_cgc_tier1_2_7_2022.tsv'
+bailey_raw_file = cancer_genes_raw_dir / '1-s2.0-S009286741830237X-mmc1.xlsx'
+
+# location of annotated cancer gene info
+# these annotations are collated/cleaned up in 2_download_cancer_genes.ipynb
+cosmic_with_annotations = cancer_genes_dir / 'cosmic_tier1_annotated.tsv'
+bailey_with_annotations = cancer_genes_dir / 'bailey_annotated.tsv'
+vogelstein_with_annotations = cancer_genes_dir / 'vogelstein_annotated.tsv'
+merged_cancer_genes = cancer_genes_dir / 'merged_with_annotations.tsv'
+
+# TODO: move?
 cosmic_with_annotations = data_dir / 'cosmic_tier1_annotated.tsv'
 
 # repo/commit information to retrieve TCGA code -> (sample|cancer) type map
