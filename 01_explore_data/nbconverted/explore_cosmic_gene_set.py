@@ -65,16 +65,6 @@ cosmic_df['Role in Cancer'] = cosmic_df['Role in Cancer'].str.replace(', fusion'
 print(cosmic_df['Role in Cancer'].unique())
 
 
-# In[4]:
-
-
-# how to resolve genes annotated as both oncogene and TSG?
-cosmic_dual_df = cosmic_df[cosmic_df['Role in Cancer'] == 'oncogene, TSG']
-print(cosmic_dual_df.shape)
-print(cosmic_dual_df.index)
-cosmic_dual_df.head()
-
-
 # In[5]:
 
 
@@ -96,14 +86,15 @@ class_df.head()
 # In[6]:
 
 
-# TODO: should we use genes that aren't labeled as pan-cancer drivers here?
+# get genes labeled by Bailey et al. as pan-cancer drivers, that are
+# also in COSMIC set and have annotations
 bailey_predicted_df = (
     class_df[((class_df.Cancer == 'PANCAN') &
              (class_df.Gene.isin(cosmic_dual_df.index)) &
              (~class_df.classification.isna()))]
 ).copy()
 
-# this is the best classification we have to go on in these cases, so if something
+# this is the best annotation we have to go on in these cases, so if something
 # is labeled as "possible X", we'll just consider it X
 bailey_predicted_df['classification'] = (
     bailey_predicted_df['classification'].str.replace('possible ', '')
@@ -145,7 +136,8 @@ cosmic_df.head()
 # In[10]:
 
 
-# TP53 should be labeled as TSG now, even though it can act as an oncogene sometimes
+# TP53 should be labeled as TSG now, since this is generally how it behaves
+# (even though it can act as an oncogene under specific conditions)
 cosmic_df.loc[cosmic_df.index == 'TP53', ['Role in Cancer']]
 
 
