@@ -32,10 +32,10 @@ get_ipython().run_line_magic('autoreload', '2')
 
 # if True, plot results for COSMIC CGC gene set
 # if False, plot results for Vogelstein et al. 2013 gene set
-cosmic_genes = True
+merged_geneset = True
 
-if cosmic_genes:
-    results_dir = Path(cfg.results_dirs['mutation'], 'cosmic_all', 'gene').resolve()
+if merged_geneset:
+    results_dir = Path(cfg.results_dirs['mutation'], 'merged_all', 'gene').resolve()
     # if True, save figures to ./images directory
     # set this to False for cosmic genes, for now
     SAVE_FIGS = False
@@ -309,12 +309,13 @@ heatmap_df = (all_results_df
 heatmap_df.iloc[:, :5]
 
 
-# In[19]:
+# In[16]:
 
 
-if cosmic_genes:
-    # there are way more cosmic genes so we need a bigger figure
-    sns.set({'figure.figsize': (52, 6)})
+if merged_geneset:
+    # there are way more genes so we need a bigger figure
+    # TODO: this probably needs to be separated into two rows
+    sns.set({'figure.figsize': (55, 6)})
 else:
     sns.set({'figure.figsize': (28, 6)})
     
