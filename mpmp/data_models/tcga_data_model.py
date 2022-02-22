@@ -1,5 +1,4 @@
 import sys
-import typing
 from pathlib import Path
 
 import numpy as np
@@ -92,30 +91,14 @@ class TCGADataModel():
             genes_df = du.load_vogelstein()
         elif gene_set == '50_random':
             genes_df = du.load_random_genes()
+        elif gene_set == 'cosmic':
+            genes_df = du.load_cosmic()
         else:
-            from mpmp.exceptions import GenesNotFoundError
-            assert isinstance(gene_set, typing.List)
-            genes_df = du.load_vogelstein()
-            # if all genes in gene_set are in vogelstein dataset, use it
-            if set(gene_set).issubset(set(genes_df.gene.values)):
-                genes_df = genes_df[genes_df.gene.isin(gene_set)]
-            # else if all genes in gene_set are in top50 dataset, use it
-            else:
-                genes_df = du.load_top_genes()
-                if set(gene_set).issubset(set(genes_df.gene.values)):
-                    genes_df = genes_df[genes_df.gene.isin(gene_set)]
-                else:
-                    # else if all genes in gene_set are in random dataset, use it
-                    genes_df = du.load_random_genes()
-                    if set(gene_set).issubset(set(genes_df.gene.values)):
-                        genes_df = genes_df[genes_df.gene.isin(gene_set)]
-                    else:
-                        # else, finally, throw an error
-                        raise GenesNotFoundError(
-                            'Gene list was not a subset of existing gene sets'
-                        )
+            genes_df = du.load_custom_genes(gene_set)
 
         return genes_df
+
+
 
     def process_data_for_cancer_type(self,
                                      cancer_type,
@@ -476,6 +459,13 @@ class TCGADataModel():
             y_copy_number_df = self.copy_gain_df.loc[:, gene]
         elif classification == "TSG":
             y_copy_number_df = self.copy_loss_df.loc[:, gene]
+        elif classification == "Oncogene, TSG":
+            # some genes may act as both (i.e. in a cancer type-specific
+            # or tissue-specific manner), in this case we'll just use the
+            # union of the gain/loss dfs to define positive labeled samples
+            y_copy_number_df = (
+                self.copy_gain_df.loc[:, gene] | self.copy_loss_df.loc[:, gene]
+            )
         else:
             y_copy_number_df = pd.DataFrame()
             include_copy = False

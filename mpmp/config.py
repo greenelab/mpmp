@@ -182,6 +182,10 @@ vogelstein_commit = '2a0683b68017fb226f4053e63415e4356191734f'
 genes_base_url = 'https://raw.githubusercontent.com/cognoma/genes/'
 genes_commit = 'ad9631bb4e77e2cdc5413b0d77cb8f7e93fc5bee'
 
+# location of COSMIC gene info
+cosmic_genes_file = data_dir / 'cosmic_cgc_tier1_2_7_2022.tsv'
+cosmic_with_annotations = data_dir / 'cosmic_tier1_annotated.tsv'
+
 # repo/commit information to retrieve TCGA code -> (sample|cancer) type map
 # we get this from cognoma: https://github.com/cognoma/cancer-data/
 sample_commit = 'da832c5edc1ca4d3f665b038d15b19fced724f4c'

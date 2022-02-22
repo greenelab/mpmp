@@ -4,6 +4,7 @@ Functions for reading and processing input data
 """
 import os
 import sys
+import typing
 from pathlib import Path
 
 import numpy as np
@@ -216,8 +217,8 @@ def load_random_genes():
 
 
 def load_vogelstein():
-    """Load list of cancer-relevant genes from Vogelstein and Kinzler,
-    Nature Medicine 2004 (https://doi.org/10.1038/nm1087)
+    """Load list of cancer-relevant genes from Vogelstein et al. 2013
+    (https://doi.org/10.1126/science.1235122).
 
     These genes and their oncogene or TSG status were precomputed in
     the pancancer repo, so we just load them from there.
@@ -232,6 +233,58 @@ def load_vogelstein():
     )
     # some genes in vogelstein set have different names in mutation data
     genes_df.gene.replace(to_replace=cfg.gene_aliases, inplace=True)
+    return genes_df
+
+
+def load_cosmic():
+    """Load list of cancer-relevant genes from COSMIC Cancer Gene Census
+    (https://cancer.sanger.ac.uk/cosmic/census?tier=1).
+
+    These genes and their oncogene or TSG status are precomputed in
+    the explore_cosmic_gene_set notebook.
+    """
+
+    genes_df = pd.read_csv(cfg.cosmic_with_annotations, sep='\t')
+
+    # some genes in cosmic set have different names in mutation data
+    genes_df.gene.replace(to_replace=cfg.gene_aliases, inplace=True)
+    return genes_df
+
+
+def load_custom_genes(gene_set):
+    """Load oncogene/TSG annotation information for custom genes.
+
+    This will load annotations from the gene sets corresponding to
+    load_functions, in that order of priority.
+    """
+    # make sure the passed-in gene set is a list
+    assert isinstance(gene_set, typing.List)
+
+    load_functions = [
+        load_vogelstein,
+        load_top_genes,
+        load_random_genes,
+        load_cosmic
+    ]
+    genes_df = None
+    for load_fn in load_functions:
+        annotated_df = load_fn()
+        if set(gene_set).issubset(set(annotated_df.gene.values)):
+            genes_df = annotated_df[annotated_df.gene.isin(gene_set)]
+            break
+
+    if genes_df is None:
+        # note that this will happen if gene_set is not a subset of exactly
+        # one of the gene sets in load_functions
+        #
+        # we could allow gene_set to be a subset of the union of all of them,
+        # but that would take a bit more work and is probably not a super
+        # common use case for us
+        from mpmp.exceptions import GenesNotFoundError
+        raise GenesNotFoundError(
+            'Gene list was not a subset of any existing gene set'
+        )
+
     return genes_df
 
 
