@@ -47,7 +47,7 @@ def gene_sample_count(gene, data_model, classification='neither'):
 
 
 # cache partial results and load them
-output_file = Path('./gene_sample_count.tsv')
+output_file = Path('./gene_sample_count_no_copy.tsv')
 if output_file.is_file():
     output_df = pd.read_csv(output_file, sep='\t', index_col=0)
 else:
@@ -66,40 +66,41 @@ print(gene_sample_count('TP53', tcga_data, classification='TSG'))
 # In[6]:
 
 
-gene_df = du.load_merged()
-gene_df.head()
+mutation_df = pancancer_data[1]
+mutation_df.iloc[:5, :5]
 
 
 # In[7]:
 
 
-save_every = 50
+save_every = 100
 
-for gene_ix, gene_series in gene_df.iterrows():
+gene_list = mutation_df.columns
+for gene_ix, gene in enumerate(gene_list):
     
     # if gene has already been processed, skip it
-    if gene_series.gene in output_df.index:
+    if gene in output_df.index:
         continue
         
     # load sample count for gene
-    gene, sample_count, cancer_types = gene_sample_count(
-        gene_series.gene,
+    gene_name, sample_count, cancer_types = gene_sample_count(
+        gene,
         tcga_data,
-        gene_series.classification)
+        classification='neither')
     
     # add to output dataframe
     output_df = pd.concat((
         output_df,
         pd.DataFrame([[sample_count, cancer_types]],
-                     index=[gene],
+                     index=[gene_name],
                      columns=['sample_count', 'cancer_types'])
     ))
     
     # save results every save_every genes, and at the end of all genes
     # this allows us to restart if this runs for a while and gets interrupted
     progress_ix = gene_ix + 1
-    if ((progress_ix % save_every == 0) or (progress_ix == gene_df.shape[0])) and (gene_ix != 0):
-        print('processed: {} / {}'.format(gene_ix+1, gene_df.shape[0]),
+    if ((progress_ix % save_every == 0) or (progress_ix == len(gene_list))) and (gene_ix != 0):
+        print('processed: {} / {}'.format(gene_ix+1, len(gene_list)),
               file=sys.stderr)
         output_df.to_csv(output_file, sep='\t')
 
@@ -109,4 +110,49 @@ for gene_ix, gene_series in gene_df.iterrows():
 
 print(output_df.shape)
 output_df.head()
+
+
+# In[10]:
+
+
+valid_genes = (output_df.sample_count > 0).sum()
+print('Valid genes:', valid_genes, '/', output_df.shape[0])
+
+
+# In[12]:
+
+
+output_df['num_cancer_types'] = output_df.cancer_types.str.len()
+output_df.head()
+
+
+# In[31]:
+
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+sns.set({'figure.figsize': (8, 6)})
+
+sns.histplot(output_df.num_cancer_types, binwidth=1)
+plt.xticks(range(0, output_df.num_cancer_types.max()+1))
+plt.setp(plt.gca().get_xticklabels()[1::2], visible=False)
+plt.xlabel('Cancer types')
+plt.title('Number of valid cancer types, per gene')
+
+
+# In[32]:
+
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+sns.set({'figure.figsize': (8, 6)})
+
+sns.histplot(output_df.num_cancer_types, binwidth=1)
+plt.xticks(range(0, output_df.num_cancer_types.max()+1))
+plt.setp(plt.gca().get_xticklabels()[1::2], visible=False)
+plt.xlabel('Cancer types')
+plt.yscale('log')
+plt.title('Number of valid cancer types, per gene')
 
