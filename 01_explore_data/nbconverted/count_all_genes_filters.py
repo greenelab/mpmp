@@ -18,14 +18,13 @@ import mpmp.utilities.data_utilities as du
 # In[2]:
 
 
-tcga_data = TCGADataModel(seed=cfg.default_seed, verbose=True)
+tcga_data = TCGADataModel(seed=cfg.default_seed, verbose=False)
 
 
-# In[8]:
+# In[3]:
 
 
 def gene_sample_count(gene, data_model, classification='neither'):
-    print(gene, file=sys.stderr)
     try:
         tcga_data.process_data_for_gene(gene,
                                         classification,
@@ -38,7 +37,7 @@ def gene_sample_count(gene, data_model, classification='neither'):
     return (gene, sample_count)
 
 
-# In[5]:
+# In[4]:
 
 
 # cache partial results and load them
@@ -52,7 +51,7 @@ print(output_df.shape)
 output_df.head()
 
 
-# In[9]:
+# In[5]:
 
 
 print(gene_sample_count('TP53', tcga_data, classification='TSG'))
@@ -61,18 +60,47 @@ print(gene_sample_count('TP53', tcga_data, classification='TSG'))
 # In[6]:
 
 
-vogelstein_df = du.load_vogelstein()
-vogelstein_df.head()
+gene_df = du.load_merged()
+gene_df.head()
 
 
-# In[ ]:
+# In[7]:
 
 
 save_every = 50
 
-for gene_ix, gene_series in vogelstein_df.iterrows():
-    if (gene_ix % save_every == 0) and (gene_ix != 0):
-        output_df.to_csv(output_file, sep='\t')
+for gene_ix, gene_series in gene_df.iterrows():
     
+    # if gene has already been processed, skip it
+    if gene_series.gene in output_df.index:
+        continue
         
+    # load sample count for gene
+    gene, sample_count = gene_sample_count(
+        gene_series.gene,
+        tcga_data,
+        gene_series.classification)
+    
+    # add to output dataframe
+    output_df = pd.concat((
+        output_df,
+        pd.DataFrame(sample_count,
+                     index=[gene],
+                     columns=['sample_count'])
+    ))
+    
+    # save results every save_every genes, and at the end of all genes
+    # this allows us to restart if this runs for a while and gets interrupted
+    progress_ix = gene_ix + 1
+    if ((progress_ix % save_every == 0) or (progress_ix == gene_df.shape[0])) and (gene_ix != 0):
+        print('processed: {} / {}'.format(gene_ix+1, gene_df.shape[0]),
+              file=sys.stderr)
+        output_df.to_csv(output_file, sep='\t')
+
+
+# In[8]:
+
+
+print(output_df.shape)
+output_df.head()
 
