@@ -18,7 +18,9 @@ import mpmp.utilities.data_utilities as du
 # In[2]:
 
 
+# load some data we need, this takes a bit
 tcga_data = TCGADataModel(seed=cfg.default_seed, verbose=False)
+pancancer_data = du.load_pancancer_data()
 
 
 # In[3]:
@@ -30,11 +32,15 @@ def gene_sample_count(gene, data_model, classification='neither'):
                                         classification,
                                         None)
         sample_count = tcga_data.X_df.shape[0]
+        cancer_types = (tcga_data.sample_info_df
+          .loc[tcga_data.X_df.index, 'cancer_type']
+          .unique()
+        )
     except KeyError:
         sample_count = np.nan
+        cancer_types = []
         
-    # TODO: get cancer types?
-    return (gene, sample_count)
+    return (gene, sample_count, cancer_types)
 
 
 # In[4]:
@@ -76,7 +82,7 @@ for gene_ix, gene_series in gene_df.iterrows():
         continue
         
     # load sample count for gene
-    gene, sample_count = gene_sample_count(
+    gene, sample_count, cancer_types = gene_sample_count(
         gene_series.gene,
         tcga_data,
         gene_series.classification)
@@ -84,9 +90,9 @@ for gene_ix, gene_series in gene_df.iterrows():
     # add to output dataframe
     output_df = pd.concat((
         output_df,
-        pd.DataFrame(sample_count,
+        pd.DataFrame([[sample_count, cancer_types]],
                      index=[gene],
-                     columns=['sample_count'])
+                     columns=['sample_count', 'cancer_types'])
     ))
     
     # save results every save_every genes, and at the end of all genes
