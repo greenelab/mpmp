@@ -65,7 +65,7 @@ cosmic_df['Role in Cancer'] = cosmic_df['Role in Cancer'].str.replace(', fusion'
 print(cosmic_df['Role in Cancer'].unique())
 
 
-# In[5]:
+# In[4]:
 
 
 # load Bailey et al. data
@@ -75,6 +75,14 @@ class_df = pd.read_excel(
     cfg.data_dir / '1-s2.0-S009286741830237X-mmc1.xlsx', 
     engine='openpyxl', sheet_name='Table S1', index_col='KEY', header=3
 )
+
+# excel file has lots of empty columns, we can just drop them
+class_df.drop(
+    class_df.columns[class_df.columns.str.contains('Unnamed')],
+    axis=1, inplace=True
+)
+
+# rename classification/annotation column to standardize with Vogelstein data
 class_df.rename(columns={'Tumor suppressor or oncogene prediction (by 20/20+)':
                          'classification'},
                 inplace=True)
@@ -83,14 +91,14 @@ print(class_df.shape)
 class_df.head()
 
 
-# In[6]:
+# In[5]:
 
 
 # get genes labeled by Bailey et al. as pan-cancer drivers, that are
 # also in COSMIC set and have annotations
 bailey_predicted_df = (
     class_df[((class_df.Cancer == 'PANCAN') &
-             (class_df.Gene.isin(cosmic_dual_df.index)) &
+             (class_df.Gene.isin(cosmic_df.index)) &
              (~class_df.classification.isna()))]
 ).copy()
 
@@ -106,10 +114,19 @@ print(bailey_predicted_df.shape)
 bailey_predicted_df.head()
 
 
+# In[6]:
+
+
+from pandas.api.types import is_datetime64_any_dtype
+
+# make sure no gene names were converted to dates, since excel does this sometimes
+assert not is_datetime64_any_dtype(bailey_predicted_df.Gene)
+
+
 # In[7]:
 
 
-cosmic_clean_df = (cosmic_dual_df.loc[:, ['Role in Cancer']]
+cosmic_clean_df = (cosmic_df.loc[:, ['Role in Cancer']]
     .merge(bailey_predicted_df.loc[:, ['Gene', 'classification']],
            left_index=True, right_on='Gene')
     .set_index('Gene')
@@ -193,7 +210,7 @@ plt.title('Overlap between cancer gene sets', size=13)
 # 
 # Or, in other words, how many genes will we need to run our classifiers for?
 
-# In[17]:
+# In[14]:
 
 
 import sys
@@ -219,14 +236,14 @@ def calculate_gene_count(genes_df, verbose):
     return gene_list
 
 
-# In[18]:
+# In[15]:
 
 
 genes_df = pd.read_csv(cfg.cosmic_with_annotations, sep='\t')
 genes_df.head()
 
 
-# In[20]:
+# In[16]:
 
 
 gene_list = calculate_gene_count(genes_df, verbose=False)
