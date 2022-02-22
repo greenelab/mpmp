@@ -18,12 +18,23 @@ import mpmp.utilities.data_utilities as du
 # In[2]:
 
 
+use_copy_data = False
+
+if use_copy_data:
+    output_file = Path('./gene_sample_count_with_copy.tsv')
+else:
+    output_file = Path('./gene_sample_count_no_copy.tsv')
+
+
+# In[3]:
+
+
 # load some data we need, this takes a bit
 tcga_data = TCGADataModel(seed=cfg.default_seed, verbose=False)
 pancancer_data = du.load_pancancer_data()
 
 
-# In[3]:
+# In[4]:
 
 
 def gene_sample_count(gene, data_model, classification='neither'):
@@ -32,24 +43,27 @@ def gene_sample_count(gene, data_model, classification='neither'):
                                         classification,
                                         None)
         sample_count = tcga_data.X_df.shape[0]
-        cancer_types = (tcga_data.sample_info_df
+        cancer_types = ';'.join(tcga_data.sample_info_df
           .loc[tcga_data.X_df.index, 'cancer_type']
           .unique()
         )
     except KeyError:
         sample_count = np.nan
-        cancer_types = []
+        cancer_types = pd.NA
         
     return (gene, sample_count, cancer_types)
 
 
-# In[4]:
+# In[5]:
 
 
 # cache partial results and load them
-output_file = Path('./gene_sample_count_no_copy.tsv')
 if output_file.is_file():
-    output_df = pd.read_csv(output_file, sep='\t', index_col=0)
+    output_df = pd.read_csv(
+        output_file, sep='\t', index_col=0
+    )
+    output_df.cancer_types.fillna('', inplace=True)
+    output_df.loc[output_df.cancer_types == '[]', 'cancer_types'] = []
 else:
     output_df = pd.DataFrame()
     
@@ -57,20 +71,20 @@ print(output_df.shape)
 output_df.head()
 
 
-# In[5]:
+# In[6]:
 
 
 print(gene_sample_count('TP53', tcga_data, classification='TSG'))
 
 
-# In[6]:
+# In[7]:
 
 
 mutation_df = pancancer_data[1]
 mutation_df.iloc[:5, :5]
 
 
-# In[7]:
+# In[8]:
 
 
 save_every = 100
@@ -86,7 +100,8 @@ for gene_ix, gene in enumerate(gene_list):
     gene_name, sample_count, cancer_types = gene_sample_count(
         gene,
         tcga_data,
-        classification='neither')
+        classification=('Oncogene, TSG' if use_copy_data else 'neither')
+    )
     
     # add to output dataframe
     output_df = pd.concat((
@@ -105,7 +120,7 @@ for gene_ix, gene in enumerate(gene_list):
         output_df.to_csv(output_file, sep='\t')
 
 
-# In[8]:
+# In[9]:
 
 
 print(output_df.shape)
@@ -119,14 +134,15 @@ valid_genes = (output_df.sample_count > 0).sum()
 print('Valid genes:', valid_genes, '/', output_df.shape[0])
 
 
-# In[12]:
+# In[11]:
 
 
-output_df['num_cancer_types'] = output_df.cancer_types.str.len()
+output_df['num_cancer_types'] = output_df.cancer_types.str.split(';', expand=False).apply(len)
+output_df.loc[output_df.sample_count == 0, 'num_cancer_types'] = 0
 output_df.head()
 
 
-# In[31]:
+# In[12]:
 
 
 import seaborn as sns
@@ -141,11 +157,8 @@ plt.xlabel('Cancer types')
 plt.title('Number of valid cancer types, per gene')
 
 
-# In[32]:
+# In[13]:
 
-
-import seaborn as sns
-import matplotlib.pyplot as plt
 
 sns.set({'figure.figsize': (8, 6)})
 
@@ -154,5 +167,11 @@ plt.xticks(range(0, output_df.num_cancer_types.max()+1))
 plt.setp(plt.gca().get_xticklabels()[1::2], visible=False)
 plt.xlabel('Cancer types')
 plt.yscale('log')
-plt.title('Number of valid cancer types, per gene')
+plt.title('Number of valid cancer types, per gene, log scale')
+
+
+# In[ ]:
+
+
+
 
