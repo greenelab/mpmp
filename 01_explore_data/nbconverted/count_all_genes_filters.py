@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ## Count number of valid genes after applying cancer type filters
+# 
+# In [the preprocessing code for our classifiers](https://github.com/greenelab/mpmp/blob/5d5fa0823b00fc3080d3a9db69d8d6704f554549/mpmp/utilities/tcga_utilities.py#L84), we filter out cancer types that don't contain at least 5% of samples mutated and at least 10 total samples mutated, for a given target gene.
+# 
+# We were curious how many total genes these filters would give us, if we look at _all_ ~20,000 genes we have mutation data for. This script filters samples for each gene and counts the number of samples/cancer types that would be included in our classifiers.
+
 # In[1]:
 
 
@@ -14,6 +20,15 @@ import mpmp.config as cfg
 from mpmp.data_models.tcga_data_model import TCGADataModel
 import mpmp.utilities.data_utilities as du
 
+
+# ### Choose whether or not to use CNV info
+# 
+# Normally we'd use copy gain for oncogenes and copy loss for TSGs, but since we don't have these annotations for all the genes in the genome, there are two ways to handle marking samples as "mutated":
+# 
+# 1. Just use point mutations for all genes, no copy number info
+# 2. Use point mutations and copy gain/loss for all genes
+# 
+# We provide an option here to run either of these.
 
 # In[2]:
 
@@ -29,7 +44,7 @@ else:
 # In[3]:
 
 
-# load some data we need, this takes a bit
+# load sample info and mutation data, this takes some time
 tcga_data = TCGADataModel(seed=cfg.default_seed, verbose=False)
 pancancer_data = du.load_pancancer_data()
 
@@ -38,6 +53,7 @@ pancancer_data = du.load_pancancer_data()
 
 
 def gene_sample_count(gene, data_model, classification='neither'):
+    """Count valid samples/cancer types for a given gene."""
     try:
         tcga_data.process_data_for_gene(gene,
                                         classification,
@@ -58,6 +74,8 @@ def gene_sample_count(gene, data_model, classification='neither'):
 
 
 # cache partial results and load them
+# we're running this script for 20,000 genes, so it's nice to save progress in case
+# execution is interrupted
 if output_file.is_file():
     output_df = pd.read_csv(
         output_file, sep='\t', index_col=0
@@ -76,6 +94,8 @@ output_df.head()
 
 print(gene_sample_count('TP53', tcga_data, classification='TSG'))
 
+
+# ### Calculate sample/cancer type count for all genes in the mutation gene set
 
 # In[7]:
 
@@ -134,6 +154,8 @@ valid_genes = (output_df.sample_count > 0).sum()
 print('Valid genes:', valid_genes, '/', output_df.shape[0])
 
 
+# ### Plot distribution of valid cancer types across gene set
+
 # In[11]:
 
 
@@ -168,10 +190,4 @@ plt.setp(plt.gca().get_xticklabels()[1::2], visible=False)
 plt.xlabel('Cancer types')
 plt.yscale('log')
 plt.title('Number of valid cancer types, per gene, log scale')
-
-
-# In[ ]:
-
-
-
 
