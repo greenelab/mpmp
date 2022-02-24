@@ -30,7 +30,7 @@ get_ipython().run_line_magic('autoreload', '2')
 # In[2]:
 
 
-# if True, plot results for COSMIC CGC gene set
+# if True, plot results for merged geneset (see 00_download_data/2_download_cancer_gene_data.ipynb)
 # if False, plot results for Vogelstein et al. 2013 gene set
 merged_geneset = True
 
@@ -47,7 +47,7 @@ else:
     SAVE_FIGS = True
 
 # set significance cutoff after FDR correction
-SIG_ALPHA = 0.001
+SIG_ALPHA = 0.05
 
 # if True, plot AUROC instead of AUPR
 PLOT_AUROC = False
@@ -314,8 +314,8 @@ heatmap_df.iloc[:, :5]
 
 if merged_geneset:
     # there are way more genes so we need a bigger figure
-    # TODO: this probably needs to be separated into two rows
-    sns.set({'figure.figsize': (55, 6)})
+    # TODO: this probably needs to be separated into multiple rows
+    sns.set({'figure.figsize': (75, 6)})
 else:
     sns.set({'figure.figsize': (28, 6)})
     

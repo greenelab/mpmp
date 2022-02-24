@@ -29,12 +29,24 @@ import mpmp.utilities.plot_utilities as plu
 
 
 # set results directory
-results_dir = Path(cfg.results_dirs['mutation'],
-                   'methylation_results_shuffle_cancer_type',
-                   'gene').resolve()
+merged_geneset = True
+
+if merged_geneset:
+    results_dir = Path(cfg.results_dirs['mutation'],
+                       'merged_methylation',
+                       'gene').resolve()
+    # if True, save figures to ./images directory
+    # set this to False for cosmic genes, for now
+    SAVE_FIGS = False
+else:
+    results_dir = Path(cfg.results_dirs['mutation'],
+                       'methylation_results_shuffle_cancer_type',
+                       'gene').resolve()
+    # currently we're using the vogelstein figures for the paper
+    SAVE_FIGS = True
 
 # set significance cutoff after FDR correction
-SIG_ALPHA = 0.001
+SIG_ALPHA = 0.05
 
 # if True, save figures to ./images directory
 SAVE_FIGS = True
@@ -222,7 +234,7 @@ heatmap_df.iloc[:, :5]
 # In[13]:
 
 
-sns.set({'figure.figsize': (32, 5)})
+sns.set({'figure.figsize': (100, 5)})
 sns.set_context('notebook', font_scale=1.5)
 
 ax = plu.plot_heatmap(heatmap_df,
