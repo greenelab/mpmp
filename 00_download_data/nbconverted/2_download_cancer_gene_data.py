@@ -69,6 +69,10 @@ class_df = pd.read_excel(
     cfg.bailey_raw_file,
     engine='openpyxl', sheet_name='Table S1', index_col='KEY', header=3
 )
+class_df.drop(
+    class_df.columns[class_df.columns.str.contains('Unnamed')],
+    axis=1, inplace=True
+)
 class_df.rename(columns={'Tumor suppressor or oncogene prediction (by 20/20+)':
                          'classification'},
                 inplace=True)
