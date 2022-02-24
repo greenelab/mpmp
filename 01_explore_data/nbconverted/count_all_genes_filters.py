@@ -53,7 +53,14 @@ pancancer_data = du.load_pancancer_data()
 
 
 def gene_sample_count(gene, data_model, classification='neither'):
-    """Count valid samples/cancer types for a given gene."""
+    """Count valid samples/cancer types for a given gene.
+    
+    By 'valid', we mean the gene we're using as a label has sufficient
+    mutated samples in the given cancer type to train a classifier.
+    We usually define 'sufficient' as 5% and at least 10 of the samples
+    have mutations in the cancer type, but this can be changed as a
+    parameter to process_data_for_gene.
+    """
     try:
         tcga_data.process_data_for_gene(gene,
                                         classification,
@@ -74,8 +81,8 @@ def gene_sample_count(gene, data_model, classification='neither'):
 
 
 # cache partial results and load them
-# we're running this script for 20,000 genes, so it's nice to save progress in case
-# execution is interrupted
+# we're running this script for 20,000 genes, so it's nice to save progress every
+# n genes, in case execution is interrupted
 if output_file.is_file():
     output_df = pd.read_csv(
         output_file, sep='\t', index_col=0
