@@ -47,7 +47,7 @@ else:
     SAVE_FIGS = True
 
 # set significance cutoff after FDR correction
-SIG_ALPHA = 0.05
+SIG_ALPHA = 0.001
 
 # if True, plot AUROC instead of AUPR
 PLOT_AUROC = False
