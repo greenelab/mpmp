@@ -36,6 +36,25 @@ get_ipython().run_line_magic('autoreload', '2')
 # set results directory
 results_dir = Path(cfg.results_dirs['mutation'], 'dosage_effects')
 
+# top 15 genes in terms of performance, we'll focus on these here
+top_15_genes = [
+    'BRAF',
+    'CDKN2A',
+    'CTNNB1',
+    'EGFR',
+    'ERBB2',
+    'FBXW7',
+    'FUBP1',
+    'NFE2L2',
+    'NRAS',
+    'PIK3CA',
+    'PTEN',
+    'RB1',
+    'SPOP',
+    'TP53',
+    'TSC1'
+]
+
 
 # In[3]:
 
@@ -47,6 +66,10 @@ for subdir in results_dir.iterdir():
     experiment = subdir.stem
     gene_dir = Path(subdir, 'gene')
     model_results_df = au.load_stratified_prediction_results(gene_dir, 'gene')
+    model_results_df = (
+        model_results_df[model_results_df.identifier.isin(top_15_genes)]
+          .copy()
+    )
     model_results_df['experiment'] = (
         experiment.replace('_', ' ').capitalize()
     )
