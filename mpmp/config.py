@@ -195,9 +195,6 @@ bailey_with_annotations = cancer_genes_dir / 'bailey_annotated.tsv'
 vogelstein_with_annotations = cancer_genes_dir / 'vogelstein_annotated.tsv'
 merged_cancer_genes = cancer_genes_dir / 'merged_with_annotations.tsv'
 
-# TODO: move?
-cosmic_with_annotations = data_dir / 'cosmic_tier1_annotated.tsv'
-
 # repo/commit information to retrieve TCGA code -> (sample|cancer) type map
 # we get this from cognoma: https://github.com/cognoma/cancer-data/
 sample_commit = 'da832c5edc1ca4d3f665b038d15b19fced724f4c'

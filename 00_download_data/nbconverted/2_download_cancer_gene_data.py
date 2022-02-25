@@ -102,11 +102,20 @@ print(bailey_df.shape)
 bailey_df.head()
 
 
+# In[6]:
+
+
+from pandas.api.types import is_datetime64_any_dtype
+
+# make sure no gene names were converted to dates, since excel does this sometimes
+assert not is_datetime64_any_dtype(bailey_df.index)
+
+
 # ### Load Vogelstein et al. data
 # 
 # This data originally came from [Vogelstein et al. 2013](https://www.science.org/doi/10.1126/science.1235122), and is available as a tsv in [the `pancancer` repo](https://github.com/greenelab/pancancer/blob/master/data/vogelstein_cancergenes.tsv). Oncogene/TSG annotations are also 20/20+ predictions.
 
-# In[6]:
+# In[7]:
 
 
 import mpmp.utilities.data_utilities as du
@@ -128,7 +137,7 @@ vogelstein_df.head()
 # 3. For genes that can't be resolved confidently, we'll keep them as "oncogene, TSG" and run our scripts using both copy gain and copy loss downstream.
 # 4. Merge the three datasets together, ensuring that annotations are concordant (or resolving them if not)
 
-# In[7]:
+# In[8]:
 
 
 # first merge bailey and vogelstein datasets
@@ -138,14 +147,14 @@ print(vogelstein_df.classification.unique())
 vogelstein_df.head()
 
 
-# In[8]:
+# In[9]:
 
 
 print(bailey_df.classification.unique())
 bailey_df.head()
 
 
-# In[9]:
+# In[10]:
 
 
 # first merge dataframes, then resolve classifications
@@ -162,7 +171,7 @@ print(vogelstein_bailey_df.shape)
 vogelstein_bailey_df.head()
 
 
-# In[10]:
+# In[11]:
 
 
 def merge_classifications(row):
@@ -188,14 +197,15 @@ print(vogelstein_bailey_df.classification.unique())
 vogelstein_bailey_df.head()
 
 
-# In[11]:
-
-
-# examples where the datasets disagree
-vogelstein_bailey_df[vogelstein_bailey_df.classification == 'check'].head()
-
-
 # In[12]:
+
+
+# examples where the datasets disagree, there shouldn't be too many of them
+print(vogelstein_bailey_df[vogelstein_bailey_df.classification == 'check'].shape)
+vogelstein_bailey_df[vogelstein_bailey_df.classification == 'check']
+
+
+# In[13]:
 
 
 # COSMIC CGC classifies DNMT3A as a TSG at the pan-cancer level,
@@ -230,7 +240,7 @@ print(vogelstein_bailey_df.classification.unique())
 vogelstein_bailey_df.head()
 
 
-# In[13]:
+# In[14]:
 
 
 # now merge with cosmic CGC genes
@@ -248,7 +258,7 @@ print(merged_df.shape)
 merged_df.head()
 
 
-# In[14]:
+# In[15]:
 
 
 def merge_all(row):
@@ -279,7 +289,7 @@ print(merged_df.classification.unique())
 merged_df.head()
 
 
-# In[15]:
+# In[16]:
 
 
 (merged_df
