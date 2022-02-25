@@ -38,11 +38,25 @@ get_ipython().run_line_magic('autoreload', '2')
 # In[2]:
 
 
-# set results directory
-vogelstein_results_dir = Path(cfg.results_dirs['mutation'],
-                              'shuffle_cancer_type',
-                              'expression_vogelstein',
-                              'gene').resolve()
+# if True, plot results for merged geneset (see 00_download_data/2_download_cancer_gene_data.ipynb)
+# if False, plot results for Vogelstein et al. 2013 gene set
+merged_geneset = True
+
+if merged_geneset:
+    cancer_genes_results_dir = Path(cfg.results_dirs['mutation'],
+                                    'merged_expression',
+                                    'gene').resolve()
+    # if True, save figures to ./images directory
+    # set this to False for cosmic genes, for now
+    SAVE_FIGS = False
+else:
+    cancer_genes_results_dir = Path(cfg.results_dirs['mutation'],
+                                    'shuffle_cancer_type',
+                                    'expression_vogelstein',
+                                    'gene').resolve()
+    # currently we're using the vogelstein figures for the paper
+    SAVE_FIGS = True
+    
 top_50_results_dir = Path(cfg.results_dirs['mutation'],
                           'shuffle_cancer_type',
                           'expression_top',
@@ -54,9 +68,6 @@ random_50_results_dir = Path(cfg.results_dirs['mutation'],
 
 # set significance cutoff after FDR correction
 SIG_ALPHA = 0.001
-
-# if True, save figures to ./images directory
-SAVE_FIGS = True
 
 # if True, plot AUROC instead of AUPR
 PLOT_AUROC = False
@@ -72,16 +83,16 @@ else:
 
 
 # load raw data
-vogelstein_df = au.load_stratified_prediction_results(vogelstein_results_dir, 'gene')
-vogelstein_df = vogelstein_df[vogelstein_df.training_data.isin(['expression'])]
-vogelstein_df['gene_set'] = 'vogelstein'
+cancer_genes_df = au.load_stratified_prediction_results(cancer_genes_results_dir, 'gene')
+cancer_genes_df = cancer_genes_df[cancer_genes_df.training_data.isin(['expression'])]
+cancer_genes_df['gene_set'] = 'cancer_genes'
 
 # make sure that we're correctly pointing to raw data for non-methylation data types
 # and that we have data for two replicates (two random seeds)
-print(vogelstein_df.shape)
-print(vogelstein_df.seed.unique())
-print(vogelstein_df.training_data.unique())
-vogelstein_df.head()
+print(cancer_genes_df.shape)
+print(cancer_genes_df.seed.unique())
+print(cancer_genes_df.training_data.unique())
+cancer_genes_df.head()
 
 
 # In[4]:
@@ -121,7 +132,7 @@ random_50_df.head()
 
 # combine results dataframes
 results_df = (
-    pd.concat((vogelstein_df, top_50_df, random_50_df))
+    pd.concat((cancer_genes_df, top_50_df, random_50_df))
       .drop(columns=['training_data', 'experiment'])
       .rename(columns={'gene_set': 'training_data'})
 )
@@ -145,7 +156,7 @@ fig, axarr = plt.subplots(1, 3)
 gene_set_map = {
     'random_50': 'random',
     'top_50': 'most mutated',
-    'vogelstein': 'Vogelstein et al.'
+    'cancer_genes': 'cancer gene set'
 }
 all_results_df.training_data.replace(to_replace=gene_set_map, inplace=True)
 
@@ -155,7 +166,8 @@ plu.plot_volcano_baseline(all_results_df,
                           SIG_ALPHA,
                           metric=plot_metric,
                           verbose=True,
-                          mark_overlap=True)
+                          # TODO: fix overlap for merged cancer genes
+                          mark_overlap=(not merged_geneset))
 
 if SAVE_FIGS:
     images_dir.mkdir(exist_ok=True)
@@ -172,7 +184,7 @@ sns.set_style('whitegrid')
 fig, axarr = plt.subplots(1, 1)
 
 gene_set_map = {
-    'vogelstein': 'Vogelstein et al.'
+    'cancer_genes': 'cancer gene set'
 }
 all_results_df.training_data.replace(to_replace=gene_set_map, inplace=True)
 
@@ -203,7 +215,7 @@ fig, axarr = plt.subplots(1, 1)
 gene_set_map = {
     'random_50': 'random',
     'top_50': 'most mutated',
-    'vogelstein': 'Vogelstein et al.'
+    'cancer_genes': 'cancer gene set'
 }
 
 all_results_df = (all_results_df
@@ -225,15 +237,16 @@ for tick in ax.get_xticklabels():
     
 plt.tight_layout()
 
-tests_df = plu.add_annotation(ax,
-                              all_results_df.rename(
-                                  columns={'gene_set': 'training_data'}
-                              ),
-                              all_pairs=(gene_set_map.values()),
-                              metric=plot_metric,
-                              box_pairs=[('random', 'most mutated'),
-                                         ('most mutated', 'Vogelstein et al.'),
-                                         ('random', 'Vogelstein et al.')])
+if not merged_geneset:
+    tests_df = plu.add_annotation(ax,
+                                  all_results_df.rename(
+                                      columns={'gene_set': 'training_data'}
+                                  ),
+                                  all_pairs=(gene_set_map.values()),
+                                  metric=plot_metric,
+                                  box_pairs=[('random', 'most mutated'),
+                                             ('most mutated', 'cancer gene set'),
+                                             ('random', 'cancer gene set')])
 
 if SAVE_FIGS:
     plt.savefig(images_dir / 'expression_boxes.svg', bbox_inches='tight')
@@ -246,7 +259,8 @@ if SAVE_FIGS:
 
 # pairwise rank sum tests comparing results distributions
 # H0: results distributions are the same between the data types
-tests_df.sort_values('p_value')
+if not merged_geneset:
+    tests_df.sort_values('p_value')
 
 
 # In[11]:
