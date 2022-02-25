@@ -251,6 +251,21 @@ def load_cosmic():
     return genes_df
 
 
+def load_merged():
+    """Load list of cancer-relevant genes generated in the script at
+    00_download_data/2_download_cancer_gene_data.ipynb.
+
+    This is a combination of ~500 cancer-associated genes from COSMIC CGC,
+    Vogelstein et al. and Bailey et al.
+    """
+
+    genes_df = pd.read_csv(cfg.merged_cancer_genes, sep='\t')
+
+    # some genes in cosmic set have different names in mutation data
+    genes_df.gene.replace(to_replace=cfg.gene_aliases, inplace=True)
+    return genes_df
+
+
 def load_custom_genes(gene_set):
     """Load oncogene/TSG annotation information for custom genes.
 
@@ -261,10 +276,11 @@ def load_custom_genes(gene_set):
     assert isinstance(gene_set, typing.List)
 
     load_functions = [
+        load_merged,
         load_vogelstein,
+        load_cosmic,
         load_top_genes,
-        load_random_genes,
-        load_cosmic
+        load_random_genes
     ]
     genes_df = None
     for load_fn in load_functions:
