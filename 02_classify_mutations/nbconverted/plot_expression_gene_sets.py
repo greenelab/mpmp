@@ -46,6 +46,12 @@ if merged_geneset:
     cancer_genes_results_dir = Path(cfg.results_dirs['mutation'],
                                     'merged_expression',
                                     'gene').resolve()
+    top_50_results_dir = Path(cfg.results_dirs['mutation'],
+                              'expression_top',
+                              'gene').resolve()
+    random_50_results_dir = Path(cfg.results_dirs['mutation'],
+                                 'expression_random',
+                                 'gene').resolve()
     # if True, save figures to ./images directory
     # set this to False for cosmic genes, for now
     SAVE_FIGS = False
@@ -54,17 +60,17 @@ else:
                                     'shuffle_cancer_type',
                                     'expression_vogelstein',
                                     'gene').resolve()
+    top_50_results_dir = Path(cfg.results_dirs['mutation'],
+                              'shuffle_cancer_type',
+                              'expression_top',
+                              'gene').resolve()
+    random_50_results_dir = Path(cfg.results_dirs['mutation'],
+                                 'shuffle_cancer_type',
+                                 'expression_random',
+                                 'gene').resolve()
     # currently we're using the vogelstein figures for the paper
     SAVE_FIGS = True
     
-top_50_results_dir = Path(cfg.results_dirs['mutation'],
-                          'shuffle_cancer_type',
-                          'expression_top',
-                          'gene').resolve()
-random_50_results_dir = Path(cfg.results_dirs['mutation'],
-                             'shuffle_cancer_type',
-                             'expression_random',
-                             'gene').resolve()
 
 # set significance cutoff after FDR correction
 SIG_ALPHA = 0.001
