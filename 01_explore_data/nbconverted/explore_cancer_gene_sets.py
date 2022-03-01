@@ -240,8 +240,9 @@ vogelstein_sig_results = [r for r in vogelstein_results if r.p_fdr_bh < 0.05]
 
 # save to output directory
 cfg.go_output_dir.mkdir(exist_ok=True)
-output_file = cfg.go_output_dir / 'vogelstein_enrichment.tsv'
-goea.wr_tsv(str(output_file), vogelstein_sig_results)
+
+vogelstein_output_file = cfg.go_output_dir / 'vogelstein_enrichment.tsv'
+goea.wr_tsv(str(vogelstein_output_file), vogelstein_sig_results)
 
 
 # In[18]:
@@ -274,6 +275,35 @@ non_vogelstein_sig_results = [r for r in non_vogelstein_results if r.p_fdr_bh < 
 # In[21]:
 
 
-output_file = cfg.go_output_dir / 'non_vogelstein_enrichment.tsv'
-goea.wr_tsv(str(output_file), non_vogelstein_sig_results)
+non_vogelstein_output_file = cfg.go_output_dir / 'non_vogelstein_enrichment.tsv'
+goea.wr_tsv(str(non_vogelstein_output_file), non_vogelstein_sig_results)
 
+
+# In[22]:
+
+
+# get entrez IDs for all gene set
+all_ids = gene_names_to_ids(all_genes)
+print(len(all_ids))
+all_ids[:5]
+
+
+# In[23]:
+
+
+# run GO enrichment analysis for non-Vogelstein genes
+all_results = goea.run_study(all_ids)
+all_sig_results = [r for r in all_results if r.p_fdr_bh < 0.05]
+
+
+# In[24]:
+
+
+all_output_file = cfg.go_output_dir / 'merged_enrichment.tsv'
+goea.wr_tsv(str(all_output_file), all_sig_results)
+
+
+# ### Overlap of enrichment results
+vogelstein_mf_results_df = (
+    pd.read_csv()
+)
