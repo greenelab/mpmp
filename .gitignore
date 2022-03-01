@@ -2,6 +2,9 @@
 **/.ipynb_checkpoints/*
 *.egg-info*
 
+# don't track GO analysis files, they are fairly large
+01_explore_data/go_data/*
+
 # don't track large data files
 # these can all be generated de novo using scripts in 00_download_data
 data/raw/*

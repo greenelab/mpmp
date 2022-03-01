@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# ## Explore overlap between cancer gene sets
+# ## Explore cancer gene sets
 # 
 # We want to download the set of cancer-associated genes from the [COSMIC Cancer Gene Census](https://cancer.sanger.ac.uk/cosmic/census), in order to use these genes in our experiments as a comparison/complement to the Vogelstein et al. gene set.
+# 
+# TODO: document in more detail
 
 # In[1]:
 
@@ -87,4 +89,70 @@ label_map = {
 }
 venn(label_map)
 plt.title('Overlap between cancer gene sets', size=13)
+
+
+# ### Enrichment analysis of gene sets
+# 
+# Here, we want to do a GO molecular function enrichment analysis of the gene sets we're using. In particular, we want to compare enriched functions for the Vogelstein et al. and merged cancer gene sets, since the classification results we see for these gene sets are so different.
+# 
+# The code below mostly follows the `goatools` tutorial here: https://github.com/tanghaibao/goatools/blob/main/notebooks/goea_nbt3102.ipynb
+
+# In[10]:
+
+
+# download ontology data
+cfg.go_data_dir.mkdir(exist_ok=True)
+obo_file = cfg.go_data_dir / 'go-basic.obo'
+
+if not obo_file.exists():
+    from goatools.base import download_go_basic_obo
+    obo_fname = download_go_basic_obo()
+    Path(obo_fname).replace(obo_file)
+else:
+    print('Ontology data file already exists')
+
+
+# In[13]:
+
+
+# download gene-GO associations
+gene2go_file = cfg.go_data_dir / 'gene2go.gz'
+
+if not gene2go_file.exists():
+    from goatools.base import download_ncbi_associations
+    gene2go_fname = download_ncbi_associations()
+    Path(gene2go_fname).replace(gene2go_file)
+else:
+    print('Associations data file already exists')
+
+
+# In[14]:
+
+
+# load ontology structure
+from goatools.obo_parser import GODag
+
+obodag = GODag(str(obo_file))
+
+
+# In[16]:
+
+
+from goatools.anno.genetogo_reader import Gene2GoReader
+
+# Read NCBI's gene2go. Store annotations in a list of namedtuples
+objanno = Gene2GoReader(str(gene2go_file), taxids=[9606])
+
+# Get namespace2association where:
+#    namespace is:
+#        BP: biological_process               
+#        MF: molecular_function
+#        CC: cellular_component
+#    assocation is a dict:
+#        key: NCBI GeneID
+#        value: A set of GO IDs associated with that gene
+ns2assoc = objanno.get_ns2assc()
+
+for nspc, id2gos in ns2assoc.items():
+    print("{NS} {N:,} annotated human genes".format(NS=nspc, N=len(id2gos)))
 

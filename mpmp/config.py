@@ -258,3 +258,6 @@ titration_ratios = [0.0, 0.25, 0.5, 0.75, 1.]
 
 # whether or not to batch correct covariates
 bc_covariates = False
+
+# location of data for GO enrichment analysis
+go_data_dir = repo_root / '01_explore_data' / 'go_data'
