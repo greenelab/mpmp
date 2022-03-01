@@ -156,3 +156,41 @@ ns2assoc = objanno.get_ns2assc()
 for nspc, id2gos in ns2assoc.items():
     print("{NS} {N:,} annotated human genes".format(NS=nspc, N=len(id2gos)))
 
+
+# In[17]:
+
+
+# convert NCBI Gene query results for human genes to Python module
+# see: https://github.com/tanghaibao/goatools/blob/main/notebooks/background_genes_ncbi.ipynb
+from goatools.cli.ncbi_gene_results_to_python import ncbi_tsv_to_py
+
+ncbi_tsv = str(cfg.go_data_dir / 'gene_result.txt')
+output_py = 'genes_ncbi_9606_proteincoding.py'
+ncbi_tsv_to_py(ncbi_tsv, output_py)
+
+
+# In[22]:
+
+
+# load human background gene set
+from genes_ncbi_9606_proteincoding import GENEID2NT as GeneID2nt
+
+print(len(GeneID2nt))
+print(list(GeneID2nt.items())[0])
+
+
+# In[23]:
+
+
+# initialize GO enrichment analysis object
+from goatools.goea.go_enrichment_ns import GOEnrichmentStudyNS
+
+goea = GOEnrichmentStudyNS(
+    GeneID2nt.keys(), # list of human protein-coding genes
+    ns2assoc, # gene/GO term associations
+    obodag, # ontology structure
+    propagate_counts=False,
+    alpha=0.05,
+    methods=['fdr_bh']
+)
+
