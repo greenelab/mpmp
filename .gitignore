@@ -3,8 +3,9 @@
 *.egg-info*
 
 # don't track GO analysis files, they are fairly large
-01_explore_data/go_data/*
 01_explore_data/genes_ncbi_9606_proteincoding.py
+01_explore_data/go_data/*
+01_explore_data/go_output/*
 
 # don't track large data files
 # these can all be generated de novo using scripts in 00_download_data

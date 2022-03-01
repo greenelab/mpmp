@@ -261,3 +261,4 @@ bc_covariates = False
 
 # location of data for GO enrichment analysis
 go_data_dir = repo_root / '01_explore_data' / 'go_data'
+go_output_dir = repo_root / '01_explore_data' / 'go_output'
