@@ -858,7 +858,7 @@ def only_target_from_data(data_df, target_gene, gene_features):
     try:
         target_feature = symbol_map[target_gene]
         if target_feature in update_map.keys():
-            target_feature = update_map[target_gene]
+            target_feature = update_map[target_feature]
         target_feature = str(target_feature)
     except KeyError:
         # if not found in symbol_map, just use raw feature

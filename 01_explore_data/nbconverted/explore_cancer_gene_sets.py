@@ -194,3 +194,46 @@ goea = GOEnrichmentStudyNS(
     methods=['fdr_bh']
 )
 
+
+# In[25]:
+
+
+# we need to convert gene symbols to entrez IDs
+from mpmp.utilities.tcga_utilities import get_symbol_map
+
+symbol_to_entrez, old_to_new_entrez = get_symbol_map()
+vogelstein_ids = []
+
+for gene in vogelstein_df.gene.unique():
+    try:
+        gene_id = symbol_to_entrez[gene]
+        if gene_id in old_to_new_entrez.keys():
+            gene_id = old_to_new_entrez[gene_id]
+        vogelstein_ids.append(gene_id)
+    except KeyError:
+        print('Gene {} not in ID map'.format(gene), file=sys.stderr)
+        continue
+        
+print(len(vogelstein_ids))
+vogelstein_ids[:5]
+
+
+# In[27]:
+
+
+# run GO enrichment analysis for Vogelstein genes
+vogelstein_results = goea.run_study(vogelstein_ids)
+vogelstein_sig_results = [r for r in vogelstein_results if r.p_fdr_bh < 0.05]
+
+
+# In[33]:
+
+
+goea.wr_tsv('./vogelstein_enrichment.tsv', vogelstein_sig_results)
+
+
+# In[ ]:
+
+
+
+
