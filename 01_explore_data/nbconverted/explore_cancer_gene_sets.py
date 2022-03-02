@@ -3,9 +3,9 @@
 
 # ## Explore cancer gene sets
 # 
-# We want to download the set of cancer-associated genes from the [COSMIC Cancer Gene Census](https://cancer.sanger.ac.uk/cosmic/census), in order to use these genes in our experiments as a comparison/complement to the Vogelstein et al. gene set.
+# In `00_download_data/2_download_cancer_gene_data.ipynb`, we downloaded and integrated several different sets of cancer-associated genes. In this script, we want to explore the similarities and differences between these gene sets in more detail.
 # 
-# TODO: document in more detail
+# We see that the results of our classification experiments are somewhat dependent on which gene set or sets we decide to use, so understanding the similarities and differences between the gene sets will help us to put these in context.
 
 # In[1]:
 
@@ -94,9 +94,9 @@ plt.title('Overlap between cancer gene sets', size=13)
 
 # ### Enrichment analysis of gene sets
 # 
-# Here, we want to do a GO molecular function enrichment analysis of the gene sets we're using. In particular, we want to compare enriched functions for the Vogelstein et al. and merged cancer gene sets, since the classification results we see for these gene sets are so different.
+# Here, we want to do a GO molecular function enrichment analysis of the gene sets we're using. In particular, we want to compare enriched functions for the Vogelstein et al. and "merged" (Vogelstein + COSMIC + Bailey) cancer gene sets, since the classification results we see for these gene sets are so different.
 # 
-# The code below mostly follows the `goatools` tutorial here: https://github.com/tanghaibao/goatools/blob/main/notebooks/goea_nbt3102.ipynb
+# The code below mostly follows this `goatools` vignette, which is a Python package we use to analyze functional enrichment: https://github.com/tanghaibao/goatools/blob/main/notebooks/goea_nbt3102.ipynb
 
 # In[7]:
 
@@ -304,6 +304,8 @@ goea.wr_tsv(str(all_output_file), all_sig_results)
 
 
 # ### Overlap of enrichment results
+# 
+# We want to see if there are GO terms that are enriched in one gene set (Vogelstein/non-Vogelstein) but not the other. The hope is this will tell us something about why the gene sets result in such different (relative) performance between data types.
 
 # In[50]:
 
@@ -379,8 +381,8 @@ print(non_vogelstein_enrichment_df[non_vogelstein_enrichment_df['# GO'].isin(ove
 non_vogelstein_enrichment_df[non_vogelstein_enrichment_df['# GO'].isin(overlap_terms)].head(10)
 
 
-# In[ ]:
-
-
-
-
+# Results are summarized in the Google slides here: https://docs.google.com/presentation/d/1AVK7XVRHq3xkeH7U1413jQLh79zDgS6Q4VEPsXcDTQU/edit?usp=sharing
+# 
+# Comparing the Vogelstein-only and non-Vogelstein-only terms, for the MF enrichment I don't honestly see a huge difference. Both gene sets are enriched for lots of "DNA binding" and "protein binding"-type terms. The non-Vogelstein gene set has some terms related to transcriptional activation/repression which the Vogelstein gene set doesn't have, so maybe these genes could induce changes to transcription which are picked up more easily in the gene expression dataset.
+# 
+# Looking at BP enrichment, we can see that the Vogelstein-only genes are enriched for MAPK signaling genes, and the non-Vogelstein genes are enriched for cell cycle genes and transcriptional regulators.
