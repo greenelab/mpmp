@@ -22,8 +22,8 @@ import mpmp.utilities.data_utilities as du
 # In[2]:
 
 
-# this is the number of valid genes in the Vogelstein gene set
-NUM_GENES = 85
+# this is the number of valid genes in the merged cancer gene set
+NUM_GENES = 268
 
 # sample random genes from set of genes with every gene with >= NUM_CANCERS
 # valid cancer types
@@ -86,8 +86,11 @@ sum_df.iloc[:5, :5]
 # In[6]:
 
 
-SUM_THRESHOLD = 10
-PROP_THRESHOLD = 0.1
+# these are the same thresholds we use for classifier preprocessing
+# this ensures that we'll be able to train a classifier for every
+# "randomly" sampled gene
+SUM_THRESHOLD = 15
+PROP_THRESHOLD = 0.05
 
 sum_df = (sum_df > SUM_THRESHOLD)
 ratio_df = (ratio_df > PROP_THRESHOLD)
@@ -120,7 +123,7 @@ print(sampled_genes.sort_values(ascending=False).head(20))
 
 
 # get oncogene/TSG status from Vogelstein gene list
-# this is just used to decide whether to add copy number gains/losses in mutation labeling
+# this is used to decide whether to add copy number gains/losses in mutation labeling
 vogelstein_df = du.load_vogelstein()
 gene_to_class_map = dict(zip(vogelstein_df.gene, vogelstein_df.classification))
 
