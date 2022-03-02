@@ -304,6 +304,94 @@ goea.wr_tsv(str(all_output_file), all_sig_results)
 
 
 # ### Overlap of enrichment results
+
+# In[28]:
+
+
 vogelstein_mf_results_df = (
-    pd.read_csv()
+    pd.read_csv(vogelstein_output_file, sep='\t')
+      .query("NS == 'MF'")
+      .reset_index(drop=True)
 )
+
+print(vogelstein_mf_results_df.shape)
+vogelstein_mf_results_df.head()
+
+
+# In[29]:
+
+
+non_vogelstein_mf_results_df = (
+    pd.read_csv(non_vogelstein_output_file, sep='\t')
+      .query("NS == 'MF'")
+      .reset_index(drop=True)
+)
+
+print(non_vogelstein_mf_results_df.shape)
+non_vogelstein_mf_results_df.head()
+
+
+# In[39]:
+
+
+sns.set_style('white')
+
+vogelstein_set = set(vogelstein_mf_results_df['# GO'].values)
+non_vogelstein_set = set(non_vogelstein_mf_results_df['# GO'].values)
+
+go_term_map = {
+    'vogelstein': vogelstein_set,
+    'non_vogelstein': non_vogelstein_set,
+}
+venn(go_term_map)
+plt.title('Overlap between enriched GO MF terms', size=13)
+
+
+# In[41]:
+
+
+vogelstein_only_terms = (
+    vogelstein_set - non_vogelstein_set
+)
+print(vogelstein_mf_results_df[vogelstein_mf_results_df['# GO'].isin(vogelstein_only_terms)].shape)
+vogelstein_mf_results_df[vogelstein_mf_results_df['# GO'].isin(vogelstein_only_terms)].head(10)
+
+
+# In[42]:
+
+
+non_vogelstein_only_terms = (
+    non_vogelstein_set - vogelstein_set
+)
+print(non_vogelstein_mf_results_df[non_vogelstein_mf_results_df['# GO'].isin(non_vogelstein_only_terms)].shape)
+non_vogelstein_mf_results_df[non_vogelstein_mf_results_df['# GO'].isin(non_vogelstein_only_terms)].head(10)
+
+
+# In[30]:
+
+
+all_mf_results_df = (
+    pd.read_csv(all_output_file, sep='\t')
+      .query("NS == 'MF'")
+      .reset_index(drop=True)
+)
+
+print(all_mf_results_df.shape)
+all_mf_results_df.head()
+
+
+# In[35]:
+
+
+sns.set_style('white')
+
+all_set = set(all_mf_results_df['# GO'].values)
+
+go_term_map = {
+    'vogelstein': vogelstein_set,
+    'non_vogelstein': non_vogelstein_set,
+    'all': all_set
+}
+venn(go_term_map)
+plt.title('Overlap between enriched GO MF terms', size=13)
+
