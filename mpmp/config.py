@@ -261,7 +261,7 @@ bc_covariates = False
 
 # options for what model to use for classification
 model_choices = [
-    'elastic_net', # elastic net regularized logistic regression
+    'elasticnet', # elastic net regularized logistic regression
     'gbm', # gradient boosting, implemented in lightgbm
     'mlp' # 3-layer multi-layer perceptron neural network
 ]

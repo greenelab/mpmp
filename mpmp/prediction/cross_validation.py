@@ -37,7 +37,7 @@ def run_cv_stratified(data_model,
                       output_survival_fn=False,
                       survival_fit_ridge=False,
                       stratify=True,
-                      model='elastic_net',
+                      model='elasticnet',
                       bc_train_test=False,
                       bc_titration_ratio=None,
                       results_dir=None):
@@ -179,7 +179,7 @@ def run_cv_stratified(data_model,
                                                            num_features)
 
         classifiers_list = {
-            'elastic_net': clf.train_linear_classifier,
+            'elasticnet': clf.train_linear_classifier,
             'gbm': clf.train_gb_classifier,
             'mlp': clf.train_mlp_classifier
         }
@@ -252,7 +252,7 @@ def run_cv_stratified(data_model,
             signal=signal,
             seed=data_model.seed,
             name=predictor,
-            nonlinear=(model != 'elastic_net')
+            model=model
         )
         coef_df = coef_df.assign(identifier=identifier)
         if isinstance(training_data, str):
@@ -410,7 +410,7 @@ def extract_coefficients(cv_pipeline,
                          signal,
                          seed,
                          name='classify',
-                         nonlinear=False):
+                         model='elasticnet'):
     """
     Pull out the coefficients from the trained models
 
@@ -427,10 +427,11 @@ def extract_coefficients(cv_pipeline,
 
     if name == 'survival':
         weights = final_classifier.coef_.flatten()
-    elif nonlinear:
+    elif model == 'gbm':
         # use information gain for feature importance with nonlinear classifier
-        # TODO this won't work for mlp
         weights = final_classifier.booster_.feature_importance(importance_type='gain')
+    elif model == 'mlp':
+        raise NotImplementedError('feature importance not implemented for MLP')
     else:
         weights = final_classifier.coef_[0]
 

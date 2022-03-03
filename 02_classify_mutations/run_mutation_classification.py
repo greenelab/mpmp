@@ -79,7 +79,7 @@ def process_args():
                       default='mad',
                       help='method to use for feature selection, only applied if '
                            '0 > num_features > total number of columns')
-    opts.add_argument('--model', choices=cfg.model_choices, default='elastic_net',
+    opts.add_argument('--model', choices=cfg.model_choices, default='elasticnet',
                       help='what type of model to use for classification, defaults '
                            'to logistic regression with elastic net regularization')
     opts.add_argument('--num_features', type=int, default=cfg.num_features_raw,
