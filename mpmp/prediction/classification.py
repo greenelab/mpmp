@@ -21,16 +21,16 @@ from sklearn.model_selection import (
 
 import mpmp.config as cfg
 
-def train_classifier(X_train,
-                     X_test,
-                     y_train,
-                     alphas,
-                     l1_ratios,
-                     seed,
-                     n_folds=4,
-                     max_iter=1000):
+def train_linear_classifier(X_train,
+                            X_test,
+                            y_train,
+                            alphas,
+                            l1_ratios,
+                            seed,
+                            n_folds=4,
+                            max_iter=1000):
     """
-    Build the logic and sklearn pipelines to predict binary y from dataset x
+    Train a linear (elastic net logistic regression) classifier.
 
     Arguments
     ---------
@@ -39,6 +39,7 @@ def train_classifier(X_train,
     y_train: pandas DataFrame of processed y matrix (output from align_matrices())
     alphas: list of alphas to perform cross validation over
     l1_ratios: list of l1 mixing parameters to perform cross validation over
+    seed: seed for random number generator
     n_folds: int of how many folds of cross validation to perform
     max_iter: the maximum number of iterations to test until convergence
 
@@ -172,6 +173,18 @@ def train_gb_classifier(X_train,
     y_predict_test = cv_pipeline.predict_proba(X_test)[:, 1]
 
     return cv_pipeline, y_predict_train, y_predict_test, y_cv
+
+
+def train_mlp_classifier(X_train,
+                         X_test,
+                         y_train,
+                         params,
+                         seed,
+                         n_folds=4,
+                         max_iter=1000):
+    """Train multi-layer perceptron classifier."""
+
+    raise NotImplementedError('mlp classifier not yet implemented')
 
 
 def get_preds(X_test_df, y_test_df, cv_pipeline, fold_no):

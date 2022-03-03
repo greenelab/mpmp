@@ -75,6 +75,7 @@ def save_model_options(output_dir, model_options, predictor='classify'):
                                      '.pkl',
                                      training_data,
                                      predictor,
+                                     model_options.model,
                                      s=model_options.seed)
 
     with open(output_file, 'wb') as f:

@@ -37,7 +37,7 @@ def run_cv_stratified(data_model,
                       output_survival_fn=False,
                       survival_fit_ridge=False,
                       stratify=True,
-                      nonlinear=False,
+                      model='elastic_net',
                       bc_train_test=False,
                       bc_titration_ratio=None,
                       results_dir=None):
@@ -178,9 +178,13 @@ def run_cv_stratified(data_model,
                                                            feature_selection_method,
                                                            num_features)
 
+        classifiers_list = {
+            'elastic_net': clf.train_linear_classifier,
+            'gbm': clf.train_gb_classifier,
+            'mlp': clf.train_mlp_classifier
+        }
         models_list = {
-            'classify': (clf.train_gb_classifier if nonlinear
-                         else clf.train_classifier),
+            'classify': classifiers_list[model],
             'regress': reg.train_regressor,
             'survival': surv.train_survival
         }
@@ -205,7 +209,7 @@ def run_cv_stratified(data_model,
             train_model = partial(train_model, debug_info=debug_info)
 
         # set the hyperparameters
-        train_model_params = apply_model_params(train_model, predictor, nonlinear)
+        train_model_params = apply_model_params(train_model, predictor, model)
 
         try:
             model_results = train_model_params(
@@ -248,7 +252,7 @@ def run_cv_stratified(data_model,
             signal=signal,
             seed=data_model.seed,
             name=predictor,
-            nonlinear=nonlinear
+            nonlinear=(model != 'elastic_net')
         )
         coef_df = coef_df.assign(identifier=identifier)
         if isinstance(training_data, str):
@@ -425,6 +429,7 @@ def extract_coefficients(cv_pipeline,
         weights = final_classifier.coef_.flatten()
     elif nonlinear:
         # use information gain for feature importance with nonlinear classifier
+        # TODO this won't work for mlp
         weights = final_classifier.booster_.feature_importance(importance_type='gain')
     else:
         weights = final_classifier.coef_[0]
@@ -469,10 +474,13 @@ def temp_seed(cntxt_seed):
         np.random.set_state(state)
 
 
-def apply_model_params(train_model, predictor, nonlinear):
-    if predictor == 'classify' and nonlinear:
-        # non-linear classifier takes different hyperparameters,
-        # pass them through here
+def apply_model_params(train_model, predictor, model):
+    if predictor == 'classify' and model == 'mlp':
+        return partial(
+            train_model,
+            params=cfg.mlp_params,
+        )
+    elif predictor == 'classify' and model == 'gbm':
         return partial(
             train_model,
             learning_rates=cfg.learning_rates,

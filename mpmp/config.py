@@ -258,3 +258,13 @@ titration_ratios = [0.0, 0.25, 0.5, 0.75, 1.]
 
 # whether or not to batch correct covariates
 bc_covariates = False
+
+# options for what model to use for classification
+model_choices = [
+    'elastic_net', # elastic net regularized logistic regression
+    'gbm', # gradient boosting, implemented in lightgbm
+    'mlp' # 3-layer multi-layer perceptron neural network
+]
+
+# TODO: not sure what these will be yet
+mlp_params = {}

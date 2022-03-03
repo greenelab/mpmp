@@ -60,6 +60,9 @@ def process_args():
                                      'experiment metadata ')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
+    opts.add_argument('--model', choices=cfg.model_choices, default='elastic_net',
+                      help='what type of model to use for classification, defaults '
+                           'to logistic regression with elastic net regularization')
     opts.add_argument('--n_dim', nargs='*', default=None,
                       help='list of compressed dimensions to use, defaults to '
                            'uncompressed data for all data types')
@@ -231,7 +234,8 @@ if __name__ == '__main__':
                                             model_options.num_folds,
                                             'classify',
                                             shuffle_labels=shuffle_labels,
-                                            standardize_columns=standardize_columns)
+                                            standardize_columns=standardize_columns,
+                                            model=model_options.model)
                 # only save results if no exceptions
                 fu.save_results(gene_dir,
                                 check_file,
