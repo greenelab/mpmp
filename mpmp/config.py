@@ -267,4 +267,8 @@ model_choices = [
 ]
 
 # TODO: not sure what these will be yet
-mlp_params = {}
+mlp_params = {
+    'learning_rate': [0.1, 0.01, 0.001, 1e-4],
+    'dropout': [0.5],
+    'weight_decay': [0, 0.1, 1, 10]
+}

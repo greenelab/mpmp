@@ -82,7 +82,7 @@ def train_linear_classifier(X_train,
     # Fit the model
     cv_pipeline.fit(X=X_train, y=y_train.status)
 
-    # Obtain cross validation results
+    # obtain cross validation results
     y_cv = cross_val_predict(
         cv_pipeline.best_estimator_,
         X=X_train,
@@ -91,7 +91,7 @@ def train_linear_classifier(X_train,
         method='decision_function',
     )
 
-    # Get all performance results
+    # get all performance results
     y_predict_train = cv_pipeline.decision_function(X_train)
     y_predict_test = cv_pipeline.decision_function(X_test)
 
@@ -183,8 +183,58 @@ def train_mlp_classifier(X_train,
                          n_folds=4,
                          max_iter=1000):
     """Train multi-layer perceptron classifier."""
+    import torch.optim
+    from skorch import NeuralNetBinaryClassifier
 
-    raise NotImplementedError('mlp classifier not yet implemented')
+    from mpmp.prediction.nn_models import LogisticRegression, ThreeLayerNet
+
+    # TODO model toggle
+    model = LogisticRegression(input_size=X_train.shape[1])
+
+    clf_parameters = {
+        'lr': params['learning_rate'],
+        # 'module__dropout': params['dropout'],
+        # 'optimizer__weight_decay': params['weight_decay'],
+        # 'classify__reg_lambda': params['lambda'], # TODO l1 loss
+     }
+
+    net = NeuralNetBinaryClassifier(
+        model,
+        max_epochs=max_iter,
+        optimizer=torch.optim.Adam,
+        iterator_train__shuffle=True
+    )
+
+    cv_pipeline = GridSearchCV(
+        estimator=net,
+        param_grid=clf_parameters,
+        n_jobs=-1,
+        cv=n_folds,
+        scoring='average_precision',
+        return_train_score=True
+    )
+
+    # labels have to be cast to floats
+    # https://discuss.pytorch.org/t/multi-label-binary-classification-result-type-float-cant-be-cast-to-the-desired-output-type-long/117915/3
+    cv_pipeline.fit(X=X_train.values.astype(np.float32),
+                    y=y_train.status.values.astype(np.float32))
+
+    # obtain cross validation results
+    # TODO: this isn't working
+    # y_cv = cross_val_predict(
+    #     cv_pipeline.best_estimator_,
+    #     X=X_train.values.astype(np.float32),
+    #     y=y_train.status.values,
+    #     cv=n_folds,
+    #     method='predict_proba',
+    # )[:, 1]
+
+    # get all performance results
+    y_predict_train = cv_pipeline.predict_proba(X_train.values.astype(np.float32))[:, 1]
+    y_predict_test = cv_pipeline.predict_proba(X_test.values.astype(np.float32))[:, 1]
+    y_cv = y_predict_train
+
+    return cv_pipeline, y_predict_train, y_predict_test, y_cv
 
 
 def get_preds(X_test_df, y_test_df, cv_pipeline, fold_no):

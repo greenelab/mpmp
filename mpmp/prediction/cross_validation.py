@@ -246,20 +246,23 @@ def run_cv_stratified(data_model,
          y_cv_df) = model_results
 
         # get coefficients
-        coef_df = extract_coefficients(
-            cv_pipeline=cv_pipeline,
-            feature_names=X_train_df.columns,
-            signal=signal,
-            seed=data_model.seed,
-            name=predictor,
-            model=model
-        )
-        coef_df = coef_df.assign(identifier=identifier)
-        if isinstance(training_data, str):
-            coef_df = coef_df.assign(training_data=training_data)
+        if model == 'mlp':
+            coef_df = pd.DataFrame()
         else:
-            coef_df = coef_df.assign(training_data='.'.join(training_data))
-        coef_df = coef_df.assign(fold=fold_no)
+            coef_df = extract_coefficients(
+                cv_pipeline=cv_pipeline,
+                feature_names=X_train_df.columns,
+                signal=signal,
+                seed=data_model.seed,
+                name=predictor,
+                model=model
+            )
+            coef_df = coef_df.assign(identifier=identifier)
+            if isinstance(training_data, str):
+                coef_df = coef_df.assign(training_data=training_data)
+            else:
+                coef_df = coef_df.assign(training_data='.'.join(training_data))
+            coef_df = coef_df.assign(fold=fold_no)
         if '{}_coef'.format(exp_string) not in results:
             results['{}_coef'.format(exp_string)] = [coef_df]
         else:
