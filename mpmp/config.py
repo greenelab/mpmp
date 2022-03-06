@@ -266,11 +266,11 @@ model_choices = [
     'mlp' # 3-layer multi-layer perceptron neural network
 ]
 
-# TODO: not sure what these will be yet
+# parameter ranges for MLP search
 mlp_params = {
-    'learning_rate': [0.1, 0.01, 0.001, 1e-4],
-    'dropout': [0.5],
-    'weight_decay': [0, 0.1, 1, 10]
+    'learning_rate': [0.1, 0.01, 0.001, 5e-4, 1e-4],
+    'dropout': [0.5, 0.75, 0.9],
+    'weight_decay': [0, 0.1, 1, 100]
 }
 
 # location of data for GO enrichment analysis

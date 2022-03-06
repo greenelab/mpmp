@@ -189,20 +189,23 @@ def train_mlp_classifier(X_train,
     from mpmp.prediction.nn_models import LogisticRegression, ThreeLayerNet
 
     # TODO model toggle
-    model = LogisticRegression(input_size=X_train.shape[1])
+    # model = LogisticRegression(input_size=X_train.shape[1])
+    model = ThreeLayerNet(input_size=X_train.shape[1])
 
     clf_parameters = {
         'lr': params['learning_rate'],
         # 'module__dropout': params['dropout'],
-        # 'optimizer__weight_decay': params['weight_decay'],
+        'optimizer__weight_decay': params['weight_decay'],
         # 'classify__reg_lambda': params['lambda'], # TODO l1 loss
      }
 
     net = NeuralNetBinaryClassifier(
         model,
         max_epochs=max_iter,
+        batch_size=48,
         optimizer=torch.optim.Adam,
-        iterator_train__shuffle=True
+        iterator_train__shuffle=True,
+        verbose=1 # by default this prints loss for each epoch
     )
 
     cv_pipeline = GridSearchCV(
@@ -221,6 +224,8 @@ def train_mlp_classifier(X_train,
 
     # obtain cross validation results
     # TODO: this isn't working
+    # TODO: are these even useful in general? seems like it would be
+    #       more useful to see results for each parameter choice
     # y_cv = cross_val_predict(
     #     cv_pipeline.best_estimator_,
     #     X=X_train.values.astype(np.float32),

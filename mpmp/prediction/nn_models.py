@@ -25,10 +25,10 @@ class ThreeLayerNet(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
+        x = F.relu(self.fc0(x))
+        x = self.dropout(x)
         x = F.relu(self.fc1(x))
         x = self.dropout(x)
-        x = F.relu(self.fc2(x))
-        x = self.dropout(x)
-        x = self.fc3(x)
+        x = self.fc2(x)
         return x
 
