@@ -272,3 +272,7 @@ mlp_params = {
     'dropout': [0.5],
     'weight_decay': [0, 0.1, 1, 10]
 }
+
+# location of data for GO enrichment analysis
+go_data_dir = repo_root / '01_explore_data' / 'go_data'
+go_output_dir = repo_root / '01_explore_data' / 'go_output'
