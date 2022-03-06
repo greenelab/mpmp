@@ -205,7 +205,7 @@ def train_mlp_classifier(X_train,
         batch_size=48,
         optimizer=torch.optim.Adam,
         iterator_train__shuffle=True,
-        verbose=1 # by default this prints loss for each epoch
+        verbose=0 # by default this prints loss for each epoch
     )
 
     cv_pipeline = GridSearchCV(
@@ -214,7 +214,7 @@ def train_mlp_classifier(X_train,
         n_jobs=-1,
         cv=n_folds,
         scoring='average_precision',
-        return_train_score=True
+        return_train_score=True,
     )
 
     # labels have to be cast to floats
