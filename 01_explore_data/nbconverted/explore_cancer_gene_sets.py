@@ -3,9 +3,9 @@
 
 # ## Explore cancer gene sets
 # 
-# In `00_download_data/2_download_cancer_gene_data.ipynb`, we downloaded and integrated several different sets of cancer-associated genes. In this script, we want to explore the similarities and differences between these gene sets in more detail.
+# In `00_download_data/2_download_cancer_gene_data.ipynb`, we downloaded and integrated several different sets of cancer-associated genes. That script contains info about which sources we're using to get our list of cancer genes, how we're labeling them as oncogene/TSG, and how the data sources are similar/different.
 # 
-# We see that the results of our classification experiments are somewhat dependent on which gene set or sets we decide to use, so understanding the similarities and differences between the gene sets will help us to put these in context.
+# In this script, we want to explore the similarities and differences between these gene sets in more detail. We have seen that the results of our classification experiments are somewhat dependent on which gene set or sets we decide to use, so understanding the similarities and differences between the gene sets will help us to put these results in context.
 
 # In[1]:
 
@@ -96,7 +96,7 @@ plt.title('Overlap between cancer gene sets', size=13)
 # 
 # Here, we want to do a GO molecular function enrichment analysis of the gene sets we're using. In particular, we want to compare enriched functions for the Vogelstein et al. and "merged" (Vogelstein + COSMIC + Bailey) cancer gene sets, since the classification results we see for these gene sets are so different.
 # 
-# The code below mostly follows this `goatools` vignette, which is a Python package we use to analyze functional enrichment: https://github.com/tanghaibao/goatools/blob/main/notebooks/goea_nbt3102.ipynb
+# The code below is based on the `goatools` example vignette, which is a Python package we use to analyze functional enrichment: https://github.com/tanghaibao/goatools/blob/main/notebooks/goea_nbt3102.ipynb
 
 # In[7]:
 
@@ -307,10 +307,10 @@ goea.wr_tsv(str(all_output_file), all_sig_results)
 # 
 # We want to see if there are GO terms that are enriched in one gene set (Vogelstein/non-Vogelstein) but not the other. The hope is this will tell us something about why the gene sets result in such different (relative) performance between data types.
 
-# In[50]:
+# In[25]:
 
 
-go_category = 'BP'
+go_category = 'MF'
 
 vogelstein_enrichment_df = (
     pd.read_csv(vogelstein_output_file, sep='\t')
@@ -322,7 +322,7 @@ print(vogelstein_enrichment_df.shape)
 vogelstein_enrichment_df.head()
 
 
-# In[51]:
+# In[26]:
 
 
 non_vogelstein_enrichment_df = (
@@ -335,7 +335,7 @@ print(non_vogelstein_enrichment_df.shape)
 non_vogelstein_enrichment_df.head()
 
 
-# In[52]:
+# In[27]:
 
 
 sns.set_style('white')
@@ -351,7 +351,7 @@ venn(go_term_map)
 plt.title('Overlap between enriched GO {} terms'.format(go_category), size=13)
 
 
-# In[53]:
+# In[28]:
 
 
 vogelstein_only_terms = (
@@ -361,7 +361,7 @@ print(vogelstein_enrichment_df[vogelstein_enrichment_df['# GO'].isin(vogelstein_
 vogelstein_enrichment_df[vogelstein_enrichment_df['# GO'].isin(vogelstein_only_terms)].head(10)
 
 
-# In[54]:
+# In[29]:
 
 
 non_vogelstein_only_terms = (
@@ -371,7 +371,7 @@ print(non_vogelstein_enrichment_df[non_vogelstein_enrichment_df['# GO'].isin(non
 non_vogelstein_enrichment_df[non_vogelstein_enrichment_df['# GO'].isin(non_vogelstein_only_terms)].head(10)
 
 
-# In[55]:
+# In[30]:
 
 
 overlap_terms = (
@@ -386,3 +386,33 @@ non_vogelstein_enrichment_df[non_vogelstein_enrichment_df['# GO'].isin(overlap_t
 # Comparing the Vogelstein-only and non-Vogelstein-only terms, for the MF enrichment I don't honestly see a huge difference. Both gene sets are enriched for lots of "DNA binding" and "protein binding"-type terms. The non-Vogelstein gene set has some terms related to transcriptional activation/repression which the Vogelstein gene set doesn't have, so maybe these genes could induce changes to transcription which are picked up more easily in the gene expression dataset.
 # 
 # Looking at BP enrichment, we can see that the Vogelstein-only genes are enriched for MAPK signaling genes, and the non-Vogelstein genes are enriched for cell cycle genes and transcriptional regulators.
+
+# In[31]:
+
+
+from goatools.godag_plot import plot_gos
+
+# select some terms from the non-vogelstein genes to visualize
+# if we take all of them we get an unreadable mess
+terms_to_plot = [
+    'GO:0000981', # DNA-binding TF activity
+    'GO:0003712', # transcription coregulator activity
+    'GO:0001227', # DNA-binding transcription repressor activity
+    'GO:0019904', # protein domain specific binding activity
+    'GO:1990837', # double-stranded DNA binding
+]
+
+plot_gos("non_vogelstein_tf.png", terms_to_plot, obodag, goea_results=non_vogelstein_results)
+
+
+# From the `goatools` vignette:
+# 
+# ```
+# GO terms colored by P-value:
+# pval < 0.005 (light red)
+# pval < 0.01 (light orange)
+# pval < 0.05 (yellow)
+# pval > 0.05 (grey) Study terms that are not statistically significant
+# ```
+
+# ![image](non_vogelstein_tf.png)
