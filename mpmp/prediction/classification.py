@@ -205,13 +205,14 @@ def train_mlp_classifier(X_train,
         batch_size=48,
         optimizer=torch.optim.Adam,
         iterator_train__shuffle=True,
-        verbose=0 # by default this prints loss for each epoch
+        verbose=0, # by default this prints loss for each epoch
+        device='cuda'
     )
 
     cv_pipeline = GridSearchCV(
         estimator=net,
         param_grid=clf_parameters,
-        n_jobs=-1,
+        n_jobs=2,
         cv=n_folds,
         scoring='average_precision',
         return_train_score=True,
