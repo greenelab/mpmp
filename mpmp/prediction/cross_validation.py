@@ -184,7 +184,7 @@ def run_cv_stratified(data_model,
 
         models_list = {
             'classify': (clf.train_gb_classifier if nonlinear
-                         else clf.train_classifier),
+                         else clf.train_classifier_bo),
             'regress': reg.train_regressor,
             'survival': surv.train_survival
         }
@@ -209,16 +209,24 @@ def run_cv_stratified(data_model,
             train_model = partial(train_model, debug_info=debug_info)
 
         # set the hyperparameters
-        train_model_params = apply_model_params(train_model, predictor, nonlinear)
+        # train_model_params = apply_model_params(train_model, predictor, nonlinear)
 
         try:
-            model_results = train_model_params(
+            # model_results = train_model_params(
+            #     X_train=X_train_df,
+            #     X_test=X_test_df,
+            #     y_train=y_train_df,
+            #     seed=data_model.seed,
+            #     n_folds=cfg.folds,
+            #     max_iter=cfg.max_iter_map[predictor],
+            # )
+            model_results = train_model(
                 X_train=X_train_df,
                 X_test=X_test_df,
                 y_train=y_train_df,
                 seed=data_model.seed,
                 n_folds=cfg.folds,
-                max_iter=cfg.max_iter_map[predictor],
+                cl_max_iter=cfg.max_iter_map[predictor],
             )
         except ValueError as e:
             if ('Only one class' in str(e)) or ('got 1 class' in str(e)):

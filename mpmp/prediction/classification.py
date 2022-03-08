@@ -122,6 +122,68 @@ def train_classifier(X_train,
 
     return cv_pipeline, y_predict_train, y_predict_test, y_cv
 
+def train_classifier_bo(X_train,
+                        X_test,
+                        y_train,
+                        seed,
+                        n_folds=4,
+                        cl_max_iter=1000,
+                        bo_max_iter=20):
+    """Elastic net classifier using Bayesian optimization to select hyperparameters."""
+
+    from skopt import BayesSearchCV
+
+    estimator = Pipeline(
+        steps=[
+            (
+                'classify',
+                SGDClassifier(
+                    random_state=seed,
+                    class_weight='balanced',
+                    loss='log',
+                    penalty='elasticnet',
+                    max_iter=cl_max_iter,
+                    tol=1e-3,
+                ),
+            )
+        ]
+    )
+
+    search_spaces = {
+        'classify__alpha': (1e-6, 1e6, 'log-uniform'),
+        'classify__l1_ratio': (0.0, 1.0, 'uniform')
+    }
+
+    cv_pipeline = BayesSearchCV(
+        estimator=estimator,
+        search_spaces=search_spaces,
+        n_iter=bo_max_iter,
+        n_jobs=-1,
+        cv=n_folds,
+        scoring='average_precision',
+        return_train_score=True,
+        verbose=2,
+    )
+
+    # Fit the model
+    cv_pipeline.fit(X=X_train, y=y_train.status)
+
+    # Obtain cross validation results
+    # Get all performance results
+    y_predict_train = cv_pipeline.decision_function(X_train)
+    y_predict_test = cv_pipeline.decision_function(X_test)
+
+    y_cv = cross_val_predict(
+        cv_pipeline.best_estimator_,
+        X=X_train,
+        y=y_train.status,
+        cv=n_folds,
+        method='decision_function',
+    )
+
+
+    return cv_pipeline, y_predict_train, y_predict_test, y_cv
+
 
 def train_gb_classifier(X_train,
                         X_test,

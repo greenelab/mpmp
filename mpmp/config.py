@@ -131,7 +131,8 @@ filter_prop = 0.05
 filter_count = 15
 
 # hyperparameters for classification experiments
-folds = -1
+folds = 3
+# folds = -1
 inner_valid_prop = 0.2
 max_iter = 200
 alphas = [1e-4, 0.001, 0.01, 0.1, 1, 10]
