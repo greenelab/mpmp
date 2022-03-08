@@ -35,6 +35,7 @@ def run_cv_stratified(data_model,
                       feature_selection_method='mad',
                       output_preds=False,
                       output_survival_fn=False,
+                      output_grid=False,
                       survival_fit_ridge=False,
                       stratify=True,
                       nonlinear=False,
@@ -78,6 +79,9 @@ def run_cv_stratified(data_model,
 
     if output_preds:
         results['{}_preds'.format(exp_string)] = []
+
+    if output_grid:
+        results['{}_param_grid'.format(exp_string)] = []
 
     for fold_no in range(num_folds):
 
@@ -313,6 +317,22 @@ def run_cv_stratified(data_model,
                     fold_no=fold_no
                 )
             results['{}_metrics'.format(exp_string)].append(metric_df)
+
+        if output_grid:
+            results['{}_param_grid'.format(exp_string)].append(
+                pd.DataFrame(
+                    np.array([
+                        # TODO make this work with a variety of params
+                        [fold_no] * cv_pipeline.cv_results_['param_classify__alpha'].shape[0],
+                        cv_pipeline.cv_results_['param_classify__alpha'],
+                        cv_pipeline.cv_results_['param_classify__l1_ratio'],
+                        cv_pipeline.cv_results_['mean_train_score'],
+                        cv_pipeline.cv_results_['mean_test_score']
+
+                    ]).T,
+                    columns=['fold', 'alpha', 'l1_ratio', 'mean_train_score', 'mean_test_score']
+                )
+            )
 
         if output_preds:
             if predictor == 'survival':

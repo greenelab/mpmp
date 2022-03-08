@@ -197,6 +197,13 @@ def save_results(output_dir,
     else:
         preds_df = None
 
+    if '{}_param_grid'.format(exp_string) in results:
+        params_df = pd.concat(results[
+            '{}_param_grid'.format(exp_string)
+        ])
+    else:
+        params_df = None
+
     output_file = construct_filename(output_dir,
                                      'metrics',
                                      '.tsv.gz',
@@ -225,6 +232,19 @@ def save_results(output_dir,
         preds_df.to_csv(
             output_file, sep="\t", float_format="%.5g"
         )
+
+    if params_df is not None:
+        output_file = construct_filename(output_dir,
+                                         'param_grid',
+                                         '.tsv.gz',
+                                         identifier,
+                                         training_data,
+                                         signal,
+                                         predictor,
+                                         s=model_options.seed,
+                                         n=n_dim)
+
+        params_df.to_csv(output_file, sep="\t")
 
 
 def generate_log_df(log_columns, log_values):

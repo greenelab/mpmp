@@ -49,6 +49,8 @@ def process_args():
                     help='name of file to log skipped genes to')
     io.add_argument('--results_dir', default=cfg.results_dirs['mutation'],
                     help='where to write results to')
+    io.add_argument('--save_hparams', action='store_true',
+                    help='if included, save train/test results for inner CV grid search')
     io.add_argument('--verbose', action='store_true')
 
     # argument group for parameters related to model training/evaluation
@@ -242,6 +244,7 @@ if __name__ == '__main__':
                     standardize_columns=standardize_columns,
                     num_features=model_options.num_features,
                     feature_selection_method=model_options.feature_selection,
+                    output_grid=io_args.save_hparams,
                     nonlinear=model_options.nonlinear,
                     bc_train_test=model_options.bc_train_test
                 )

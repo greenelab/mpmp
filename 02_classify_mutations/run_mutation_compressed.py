@@ -50,6 +50,8 @@ def process_args():
     io.add_argument('--results_dir',
                     default=(cfg.results_dirs['mutation'] / 'compressed'),
                     help='where to write results to')
+    io.add_argument('--save_hparams', action='store_true',
+                    help='if included, save train/test results for inner CV grid search')
     io.add_argument('--verbose', action='store_true')
 
     # argument group for parameters related to model training/evaluation
@@ -207,7 +209,8 @@ if __name__ == '__main__':
                                             model_options.num_folds,
                                             'classify',
                                             shuffle_labels,
-                                            standardize_columns=False)
+                                            standardize_columns=False,
+                                            output_grid=io_args.save_hparams)
                 # only save results if no exceptions
                 fu.save_results(gene_dir,
                                 check_file,
