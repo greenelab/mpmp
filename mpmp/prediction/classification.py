@@ -128,7 +128,7 @@ def train_classifier_bo(X_train,
                         seed,
                         n_folds=4,
                         cl_max_iter=1000,
-                        bo_max_iter=20):
+                        bo_num_iter=100):
     """Elastic net classifier using Bayesian optimization to select hyperparameters."""
 
     from skopt import BayesSearchCV

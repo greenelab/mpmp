@@ -448,6 +448,7 @@ def run_cv_fold(data_model,
             seed=data_model.seed,
             n_folds=cfg.folds,
             cl_max_iter=cfg.max_iter_map['classify'],
+            bo_num_iter=cfg.bo_num_iter
         )
     except ValueError as e:
         if ('Only one class' in str(e)) or ('got 1 class' in str(e)):
