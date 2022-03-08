@@ -209,24 +209,16 @@ def run_cv_stratified(data_model,
             train_model = partial(train_model, debug_info=debug_info)
 
         # set the hyperparameters
-        # train_model_params = apply_model_params(train_model, predictor, nonlinear)
+        train_model_params = apply_model_params(train_model, predictor, nonlinear)
 
         try:
-            # model_results = train_model_params(
-            #     X_train=X_train_df,
-            #     X_test=X_test_df,
-            #     y_train=y_train_df,
-            #     seed=data_model.seed,
-            #     n_folds=cfg.folds,
-            #     max_iter=cfg.max_iter_map[predictor],
-            # )
-            model_results = train_model(
+            model_results = train_model_params(
                 X_train=X_train_df,
                 X_test=X_test_df,
                 y_train=y_train_df,
                 seed=data_model.seed,
                 n_folds=cfg.folds,
-                cl_max_iter=cfg.max_iter_map[predictor],
+                max_iter=cfg.max_iter_map[predictor],
             )
         except ValueError as e:
             if ('Only one class' in str(e)) or ('got 1 class' in str(e)):
@@ -364,6 +356,178 @@ def run_cv_stratified(data_model,
 
     return results
 
+
+def run_cv_fold(data_model,
+                exp_string,
+                identifier,
+                training_data,
+                sample_info,
+                num_folds,
+                fold_no,
+                shuffle_labels=False,
+                standardize_columns=False,
+                num_features=-1,
+                feature_selection_method='mad',
+                output_preds=False,
+                output_grid=False):
+
+    results = {
+        '{}_metrics'.format(exp_string): [],
+        '{}_auc'.format(exp_string): [],
+        '{}_aupr'.format(exp_string): [],
+    }
+    signal = 'shuffled' if shuffle_labels else 'signal'
+
+    if output_preds:
+        results['{}_preds'.format(exp_string)] = []
+
+    if output_grid:
+        results['{}_param_grid'.format(exp_string)] = []
+
+    try:
+        with warnings.catch_warnings():
+            # sklearn warns us if one of the stratification classes has fewer
+            # members than num_folds: in our case that will be the 'other'
+            # class, and it's fine to distribute those unevenly. so here we
+            # can ignore that warning.
+            warnings.filterwarnings('ignore',
+                                    message='The least populated class in y')
+            X_train_raw_df, X_test_raw_df, _ = split_stratified(
+               data_model.X_df, sample_info, num_folds=num_folds,
+               fold_no=fold_no, seed=data_model.seed)
+    except ValueError:
+        if data_model.X_df.shape[0] == 0:
+            raise NoTrainSamplesError(
+                'No train samples found for identifier: {}'.format(
+                    identifier)
+            )
+
+    y_train_df = data_model.y_df.reindex(X_train_raw_df.index)
+    y_test_df = data_model.y_df.reindex(X_test_raw_df.index)
+
+    # shuffle labels for train/test sets separately
+    # this ensures that overall label balance isn't affected
+    # (see https://github.com/greenelab/mpmp/issues/44)
+    if shuffle_labels:
+        # in this case we want to shuffle labels independently for each cancer type
+        # (i.e. preserve the total number of mutated samples in each)
+        original_ones = y_train_df.groupby('DISEASE').sum()['status']
+        y_train_df.status = shuffle_by_cancer_type(y_train_df, data_model.seed)
+        y_test_df.status = shuffle_by_cancer_type(y_test_df, data_model.seed)
+        new_ones = y_train_df.groupby('DISEASE').sum()['status']
+
+        # number of mutated samples per cancer type should be the same before
+        # and after shuffling
+        assert original_ones.equals(new_ones)
+
+
+
+    # choose single-omics or multi-omics preprocessing function based on
+    # data_model.gene_data_types class attribute
+    if hasattr(data_model, 'gene_data_types'):
+        X_train_df, X_test_df = tu.preprocess_multi_data(X_train_raw_df,
+                                                         X_test_raw_df,
+                                                         data_model.gene_features,
+                                                         data_model.gene_data_types,
+                                                         standardize_columns,
+                                                         num_features)
+    else:
+        X_train_df, X_test_df = tu.preprocess_data(X_train_raw_df,
+                                                   X_test_raw_df,
+                                                   data_model.gene_features,
+                                                   y_train_df.status,
+                                                   standardize_columns,
+                                                   feature_selection_method,
+                                                   num_features)
+
+    try:
+        model_results = clf.train_classifier_bo(
+            X_train=X_train_df,
+            X_test=X_test_df,
+            y_train=y_train_df,
+            seed=data_model.seed,
+            n_folds=cfg.folds,
+            cl_max_iter=cfg.max_iter_map['classify'],
+        )
+    except ValueError as e:
+        if ('Only one class' in str(e)) or ('got 1 class' in str(e)):
+            raise OneClassError(
+                'Only one class present in test set for identifier: '
+                '{}'.format(identifier)
+            )
+        else:
+            # if not only one class error, just re-raise
+            raise e
+
+    (cv_pipeline,
+     y_pred_train,
+     y_pred_test,
+     y_cv_df) = model_results
+
+    # get coefficients
+    coef_df = extract_coefficients(
+        cv_pipeline=cv_pipeline,
+        feature_names=X_train_df.columns,
+        signal=signal,
+        seed=data_model.seed,
+        name='classify',
+    )
+    coef_df = coef_df.assign(identifier=identifier)
+    if isinstance(training_data, str):
+        coef_df = coef_df.assign(training_data=training_data)
+    else:
+        coef_df = coef_df.assign(training_data='.'.join(training_data))
+    coef_df = coef_df.assign(fold=fold_no)
+    if '{}_coef'.format(exp_string) not in results:
+        results['{}_coef'.format(exp_string)] = [coef_df]
+    else:
+        results['{}_coef'.format(exp_string)].append(coef_df)
+
+    # get relevant metrics
+    try:
+        metric_df, auc_df, aupr_df = clf.get_metrics(
+            y_train_df, y_test_df, y_cv_df, y_pred_train,
+            y_pred_test, identifier, training_data, signal,
+            data_model.seed, fold_no
+        )
+    except ValueError as e:
+        if 'Only one class' in str(e):
+            raise OneClassError(
+                'Only one class present in test set for identifier: '
+                '{}'.format(identifier)
+            )
+        else:
+            # if not only one class error, just re-raise
+            raise e
+
+    results['{}_metrics'.format(exp_string)].append(metric_df)
+    results['{}_auc'.format(exp_string)].append(auc_df)
+    results['{}_aupr'.format(exp_string)].append(aupr_df)
+
+
+    if output_grid:
+        results['{}_param_grid'.format(exp_string)].append(
+            pd.DataFrame(
+                np.array([
+                    # TODO make this work with a variety of params
+                    [fold_no] * cv_pipeline.cv_results_['param_classify__alpha'].shape[0],
+                    cv_pipeline.cv_results_['param_classify__alpha'],
+                    cv_pipeline.cv_results_['param_classify__l1_ratio'],
+                    cv_pipeline.cv_results_['mean_train_score'],
+                    cv_pipeline.cv_results_['mean_test_score']
+
+                ]).T,
+                columns=['fold', 'alpha', 'l1_ratio', 'mean_train_score', 'mean_test_score']
+            )
+        )
+
+    if output_preds:
+        get_preds = clf.get_preds if predictor == 'classify' else reg.get_preds
+        results['{}_preds'.format(exp_string)].append(
+            get_preds(X_test_df, y_test_df, cv_pipeline, fold_no)
+        )
+
+    return results
 
 def split_stratified(data_df,
                      sample_info_df,

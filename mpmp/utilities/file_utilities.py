@@ -86,6 +86,7 @@ def check_output_file(output_dir,
                       shuffle_labels,
                       model_options,
                       predictor='classify',
+                      fold_no=None,
                       titration_ratio=None):
     """Check if results already exist for a given experiment identifier.
 
@@ -113,6 +114,7 @@ def check_output_file(output_dir,
                                     predictor,
                                     s=model_options.seed,
                                     n=n_dim,
+                                    f=fold_no,
                                     t=titration_ratio)
     if check_file.is_file():
         raise ResultsFileExistsError(
@@ -130,6 +132,7 @@ def save_results(output_dir,
                  shuffle_labels,
                  model_options,
                  predictor='classify',
+                 fold_no=None,
                  titration_ratio=None):
     """Save results of a single experiment for a single identifier."""
 
@@ -157,6 +160,7 @@ def save_results(output_dir,
                                          signal,
                                          s=model_options.seed,
                                          n=n_dim,
+                                         f=fold_no,
                                          t=titration_ratio)
         auc_df.to_csv(
             output_file, sep="\t", index=False, float_format="%.5g"
@@ -173,6 +177,7 @@ def save_results(output_dir,
                                          signal,
                                          s=model_options.seed,
                                          n=n_dim,
+                                         f=fold_no,
                                          t=titration_ratio)
         aupr_df.to_csv(
             output_file, sep="\t", index=False, float_format="%.5g"
@@ -213,6 +218,7 @@ def save_results(output_dir,
                                      predictor,
                                      s=model_options.seed,
                                      n=n_dim,
+                                     f=fold_no,
                                      t=titration_ratio)
     metrics_df.to_csv(
         output_file, sep="\t", index=False, float_format="%.5g"
@@ -228,6 +234,7 @@ def save_results(output_dir,
                                          predictor,
                                          s=model_options.seed,
                                          n=n_dim,
+                                         f=fold_no,
                                          t=titration_ratio)
         preds_df.to_csv(
             output_file, sep="\t", float_format="%.5g"
