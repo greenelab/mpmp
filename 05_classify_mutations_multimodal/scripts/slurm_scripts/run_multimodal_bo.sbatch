@@ -2,7 +2,7 @@
 
 #SBATCH -N 1
 #SBATCH -t 0-24:00
-#SBATCH --array=0-24
+#SBATCH --array=0-24%20
 #SBATCH --cpus-per-task=3
 #SBATCH --output=slurm_output/slurm-%A_%a.out
 #SBATCH --error=slurm_output/slurm-%A_%a.err
@@ -42,7 +42,7 @@ for seed in 42 1; do
     cmd+="--custom_genes $gene "
     cmd+="--results_dir $RESULTS_DIR "
     cmd+="--training_data expression me_27k "
-    cmd+="--subset_mad_genes -1 "
+    cmd+="--num_features -1 "
     cmd+="--n_dim 5000 5000 "
     cmd+="--seed $seed "
     cmd+="--overlap_data_types expression me_27k me_450k "
@@ -57,7 +57,7 @@ for seed in 42 1; do
     cmd+="--custom_genes $gene "
     cmd+="--results_dir $RESULTS_DIR "
     cmd+="--training_data expression me_450k "
-    cmd+="--subset_mad_genes -1 "
+    cmd+="--num_features -1 "
     cmd+="--n_dim 5000 5000 "
     cmd+="--seed $seed "
     cmd+="--overlap_data_types expression me_27k me_450k "
@@ -72,7 +72,7 @@ for seed in 42 1; do
     cmd+="--custom_genes $gene "
     cmd+="--results_dir $RESULTS_DIR "
     cmd+="--training_data me_27k me_450k "
-    cmd+="--subset_mad_genes -1 "
+    cmd+="--num_features -1 "
     cmd+="--n_dim 5000 5000 "
     cmd+="--seed $seed "
     cmd+="--overlap_data_types expression me_27k me_450k "
@@ -87,7 +87,7 @@ for seed in 42 1; do
     cmd+="--custom_genes $gene "
     cmd+="--results_dir $RESULTS_DIR "
     cmd+="--training_data expression me_27k me_450k "
-    cmd+="--subset_mad_genes -1 "
+    cmd+="--num_features -1 "
     cmd+="--n_dim 5000 5000 5000 "
     cmd+="--seed $seed "
     cmd+="--overlap_data_types expression me_27k me_450k "

@@ -157,7 +157,7 @@ def train_classifier_bo(X_train,
     cv_pipeline = BayesSearchCV(
         estimator=estimator,
         search_spaces=search_spaces,
-        n_iter=bo_max_iter,
+        n_iter=bo_num_iter,
         n_jobs=-1,
         cv=n_folds,
         scoring='average_precision',

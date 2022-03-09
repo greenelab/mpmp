@@ -67,6 +67,7 @@ def process_args():
                       help='use bayesian optimization to select hyperparameters, '
                            'config options are set in config.py')
     opts.add_argument('--bayes_opt_fold_no', type=int, default=0,
+                      help='outer fold to run bayesian optimization for')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
     opts.add_argument('--n_dim', type=int, default=100,
@@ -221,18 +222,18 @@ if __name__ == '__main__':
                         output_grid=io_args.save_hparams,
                     )
                 else:
-                # columns should be standardized before compression
-                # so we don't want to standardize them again here
-                results = run_cv_stratified(tcga_data,
-                                            'gene',
-                                            gene,
-                                            model_options.training_data,
-                                            sample_info_df,
-                                            model_options.num_folds,
-                                            'classify',
-                                            shuffle_labels,
-                                            standardize_columns=False,
-                                            output_grid=io_args.save_hparams)
+                   # columns should be standardized before compression
+                   # so we don't want to standardize them again here
+                   results = run_cv_stratified(tcga_data,
+                                               'gene',
+                                               gene,
+                                               model_options.training_data,
+                                               sample_info_df,
+                                               model_options.num_folds,
+                                               'classify',
+                                               shuffle_labels,
+                                               standardize_columns=False,
+                                               output_grid=io_args.save_hparams)
                 # only save results if no exceptions
                 fold_no = (model_options.bayes_opt_fold_no if model_options.bayes_opt else None)
                 fu.save_results(gene_dir,
