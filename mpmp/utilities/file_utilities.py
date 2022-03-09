@@ -249,7 +249,8 @@ def save_results(output_dir,
                                          signal,
                                          predictor,
                                          s=model_options.seed,
-                                         n=n_dim)
+                                         n=n_dim,
+                                         f=fold_no)
 
         params_df.to_csv(output_file, sep="\t")
 
