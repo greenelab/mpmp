@@ -180,7 +180,8 @@ if __name__ == '__main__':
                 check_file = fu.check_output_file(gene_dir,
                                                   gene,
                                                   shuffle_labels,
-                                                  model_options)
+                                                  model_options,
+                                                  fold_no=fold_no)
                 tcga_data.process_data_for_gene(gene,
                                                 classification,
                                                 gene_dir)
