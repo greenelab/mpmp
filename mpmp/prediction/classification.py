@@ -17,6 +17,7 @@ from sklearn.metrics import (
 from sklearn.model_selection import (
     cross_val_predict,
     GridSearchCV,
+    RandomizedSearchCV,
 )
 
 import mpmp.config as cfg
@@ -184,7 +185,9 @@ def train_mlp_classifier(X_train,
                          max_iter=1000):
     """Train multi-layer perceptron classifier."""
     import torch.optim
+    from torch.utils.data import Dataset
     from skorch import NeuralNetBinaryClassifier
+    from skorch.helper import SliceDataset
 
     from mpmp.prediction.nn_models import LogisticRegression, ThreeLayerNet
 
@@ -194,34 +197,51 @@ def train_mlp_classifier(X_train,
 
     clf_parameters = {
         'lr': params['learning_rate'],
-        # 'module__dropout': params['dropout'],
+        'module__dropout': params['dropout'],
         'optimizer__weight_decay': params['weight_decay'],
-        # 'classify__reg_lambda': params['lambda'], # TODO l1 loss
      }
 
     net = NeuralNetBinaryClassifier(
         model,
         max_epochs=max_iter,
-        batch_size=48,
+        batch_size=256,
         optimizer=torch.optim.Adam,
         iterator_train__shuffle=True,
         verbose=0, # by default this prints loss for each epoch
+        train_split=False,
         device='cuda'
     )
 
-    cv_pipeline = GridSearchCV(
+    cv_pipeline = RandomizedSearchCV(
         estimator=net,
-        param_grid=clf_parameters,
-        n_jobs=2,
+        param_distributions=clf_parameters,
+        n_iter=30,
         cv=n_folds,
         scoring='average_precision',
         return_train_score=True,
+        verbose=2,
     )
+
+    # convert dataframe to something that can be indexed by batch
+    class MyDataset(Dataset):
+
+        def __init__(self, df):
+            import torch
+            self.df = df
+            self.X = torch.tensor(df.values, dtype=torch.float32)
+
+        def __len__(self):
+            return len(self.X)
+
+        def __getitem__(self, idx):
+            return self.X[idx], None
+
+    dataset = MyDataset(X_train)
+    Xs = SliceDataset(dataset)
 
     # labels have to be cast to floats
     # https://discuss.pytorch.org/t/multi-label-binary-classification-result-type-float-cant-be-cast-to-the-desired-output-type-long/117915/3
-    cv_pipeline.fit(X=X_train.values.astype(np.float32),
-                    y=y_train.status.values.astype(np.float32))
+    cv_pipeline.fit(X=Xs, y=y_train.status.values.astype(np.float32))
 
     # obtain cross validation results
     # TODO: this isn't working
