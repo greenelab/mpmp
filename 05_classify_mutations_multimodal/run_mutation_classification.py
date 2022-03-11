@@ -66,6 +66,9 @@ def process_args():
     opts.add_argument('--n_dim', nargs='*', default=None,
                       help='list of compressed dimensions to use, defaults to '
                            'uncompressed data for all data types')
+    opts.add_argument('--num_features', type=int, default=cfg.num_features_raw,
+                      help='if included, select this number of features, using '
+                           'feature selection method in feature_selection')
     opts.add_argument('--num_folds', type=int, default=4,
                       help='number of folds of cross-validation to run')
     opts.add_argument('--overlap_data_types', nargs='*',
@@ -74,9 +77,6 @@ def process_args():
                            'set of data types for a model comparison, use only '
                            'overlapping samples from these data types')
     opts.add_argument('--seed', type=int, default=cfg.default_seed)
-    opts.add_argument('--subset_mad_genes', type=int, default=cfg.num_features_raw,
-                      help='if included, subset gene features to this number of '
-                           'features having highest mean absolute deviation')
     opts.add_argument('--training_data', nargs='*', default=['expression'],
                       help='which data types to train model on')
 
@@ -161,7 +161,6 @@ if __name__ == '__main__':
     ]
 
     tcga_data = TCGADataModel(seed=model_options.seed,
-                              subset_mad_genes=model_options.subset_mad_genes,
                               training_data=model_options.training_data,
                               overlap_data_types=model_options.overlap_data_types,
                               # standardize all data types
@@ -235,6 +234,7 @@ if __name__ == '__main__':
                                             'classify',
                                             shuffle_labels=shuffle_labels,
                                             standardize_columns=standardize_columns,
+                                            num_features=model_options.num_features,
                                             model=model_options.model)
                 # only save results if no exceptions
                 fu.save_results(gene_dir,

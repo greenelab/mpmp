@@ -197,6 +197,7 @@ def train_mlp_classifier(X_train,
 
     clf_parameters = {
         'lr': params['learning_rate'],
+        'module__input_size': [X_train.shape[1]],
         'module__dropout': params['dropout'],
         'optimizer__weight_decay': params['weight_decay'],
      }
