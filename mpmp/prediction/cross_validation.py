@@ -33,6 +33,7 @@ def run_cv_stratified(data_model,
                       standardize_columns=False,
                       num_features=-1,
                       feature_selection_method='mad',
+                      bayes_opt=False,
                       output_preds=False,
                       output_survival_fn=False,
                       output_grid=False,
@@ -181,10 +182,15 @@ def run_cv_stratified(data_model,
                                                            standardize_columns,
                                                            feature_selection_method,
                                                            num_features)
+        if nonlinear:
+            classify_function = clf.train_gb_classifier
+        elif bayes_opt:
+            classify_function = clf.train_classifier_bo
+        else:
+            classify_function = clf.train_classifier
 
         models_list = {
-            'classify': (clf.train_gb_classifier if nonlinear
-                         else clf.train_classifier_bo),
+            'classify': classify_function,
             'regress': reg.train_regressor,
             'survival': surv.train_survival
         }
@@ -209,7 +215,10 @@ def run_cv_stratified(data_model,
             train_model = partial(train_model, debug_info=debug_info)
 
         # set the hyperparameters
-        train_model_params = apply_model_params(train_model, predictor, nonlinear)
+        train_model_params = apply_model_params(train_model,
+                                                predictor,
+                                                nonlinear,
+                                                bayes_opt)
 
         try:
             model_results = train_model_params(
@@ -218,7 +227,6 @@ def run_cv_stratified(data_model,
                 y_train=y_train_df,
                 seed=data_model.seed,
                 n_folds=cfg.folds,
-                max_iter=cfg.max_iter_map[predictor],
             )
         except ValueError as e:
             if ('Only one class' in str(e)) or ('got 1 class' in str(e)):
@@ -368,6 +376,8 @@ def run_cv_fold(data_model,
                 standardize_columns=False,
                 num_features=-1,
                 feature_selection_method='mad',
+                bayes_opt=False,
+                nonlinear=False,
                 output_preds=False,
                 output_grid=False):
 
@@ -440,15 +450,25 @@ def run_cv_fold(data_model,
                                                    feature_selection_method,
                                                    num_features)
 
+    if nonlinear:
+        classify_function = clf.train_gb_classifier
+    elif bayes_opt:
+        classify_function = clf.train_classifier_bo
+    else:
+        classify_function = clf.train_classifier
+
+    train_model_params = apply_model_params(classify_function,
+                                            predictor,
+                                            nonlinear,
+                                            bayes_opt)
+
     try:
-        model_results = clf.train_classifier_bo(
+        model_results = train_model_params(
             X_train=X_train_df,
             X_test=X_test_df,
             y_train=y_train_df,
             seed=data_model.seed,
             n_folds=cfg.folds,
-            cl_max_iter=cfg.max_iter_map['classify'],
-            bo_num_iter=cfg.bo_num_iter
         )
     except ValueError as e:
         if ('Only one class' in str(e)) or ('got 1 class' in str(e)):
@@ -662,21 +682,32 @@ def temp_seed(cntxt_seed):
         np.random.set_state(state)
 
 
-def apply_model_params(train_model, predictor, nonlinear):
+def apply_model_params(train_model, predictor, nonlinear, bayes_opt):
     if predictor == 'classify' and nonlinear:
         # non-linear classifier takes different hyperparameters,
         # pass them through here
         return partial(
             train_model,
+            max_iter=cfg.max_iter_map[predictor],
             learning_rates=cfg.learning_rates,
             alphas=cfg.alphas,
             lambdas=cfg.lambdas,
+        )
+    elif predictor == 'classify' and bayes_opt:
+        # bayesian optimization parameter ranges are specified in
+        # mpmp/prediction/classification.py
+        # we specify the classifier max_iter and the number of BO iterations
+        return partial(
+            train_model,
+            cl_max_iter=cfg.max_iter_map[predictor],
+            bo_num_iter=cfg.bo_num_iter
         )
     else:
         # all other models use alphas and l1_ratios
         # (i.e. elastic net hyperparameters)
         return partial(
             train_model,
+            max_iter=cfg.max_iter_map[predictor],
             alphas=cfg.alphas_map[predictor],
             l1_ratios=cfg.l1_ratios_map[predictor],
         )

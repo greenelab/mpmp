@@ -63,7 +63,7 @@ def process_args():
     opts.add_argument('--bayes_opt', action='store_true',
                       help='use bayesian optimization to select hyperparameters, '
                            'config options are set in config.py')
-    opts.add_argument('--bayes_opt_fold_no', type=int, default=0,
+    opts.add_argument('--bayes_opt_fold_no', type=int, default=-1,
                       help='outer fold to run bayesian optimization for')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
@@ -109,8 +109,8 @@ def process_args():
             len(set(args.training_data))):
         parser.error('training_data data types must be in config.data_types')
 
-    if args.bayes_opt_fold_no < 0 or args.bayes_opt_fold_no > args.num_folds-1:
-        parser.error('fold_no must be between 0 and num_folds-1')
+    if args.bayes_opt_fold_no < -1 or args.bayes_opt_fold_no > args.num_folds-1:
+        parser.error('fold_no must be between -1 and num_folds-1')
 
     # check that all data types in overlap_data_types are valid
     #
@@ -239,7 +239,7 @@ if __name__ == '__main__':
             try:
                 standardize_columns = [(t in model_options.standardize_data_types)
                                           for t in model_options.training_data]
-                if model_options.bayes_opt:
+                if model_options.bayes_opt_fold_no > -1:
                     results = run_cv_fold(
                         tcga_data,
                         'gene',
@@ -252,6 +252,7 @@ if __name__ == '__main__':
                         standardize_columns=standardize_columns,
                         num_features=model_options.num_features,
                         feature_selection_method=model_options.feature_selection,
+                        bayes_opt=model_options.bayes_opt,
                         output_grid=io_args.save_hparams,
                     )
                 else:
@@ -266,6 +267,7 @@ if __name__ == '__main__':
                                                 standardize_columns=standardize_columns,
                                                 num_features=model_options.num_features,
                                                 feature_selection_method=model_options.feature_selection,
+                                                bayes_opt=model_options.bayes_opt,
                                                 output_grid=io_args.save_hparams)
                 # only save results if no exceptions
                 fold_no = (model_options.bayes_opt_fold_no if model_options.bayes_opt else None)

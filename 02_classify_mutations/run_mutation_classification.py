@@ -69,7 +69,7 @@ def process_args():
     opts.add_argument('--bayes_opt', action='store_true',
                       help='use bayesian optimization to select hyperparameters, '
                            'config options are set in config.py')
-    opts.add_argument('--bayes_opt_fold_no', type=int, default=0,
+    opts.add_argument('--bayes_opt_fold_no', type=int, default=-1,
                       help='outer fold to run bayesian optimization for')
     opts.add_argument('--bc_cancer_type', action='store_true',
                       help='if included, use limma to remove linear cancer type signal')
@@ -128,8 +128,8 @@ def process_args():
     if (args.drop_target or args.only_target) and (args.training_data != 'expression'):
         parser.error('drop_target and only_target only implemented for expression data')
 
-    if args.bayes_opt_fold_no < 0 or args.bayes_opt_fold_no > args.num_folds-1:
-        parser.error('fold_no must be between 0 and num_folds-1')
+    if args.bayes_opt_fold_no < -1 or args.bayes_opt_fold_no > args.num_folds-1:
+        parser.error('fold_no must be between -1 and num_folds-1')
 
     # check that all data types in overlap_data_types are valid
     check_all_data_types(parser, args.overlap_data_types, args.debug)
@@ -242,7 +242,7 @@ if __name__ == '__main__':
             try:
                 standardize_columns = (model_options.training_data in
                                        cfg.standardize_data_types)
-                if model_options.bayes_opt:
+                if model_options.bayes_opt_fold_no > -1:
                     results = run_cv_fold(
                         tcga_data,
                         'gene',
@@ -270,6 +270,7 @@ if __name__ == '__main__':
                         standardize_columns=standardize_columns,
                         num_features=model_options.num_features,
                         feature_selection_method=model_options.feature_selection,
+                        bayes_opt=model_options.bayes_opt,
                         output_grid=io_args.save_hparams,
                         nonlinear=model_options.nonlinear,
                         bc_train_test=model_options.bc_train_test
