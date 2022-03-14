@@ -94,3 +94,45 @@ group_df = (bayes_opt_results_df
 
 group_df.head(30)
 
+
+# In[7]:
+
+
+results_df = pd.concat((
+    grid_results_df, bayes_opt_results_df
+))
+
+print(results_df.shape)
+results_df.head()
+
+
+# In[16]:
+
+
+# each subplot will show results for one gene
+sns.set({'figure.figsize': (20, 14)})
+fig, axarr = plt.subplots(2, 3)
+results_df.sort_values(by=['identifier', 'signal', 'training_data'], inplace=True)
+
+data_order =['expression.me_27k',
+             'expression.me_450k',
+             'me_27k.me_450k',
+             'expression.me_27k.me_450k']
+
+for ix, gene in enumerate(results_df.identifier.unique()):
+    ax = axarr[ix // 3, ix % 3]
+    plot_df = results_df[(results_df.identifier == gene) &
+                         (results_df.data_type == 'test') &
+                         (results_df.signal == 'signal')]
+    sns.boxplot(data=plot_df, x='training_data', y='aupr',
+                hue='param_opt', ax=ax)
+    ax.set_title('Prediction for {} mutation'.format(gene))
+    ax.set_ylabel('AUPR')
+    ax.set_ylim(0.0, 1.1)
+    for tick in ax.get_xticklabels():
+        tick.set_rotation(40)
+    if ix != 0:
+        ax.legend_.remove()
+        
+plt.tight_layout()
+

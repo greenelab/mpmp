@@ -32,7 +32,7 @@ get_ipython().run_line_magic('autoreload', '2')
 
 results_dir = Path(
     cfg.results_dirs['multimodal'],
-    'pilot_results_all_compressed',
+    'compressed_shuffle_cancer_type',
     'gene'
 ).resolve()
 
@@ -106,7 +106,7 @@ axarr[1, 2].legend(handles=handles, loc='lower right')
 # get results from unimodal prediction (individual data types) to compare with
 unimodal_results_dir = Path(
     cfg.results_dirs['mutation'],
-    'methylation_results',
+    'methylation_results_shuffle_cancer_type',
     'gene'
 )
 
@@ -240,7 +240,7 @@ if SAVE_FIGS:
 
 results_dir = Path(
     cfg.results_dirs['multimodal'],
-    'pilot_results_all_feats',
+    'raw_shuffle_cancer_type',
     'gene'
 ).resolve()
 
