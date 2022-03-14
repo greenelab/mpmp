@@ -9,7 +9,9 @@ import numpy as np
 import pandas as pd
 from scipy.stats import ttest_rel
 
-def load_stratified_prediction_results(results_dir, experiment_descriptor):
+def load_stratified_prediction_results(results_dir,
+                                       experiment_descriptor,
+                                       skip_compressed=True):
     """Load results of stratified prediction experiments.
 
     Arguments
@@ -34,7 +36,8 @@ def load_stratified_prediction_results(results_dir, experiment_descriptor):
             results_filename = str(results_file.stem)
             # skip compressed files here, use load_compressed* functions
             # to load that data separately
-            if check_compressed_file(results_filename): continue
+            if skip_compressed and check_compressed_file(results_filename):
+                continue
             if ('classify' not in results_filename or
                 'metrics' not in results_filename): continue
             if results_filename[0] == '.': continue
@@ -44,9 +47,7 @@ def load_stratified_prediction_results(results_dir, experiment_descriptor):
     return results_df
 
 
-def load_compressed_prediction_results(results_dir,
-                                       experiment_descriptor,
-                                       old_filenames=False):
+def load_compressed_prediction_results(results_dir, experiment_descriptor):
     """Load results of compressed prediction experiments.
 
     Arguments
@@ -56,7 +57,6 @@ def load_compressed_prediction_results(results_dir,
     experiment_descriptor (str): string describing this experiment, can be
                                  useful to segment analyses involving multiple
                                  experiments or results sets
-    old_filenames (bool): use old filename format
 
     Returns
     -------
@@ -74,12 +74,11 @@ def load_compressed_prediction_results(results_dir,
             if ('classify' not in results_filename or
                 'metrics' not in results_filename): continue
             if results_filename[0] == '.': continue
-            if old_filenames:
-                try:
-                    n_dims = int(results_filename.split('_')[-3].replace('n', ''))
-                except ValueError:
-                    n_dims = int(results_filename.split('_')[-2].replace('n', ''))
-            else:
+            try:
+                # old filename convention
+                n_dims = int(results_filename.split('_')[-3].replace('n', ''))
+            except ValueError:
+                # new filename convention
                 n_dims = int(results_filename.split('_')[-2].replace('n', ''))
             id_results_df = pd.read_csv(results_file, sep='\t')
             id_results_df['n_dims'] = n_dims
