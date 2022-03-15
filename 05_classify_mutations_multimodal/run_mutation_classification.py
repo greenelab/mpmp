@@ -64,7 +64,8 @@ def process_args():
                       help='use bayesian optimization to select hyperparameters, '
                            'config options are set in config.py')
     opts.add_argument('--bayes_opt_fold_no', type=int, default=-1,
-                      help='outer fold to run bayesian optimization for')
+                      help='outer fold to run bayesian optimization for, -1 is '
+                           'the default which runs all folds in sequential order')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
     opts.add_argument('--feature_selection',

@@ -70,7 +70,8 @@ def process_args():
                       help='use bayesian optimization to select hyperparameters, '
                            'config options are set in config.py')
     opts.add_argument('--bayes_opt_fold_no', type=int, default=-1,
-                      help='outer fold to run bayesian optimization for')
+                      help='outer fold to run bayesian optimization for, -1 is '
+                           'the default which runs all folds in sequential order')
     opts.add_argument('--bc_cancer_type', action='store_true',
                       help='if included, use limma to remove linear cancer type signal')
     opts.add_argument('--bc_train_test', action='store_true',
