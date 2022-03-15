@@ -17,7 +17,7 @@ from mpmp.exceptions import (
     NoTestSamplesError,
     OneClassError,
 )
-from mpmp.prediction.cross_validation import run_cv_stratified
+from mpmp.prediction.cross_validation import run_cv_stratified, run_cv_fold
 import mpmp.utilities.data_utilities as du
 import mpmp.utilities.file_utilities as fu
 from mpmp.utilities.tcga_utilities import check_all_data_types
@@ -47,6 +47,8 @@ def process_args():
                     help='name of file to log skipped genes to')
     io.add_argument('--results_dir', default=cfg.results_dirs['multimodal'],
                     help='where to write results to')
+    io.add_argument('--save_hparams', action='store_true',
+                    help='if included, save train/test results for inner CV grid search')
     io.add_argument('--verbose', action='store_true')
 
     # argument group for parameters related to model training/evaluation
@@ -58,8 +60,19 @@ def process_args():
                                      'parameters for training/evaluating model, '
                                      'these will affect output and are saved as '
                                      'experiment metadata ')
+    opts.add_argument('--bayes_opt', action='store_true',
+                      help='use bayesian optimization to select hyperparameters, '
+                           'config options are set in config.py')
+    opts.add_argument('--bayes_opt_fold_no', type=int, default=-1,
+                      help='outer fold to run bayesian optimization for, -1 is '
+                           'the default which runs all folds in sequential order')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
+    opts.add_argument('--feature_selection',
+                      choices=['f_test', 'mad', 'random'],
+                      default='mad',
+                      help='method to use for feature selection, only applied if '
+                           '0 > num_features > total number of columns')
     opts.add_argument('--model', choices=cfg.model_choices, default='elasticnet',
                       help='what type of model to use for classification, defaults '
                            'to logistic regression with elastic net regularization')
@@ -99,6 +112,9 @@ def process_args():
     if (len(set(args.training_data).intersection(set(cfg.data_types.keys()))) !=
             len(set(args.training_data))):
         parser.error('training_data data types must be in config.data_types')
+
+    if args.bayes_opt_fold_no < -1 or args.bayes_opt_fold_no > args.num_folds-1:
+        parser.error('fold_no must be between -1 and num_folds-1')
 
     # check that all data types in overlap_data_types are valid
     #
@@ -192,10 +208,12 @@ if __name__ == '__main__':
 
             try:
                 gene_dir = fu.make_output_dir(experiment_dir, gene)
+                fold_no = (model_options.bayes_opt_fold_no if model_options.bayes_opt else None)
                 check_file = fu.check_output_file(gene_dir,
                                                   gene,
                                                   shuffle_labels,
-                                                  model_options)
+                                                  model_options,
+                                                  fold_no=fold_no)
                 tcga_data.process_data_for_gene(gene,
                                                 classification,
                                                 gene_dir)
@@ -225,25 +243,47 @@ if __name__ == '__main__':
             try:
                 standardize_columns = [(t in model_options.standardize_data_types)
                                           for t in model_options.training_data]
-                results = run_cv_stratified(tcga_data,
-                                            'gene',
-                                            gene,
-                                            model_options.training_data,
-                                            sample_info_df,
-                                            model_options.num_folds,
-                                            'classify',
-                                            shuffle_labels=shuffle_labels,
-                                            standardize_columns=standardize_columns,
-                                            num_features=model_options.num_features,
-                                            model=model_options.model)
+                if model_options.bayes_opt_fold_no > -1:
+                    results = run_cv_fold(
+                        tcga_data,
+                        'gene',
+                        gene,
+                        model_options.training_data,
+                        sample_info_df,
+                        model_options.num_folds,
+                        model_options.bayes_opt_fold_no,
+                        shuffle_labels=shuffle_labels,
+                        standardize_columns=standardize_columns,
+                        num_features=model_options.num_features,
+                        feature_selection_method=model_options.feature_selection,
+                        bayes_opt=model_options.bayes_opt,
+                        output_grid=io_args.save_hparams,
+                    )
+                else:
+                    results = run_cv_stratified(tcga_data,
+                                                'gene',
+                                                gene,
+                                                model_options.training_data,
+                                                sample_info_df,
+                                                model_options.num_folds,
+                                                'classify',
+                                                shuffle_labels=shuffle_labels,
+                                                standardize_columns=standardize_columns,
+                                                num_features=model_options.num_features,
+                                                feature_selection_method=model_options.feature_selection,
+                                                bayes_opt=model_options.bayes_opt,
+                                                output_grid=io_args.save_hparams,
+                                                model=model_options.model)
                 # only save results if no exceptions
+                fold_no = (model_options.bayes_opt_fold_no if model_options.bayes_opt else None)
                 fu.save_results(gene_dir,
                                 check_file,
                                 results,
                                 'gene',
                                 gene,
                                 shuffle_labels,
-                                model_options)
+                                model_options,
+                                fold_no=fold_no)
             except NoTrainSamplesError:
                 if io_args.verbose:
                     print('Skipping due to no train samples: gene {}'.format(

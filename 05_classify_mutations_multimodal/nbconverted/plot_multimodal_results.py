@@ -30,14 +30,33 @@ get_ipython().run_line_magic('autoreload', '2')
 # In[2]:
 
 
-results_dir = Path(
-    cfg.results_dirs['multimodal'],
-    'pilot_results_all_compressed',
-    'gene'
-).resolve()
+BAYES_OPT = True
+
+if BAYES_OPT:
+    results_dir = Path(
+        cfg.results_dirs['multimodal'],
+        'bayes_opt',
+        'gene'
+    ).resolve()
+    unimodal_results_dir = Path(
+        cfg.results_dirs['multimodal'],
+        'bayes_opt',
+        'gene'
+    )
+else:
+    results_dir = Path(
+        cfg.results_dirs['multimodal'],
+        'compressed_shuffle_cancer_type',
+        'gene'
+    ).resolve()
+    unimodal_results_dir = Path(
+        cfg.results_dirs['mutation'],
+        'methylation_results_shuffle_cancer_type',
+        'gene'
+    )
 
 # if True, save figures to ./images directory
-SAVE_FIGS = True
+SAVE_FIGS = False
 
 # if True, plot AUROC instead of AUPR
 PLOT_AUROC = False
@@ -104,12 +123,6 @@ axarr[1, 2].legend(handles=handles, loc='lower right')
 
 
 # get results from unimodal prediction (individual data types) to compare with
-unimodal_results_dir = Path(
-    cfg.results_dirs['mutation'],
-    'methylation_results',
-    'gene'
-)
-
 # load expression and me_27k results
 u_results_df = au.load_compressed_prediction_results(unimodal_results_dir, 'gene')
 u_results_df = u_results_df[(u_results_df.n_dims == 5000)].copy()
@@ -137,6 +150,7 @@ all_results_df.head()
 # then, for each training data type, get the AUPR difference between signal and shuffled
 compare_df = pd.DataFrame()
 for training_data in all_results_df.training_data.unique():
+    all_results_df.sort_values(by=['seed', 'fold'], inplace=True)
     data_compare_df = au.compare_control_ind(
         all_results_df[all_results_df.training_data == training_data],
         identifier='identifier',
@@ -240,7 +254,7 @@ if SAVE_FIGS:
 
 results_dir = Path(
     cfg.results_dirs['multimodal'],
-    'pilot_results_all_feats',
+    'raw_shuffle_cancer_type',
     'gene'
 ).resolve()
 
@@ -388,4 +402,10 @@ if SAVE_FIGS:
     images_dir.mkdir(exist_ok=True)
     plt.savefig(images_dir / svg_filename, bbox_inches='tight')
     plt.savefig(images_dir / png_filename, dpi=300, bbox_inches='tight')
+
+
+# In[ ]:
+
+
+
 

@@ -71,13 +71,100 @@ def train_linear_classifier(X_train,
         ]
     )
 
-    cv_pipeline = GridSearchCV(
+    if n_folds == -1:
+        # for this option we just want to do a grid search for a single
+        # train/test split, this is much more computationally efficient
+        # but could have higher variance
+        from sklearn.model_selection import train_test_split
+        train_ixs, test_ixs = train_test_split(
+            np.arange(X_train.shape[0]),
+            test_size=cfg.inner_valid_prop,
+            random_state=seed,
+            shuffle=True
+        )
+        cv = zip([train_ixs], [test_ixs])
+        cv_pipeline = GridSearchCV(
+            estimator=estimator,
+            param_grid=clf_parameters,
+            n_jobs=-1,
+            cv=cv,
+            scoring='average_precision',
+            return_train_score=True,
+        )
+
+    else:
+        cv_pipeline = GridSearchCV(
+            estimator=estimator,
+            param_grid=clf_parameters,
+            n_jobs=-1,
+            cv=n_folds,
+            scoring='average_precision',
+            return_train_score=True,
+        )
+
+    # Fit the model
+    cv_pipeline.fit(X=X_train, y=y_train.status)
+
+    # Obtain cross validation results
+    # Get all performance results
+    y_predict_train = cv_pipeline.decision_function(X_train)
+    y_predict_test = cv_pipeline.decision_function(X_test)
+
+    if n_folds == -1:
+        y_cv = y_predict_train
+    else:
+        y_cv = cross_val_predict(
+            cv_pipeline.best_estimator_,
+            X=X_train,
+            y=y_train.status,
+            cv=n_folds,
+            method='decision_function',
+        )
+
+
+    return cv_pipeline, y_predict_train, y_predict_test, y_cv
+
+def train_classifier_bo(X_train,
+                        X_test,
+                        y_train,
+                        seed,
+                        n_folds=4,
+                        cl_max_iter=1000,
+                        bo_num_iter=100):
+    """Elastic net classifier using Bayesian optimization to select hyperparameters."""
+
+    from skopt import BayesSearchCV
+
+    estimator = Pipeline(
+        steps=[
+            (
+                'classify',
+                SGDClassifier(
+                    random_state=seed,
+                    class_weight='balanced',
+                    loss='log',
+                    penalty='elasticnet',
+                    max_iter=cl_max_iter,
+                    tol=1e-3,
+                ),
+            )
+        ]
+    )
+
+    search_spaces = {
+        'classify__alpha': (1e-6, 1e6, 'log-uniform'),
+        'classify__l1_ratio': (0.0, 1.0, 'uniform')
+    }
+
+    cv_pipeline = BayesSearchCV(
         estimator=estimator,
-        param_grid=clf_parameters,
+        search_spaces=search_spaces,
+        n_iter=bo_num_iter,
         n_jobs=-1,
         cv=n_folds,
         scoring='average_precision',
         return_train_score=True,
+        verbose=2,
     )
 
     # Fit the model

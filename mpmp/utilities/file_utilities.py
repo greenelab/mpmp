@@ -87,6 +87,7 @@ def check_output_file(output_dir,
                       shuffle_labels,
                       model_options,
                       predictor='classify',
+                      fold_no=None,
                       titration_ratio=None):
     """Check if results already exist for a given experiment identifier.
 
@@ -115,6 +116,7 @@ def check_output_file(output_dir,
                                     predictor,
                                     s=model_options.seed,
                                     n=n_dim,
+                                    f=fold_no,
                                     t=titration_ratio)
     if check_file.is_file():
         raise ResultsFileExistsError(
@@ -132,6 +134,7 @@ def save_results(output_dir,
                  shuffle_labels,
                  model_options,
                  predictor='classify',
+                 fold_no=None,
                  titration_ratio=None):
     """Save results of a single experiment for a single identifier."""
 
@@ -160,6 +163,7 @@ def save_results(output_dir,
                                          signal,
                                          s=model_options.seed,
                                          n=n_dim,
+                                         f=fold_no,
                                          t=titration_ratio)
         auc_df.to_csv(
             output_file, sep="\t", index=False, float_format="%.5g"
@@ -177,6 +181,7 @@ def save_results(output_dir,
                                          signal,
                                          s=model_options.seed,
                                          n=n_dim,
+                                         f=fold_no,
                                          t=titration_ratio)
         aupr_df.to_csv(
             output_file, sep="\t", index=False, float_format="%.5g"
@@ -201,6 +206,13 @@ def save_results(output_dir,
     else:
         preds_df = None
 
+    if '{}_param_grid'.format(exp_string) in results:
+        params_df = pd.concat(results[
+            '{}_param_grid'.format(exp_string)
+        ])
+    else:
+        params_df = None
+
     output_file = construct_filename(output_dir,
                                      'metrics',
                                      '.tsv.gz',
@@ -211,6 +223,7 @@ def save_results(output_dir,
                                      predictor,
                                      s=model_options.seed,
                                      n=n_dim,
+                                     f=fold_no,
                                      t=titration_ratio)
     metrics_df.to_csv(
         output_file, sep="\t", index=False, float_format="%.5g"
@@ -227,10 +240,25 @@ def save_results(output_dir,
                                          predictor,
                                          s=model_options.seed,
                                          n=n_dim,
+                                         f=fold_no,
                                          t=titration_ratio)
         preds_df.to_csv(
             output_file, sep="\t", float_format="%.5g"
         )
+
+    if params_df is not None:
+        output_file = construct_filename(output_dir,
+                                         'param_grid',
+                                         '.tsv.gz',
+                                         identifier,
+                                         training_data,
+                                         signal,
+                                         predictor,
+                                         s=model_options.seed,
+                                         n=n_dim,
+                                         f=fold_no)
+
+        params_df.to_csv(output_file, sep="\t")
 
 
 def generate_log_df(log_columns, log_values):
