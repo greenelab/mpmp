@@ -91,7 +91,9 @@ group_df = (grid_results_df
     .count()
 )
 
-group_df.head(10)
+# all of these should come up as duplicates (so only one row will print)
+# if not, there are either missing folds or duplicated folds
+group_df[~group_df.duplicated()].head(10)
 
 
 # In[6]:
@@ -146,7 +148,9 @@ group_df = (bayes_opt_results_df
     .count()
 )
 
-group_df.head(30)
+# all of these should come up as duplicates (so only one row will print)
+# if not, there are either missing folds or duplicated folds
+group_df[~group_df.duplicated()].head(10)
 
 
 # In[9]:
@@ -160,7 +164,7 @@ print(results_df.shape)
 results_df.head()
 
 
-# In[11]:
+# In[10]:
 
 
 # each subplot will show results for one gene
