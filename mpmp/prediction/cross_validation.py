@@ -55,11 +55,19 @@ def run_cv_stratified(data_model,
     identifier (str): string describing the target value/environment
     training_data (str): what type of data is being used to train model
     sample_info (pd.DataFrame): df with TCGA sample information
-    num_folds (int): number of cross-validation folds to run
+    num_folds (int): number of cross-validation folds to split into
     predictor (str): one of 'classify', 'regress', 'survival'
     shuffle_labels (bool): whether or not to shuffle labels (negative control)
     standardize_columns (bool): whether or not to standardize predictors
+    num_features (int): number of features to select
+    feature_selection_method (int): how to select features
+    bayes_opt (bool): use Bayesian optimization for parameter selection
     output_preds (bool): whether or not to write predictions to file
+    output_grid (bool): whether or not to write parameter grid to file
+    survival_fit_ridge (bool): if True use only a ridge penalty
+    stratify (bool): whether or not to stratify CV by cancer type
+    nonlinear (bool): fit a nonlinear model (default is linear)
+    results_dir (str): location of results directory
 
     Returns
     -------
@@ -380,6 +388,34 @@ def run_cv_fold(data_model,
                 nonlinear=False,
                 output_preds=False,
                 output_grid=False):
+    """
+    Run stratified cross-validation experiments for a given dataset on a single
+    fold. This enables parallelization across outer cross-validation folds and
+    evaluation datasets.
+
+    Arguments
+    ---------
+    data_model (TCGADataModel): class containing preprocessed train/test data
+    exp_string (str): string describing the experiment being run
+    identifier (str): string describing the target value/environment
+    training_data (str): what type of data is being used to train model
+    sample_info (pd.DataFrame): df with TCGA sample information
+    num_folds (int): number of cross-validation folds to split into
+    fold_no (int): cross-validation fold to run
+    shuffle_labels (bool): whether or not to shuffle labels (negative control)
+    standardize_columns (bool): whether or not to standardize predictors
+    num_features (int): number of features to select
+    feature_selection_method (int): how to select features
+    bayes_opt (bool): use Bayesian optimization for parameter selection
+    nonlinear (bool): fit a nonlinear model (default is linear)
+    output_preds (bool): whether or not to write predictions to file
+    output_grid (bool): whether or not to write parameter grid to file
+
+    Returns
+    -------
+    results (dict): maps results metrics to values across CV folds
+    """
+
 
     results = {
         '{}_metrics'.format(exp_string): [],
@@ -429,8 +465,6 @@ def run_cv_fold(data_model,
         # number of mutated samples per cancer type should be the same before
         # and after shuffling
         assert original_ones.equals(new_ones)
-
-
 
     # choose single-omics or multi-omics preprocessing function based on
     # data_model.gene_data_types class attribute
