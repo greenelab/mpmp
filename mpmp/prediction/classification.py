@@ -76,13 +76,13 @@ def train_linear_classifier(X_train,
         # train/test split, this is much more computationally efficient
         # but could have higher variance
         from sklearn.model_selection import train_test_split
-        train_ixs, test_ixs = train_test_split(
+        train_ixs, valid_ixs = train_test_split(
             np.arange(X_train.shape[0]),
             test_size=cfg.inner_valid_prop,
             random_state=seed,
             shuffle=True
         )
-        cv = zip([train_ixs], [test_ixs])
+        cv = zip([train_ixs], [valid_ixs])
         cv_pipeline = GridSearchCV(
             estimator=estimator,
             param_grid=clf_parameters,
@@ -300,15 +300,37 @@ def train_mlp_classifier(X_train,
         device='cuda'
     )
 
-    cv_pipeline = RandomizedSearchCV(
-        estimator=net,
-        param_distributions=clf_parameters,
-        n_iter=30,
-        cv=n_folds,
-        scoring='average_precision',
-        return_train_score=True,
-        verbose=2,
-    )
+    if n_folds == -1:
+        # for this option we just want to do a grid search for a single
+        # train/test split, this is much more computationally efficient
+        # but could have higher variance
+        from sklearn.model_selection import train_test_split
+        train_ixs, valid_ixs = train_test_split(
+            np.arange(X_train.shape[0]),
+            test_size=cfg.inner_valid_prop,
+            random_state=seed,
+            shuffle=True
+        )
+        cv = zip([train_ixs], [valid_ixs])
+        cv_pipeline = RandomizedSearchCV(
+            estimator=net,
+            param_distributions=clf_parameters,
+            n_iter=cfg.random_search_n_iter,
+            cv=cv,
+            scoring='average_precision',
+            return_train_score=True,
+            verbose=2,
+        )
+    else:
+        cv_pipeline = RandomizedSearchCV(
+            estimator=net,
+            param_distributions=clf_parameters,
+            n_iter=cfg.random_search_n_iter,
+            cv=n_folds,
+            scoring='average_precision',
+            return_train_score=True,
+            verbose=2,
+        )
 
     # convert dataframe to something that can be indexed by batch
     class MyDataset(Dataset):
