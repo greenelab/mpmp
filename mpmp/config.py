@@ -133,7 +133,7 @@ filter_count = 15
 # hyperparameters for classification experiments
 # folds = 3
 folds = -1
-inner_valid_prop = 0.2
+inner_valid_prop = 0.35
 max_iter = 200
 alphas = [1e-4, 0.001, 0.01, 0.1, 1, 10]
 l1_ratios = [0.0, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0]
@@ -274,6 +274,7 @@ model_choices = [
 # parameter ranges for MLP search
 mlp_params = {
     'learning_rate': [0.1, 0.01, 0.001, 5e-4, 1e-4],
+    'h1_size': [1000, 500, 250],
     'dropout': [0.5, 0.75, 0.9],
     'weight_decay': [0, 0.1, 1, 100]
 }

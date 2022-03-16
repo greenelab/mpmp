@@ -285,6 +285,7 @@ def train_mlp_classifier(X_train,
     clf_parameters = {
         'lr': params['learning_rate'],
         'module__input_size': [X_train.shape[1]],
+        'module__h1_size': params['h1_size'],
         'module__dropout': params['dropout'],
         'optimizer__weight_decay': params['weight_decay'],
      }
@@ -292,7 +293,7 @@ def train_mlp_classifier(X_train,
     net = NeuralNetBinaryClassifier(
         model,
         max_epochs=max_iter,
-        batch_size=256,
+        batch_size=512,
         optimizer=torch.optim.Adam,
         iterator_train__shuffle=True,
         verbose=0, # by default this prints loss for each epoch
@@ -319,6 +320,7 @@ def train_mlp_classifier(X_train,
             cv=cv,
             scoring='average_precision',
             return_train_score=True,
+            n_jobs=3,
             verbose=2,
         )
     else:

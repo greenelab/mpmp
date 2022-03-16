@@ -16,12 +16,14 @@ class LogisticRegression(nn.Module):
 class ThreeLayerNet(nn.Module):
     """Three-layer MLP for classification."""
 
-    def __init__(self, input_size, dropout=0.5):
+    def __init__(self, input_size, h1_size=None, dropout=0.5):
         super(ThreeLayerNet, self).__init__()
         # three layers of decreasing size
-        self.fc0 = nn.Linear(input_size, input_size // 2)
-        self.fc1 = nn.Linear(input_size // 2, input_size // 4)
-        self.fc2 = nn.Linear(input_size // 4, 1)
+        if h1_size is None:
+            h1_size = input_size // 2
+        self.fc0 = nn.Linear(input_size, h1_size)
+        self.fc1 = nn.Linear(h1_size, h1_size // 2)
+        self.fc2 = nn.Linear(h1_size // 2, 1)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
