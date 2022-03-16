@@ -321,7 +321,7 @@ def train_mlp_classifier(X_train,
         iterator_train__shuffle=True,
         verbose=0, # by default this prints loss for each epoch
         train_split=False,
-        device='cuda'
+        # device='cuda'
     )
 
     if n_folds == -1:

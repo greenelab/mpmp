@@ -341,28 +341,8 @@ def run_cv_stratified(data_model,
             results['{}_metrics'.format(exp_string)].append(metric_df)
 
         if output_grid:
-
-            # add fold number to parameter grid
-            results_grid = [
-                [fold_no] * cv_pipeline.cv_results_['mean_test_score'].shape[0]
-            ]
-            columns = ['fold']
-
-            # add all of the classifier parameters to the parameter grid
-            # TODO: do they all look like this?
-            for key_str in cv_pipeline.cv_results_.keys():
-                if key_str.startswith('param_classify__'):
-                    results_grid.append(cv_pipeline.cv_results_[key_str])
-                    columns.append(key_str.replace('param_classify__', ''))
-
-            # add mean train/test scores across inner folds to parameter grid
-            results_grid.append(cv_pipeline.cv_results_['mean_train_score'])
-            columns.append('mean_train_score')
-            results_grid.append(cv_pipeline.cv_results_['mean_test_score'])
-            columns.append('mean_test_score')
-
             results['{}_param_grid'.format(exp_string)].append(
-                pd.DataFrame(np.array(results_grid).T, columns=columns)
+                generate_param_grid(cv_pipeline.cv_results_, fold_no)
             )
 
         if output_preds:
@@ -576,18 +556,7 @@ def run_cv_fold(data_model,
 
     if output_grid:
         results['{}_param_grid'.format(exp_string)].append(
-            pd.DataFrame(
-                np.array([
-                    # TODO make this work with a variety of params
-                    [fold_no] * cv_pipeline.cv_results_['param_classify__alpha'].shape[0],
-                    cv_pipeline.cv_results_['param_classify__alpha'],
-                    cv_pipeline.cv_results_['param_classify__l1_ratio'],
-                    cv_pipeline.cv_results_['mean_train_score'],
-                    cv_pipeline.cv_results_['mean_test_score']
-
-                ]).T,
-                columns=['fold', 'alpha', 'l1_ratio', 'mean_train_score', 'mean_test_score']
-            )
+            generate_param_grid(cv_pipeline.cv_results_, fold_no)
         )
 
     if output_preds:
@@ -766,5 +735,37 @@ def apply_model_params(train_model, predictor, model, bayes_opt):
             alphas=cfg.alphas_map[predictor],
             l1_ratios=cfg.l1_ratios_map[predictor],
         )
+
+def generate_param_grid(cv_results, fold_no):
+    """Generate dataframe with results of parameter search, from sklearn
+       cv_results object.
+    """
+    # add fold number to parameter grid
+    results_grid = [
+        [fold_no] * cv_results['mean_test_score'].shape[0]
+    ]
+    columns = ['fold']
+
+    # add all of the classifier parameters to the parameter grid
+    # TODO: do they all look like this?
+    for key_str in cv_results.keys():
+        if key_str.startswith('param_'):
+            results_grid.append(cv_results[key_str])
+            columns.append(
+                # these prefixes indicate the step in the "pipeline", we
+                # don't really need them in our parameter search results
+                key_str.replace('param_', '')
+                       .replace('classify__', '')
+                       .replace('module__', '')
+                       .replace('optimizer__', '')
+            )
+
+    # add mean train/test scores across inner folds to parameter grid
+    results_grid.append(cv_results['mean_train_score'])
+    columns.append('mean_train_score')
+    results_grid.append(cv_results['mean_test_score'])
+    columns.append('mean_test_score')
+
+    return pd.DataFrame(np.array(results_grid).T, columns=columns)
 
 
