@@ -341,19 +341,28 @@ def run_cv_stratified(data_model,
             results['{}_metrics'.format(exp_string)].append(metric_df)
 
         if output_grid:
-            results['{}_param_grid'.format(exp_string)].append(
-                pd.DataFrame(
-                    np.array([
-                        # TODO make this work with a variety of params
-                        [fold_no] * cv_pipeline.cv_results_['param_classify__alpha'].shape[0],
-                        cv_pipeline.cv_results_['param_classify__alpha'],
-                        cv_pipeline.cv_results_['param_classify__l1_ratio'],
-                        cv_pipeline.cv_results_['mean_train_score'],
-                        cv_pipeline.cv_results_['mean_test_score']
 
-                    ]).T,
-                    columns=['fold', 'alpha', 'l1_ratio', 'mean_train_score', 'mean_test_score']
-                )
+            # add fold number to parameter grid
+            results_grid = [
+                [fold_no] * cv_pipeline.cv_results_['mean_test_score'].shape[0]
+            ]
+            columns = ['fold']
+
+            # add all of the classifier parameters to the parameter grid
+            # TODO: do they all look like this?
+            for key_str in cv_pipeline.cv_results_.keys():
+                if key_str.startswith('param_classify__'):
+                    results_grid.append(cv_pipeline.cv_results_[key_str])
+                    columns.append(key_str.replace('param_classify__', ''))
+
+            # add mean train/test scores across inner folds to parameter grid
+            results_grid.append(cv_pipeline.cv_results_['mean_train_score'])
+            columns.append('mean_train_score')
+            results_grid.append(cv_pipeline.cv_results_['mean_test_score'])
+            columns.append('mean_test_score')
+
+            results['{}_param_grid'.format(exp_string)].append(
+                pd.DataFrame(np.array(results_grid).T, columns=columns)
             )
 
         if output_preds:
@@ -564,7 +573,6 @@ def run_cv_fold(data_model,
     results['{}_metrics'.format(exp_string)].append(metric_df)
     results['{}_auc'.format(exp_string)].append(auc_df)
     results['{}_aupr'.format(exp_string)].append(aupr_df)
-
 
     if output_grid:
         results['{}_param_grid'.format(exp_string)].append(

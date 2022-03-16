@@ -105,11 +105,11 @@ def train_linear_classifier(X_train,
     # Fit the model
     cv_pipeline.fit(X=X_train, y=y_train.status)
 
-    # Obtain cross validation results
     # Get all performance results
     y_predict_train = cv_pipeline.decision_function(X_train)
     y_predict_test = cv_pipeline.decision_function(X_test)
 
+    # Obtain cross validation results, if applicable
     if n_folds == -1:
         y_cv = y_predict_train
     else:
@@ -234,31 +234,54 @@ def train_gb_classifier(X_train,
             )
         ]
     )
-
-    cv_pipeline = GridSearchCV(
-        estimator=estimator,
-        param_grid=clf_parameters,
-        n_jobs=-1,
-        cv=n_folds,
-        scoring='average_precision',
-        return_train_score=True,
-    )
+    if n_folds == -1:
+        # for this option we just want to do a grid search for a single
+        # train/test split, this is much more computationally efficient
+        # but could have higher variance
+        from sklearn.model_selection import train_test_split
+        train_ixs, valid_ixs = train_test_split(
+            np.arange(X_train.shape[0]),
+            test_size=cfg.inner_valid_prop,
+            random_state=seed,
+            shuffle=True
+        )
+        cv = zip([train_ixs], [valid_ixs])
+        cv_pipeline = GridSearchCV(
+            estimator=estimator,
+            param_grid=clf_parameters,
+            n_jobs=-1,
+            cv=cv,
+            scoring='average_precision',
+            return_train_score=True,
+        )
+    else:
+        cv_pipeline = GridSearchCV(
+            estimator=estimator,
+            param_grid=clf_parameters,
+            n_jobs=-1,
+            cv=n_folds,
+            scoring='average_precision',
+            return_train_score=True,
+        )
 
     # Fit the model
     cv_pipeline.fit(X=X_train, y=y_train.status)
 
-    # Obtain cross validation results
-    y_cv = cross_val_predict(
-        cv_pipeline.best_estimator_,
-        X=X_train,
-        y=y_train.status,
-        cv=n_folds,
-        method='predict_proba',
-    )[:, 1]
-
     # Get all performance results
     y_predict_train = cv_pipeline.predict_proba(X_train)[:, 1]
     y_predict_test = cv_pipeline.predict_proba(X_test)[:, 1]
+
+    # Obtain cross validation results, if applicable
+    if n_folds == -1:
+        y_cv = y_predict_train
+    else:
+        y_cv = cross_val_predict(
+            cv_pipeline.best_estimator_,
+            X=X_train,
+            y=y_train.status,
+            cv=n_folds,
+            method='decision_function',
+        )
 
     return cv_pipeline, y_predict_train, y_predict_test, y_cv
 
