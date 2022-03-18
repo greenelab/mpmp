@@ -86,3 +86,27 @@ gene_counts_df = pd.DataFrame(
 print(gene_counts_df.shape)
 gene_counts_df.head()
 
+
+# In[23]:
+
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+sns.set({'figure.figsize': (8, 6)})
+
+sns.scatterplot(data=gene_counts_df, x='count', y='prop')
+plt.xlabel('Number of mutated samples')
+plt.ylabel('Proportion of mutated samples')
+plt.title('Number of genes passing whole-dataset filters')
+
+count_thresh = 100
+prop_thresh = 0.01
+plt.gca().axhline(y=prop_thresh, linestyle='--')
+plt.gca().axvline(x=count_thresh, linestyle='--')
+
+thresh_genes = gene_counts_df[(gene_counts_df['count'] > count_thresh) &
+                              (gene_counts_df.prop > prop_thresh)]
+print('Number of genes passing filters: {} / {}'.format(
+    thresh_genes.shape[0], gene_counts_df.shape[0]))
+
