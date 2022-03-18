@@ -180,6 +180,32 @@ mlp_results_df.head()
 # In[10]:
 
 
+# load expression and me_27k results
+mlp_u_results_df = au.load_compressed_prediction_results(
+    mlp_results_dir, 'gene')
+
+# filter to genes/dims we're using here
+mlp_u_results_df = mlp_u_results_df[
+    (mlp_u_results_df.n_dims == 1000) &
+    (mlp_u_results_df.identifier.isin(genes))
+].copy()
+mlp_u_results_df.drop(columns='n_dims', inplace=True)
+mlp_u_results_df['model'] = 'mlp, random'
+
+# make sure data loaded matches our expectations
+print(mlp_u_results_df.shape)
+print(mlp_u_results_df.seed.unique())
+print(mlp_u_results_df.identifier.unique())
+print(mlp_u_results_df.training_data.unique())
+mlp_u_results_df.head()
+
+
+# In[11]:
+
+
+mlp_results_df = pd.concat((
+    mlp_results_df, mlp_u_results_df
+))
 group_df = (mlp_results_df
     .groupby(['identifier', 'training_data'])
     .count()
@@ -190,7 +216,7 @@ group_df = (mlp_results_df
 group_df[~group_df.duplicated()].head(10)
 
 
-# In[11]:
+# In[12]:
 
 
 results_df = pd.concat((
@@ -201,7 +227,7 @@ print(results_df.shape)
 results_df.head()
 
 
-# In[12]:
+# In[13]:
 
 
 # each subplot will show results for one gene
@@ -233,10 +259,4 @@ for ix, gene in enumerate(results_df.identifier.unique()):
         ax.legend_.remove()
         
 plt.tight_layout()
-
-
-# In[ ]:
-
-
-
 
