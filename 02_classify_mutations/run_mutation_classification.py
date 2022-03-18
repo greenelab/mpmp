@@ -87,6 +87,10 @@ def process_args():
                       default='mad',
                       help='method to use for feature selection, only applied if '
                            '0 > num_features > total number of columns')
+    opts.add_argument('--filter_all_data', action='store_true',
+                      help='if true, filter all data at once using mutation count/'
+                           'proportion thresholds, default is to filter each cancer '
+                           'type individually')
     opts.add_argument('--num_features', type=int, default=cfg.num_features_raw,
                       help='if included, select this number of features, using '
                            'feature selection method in feature_selection')
@@ -212,6 +216,7 @@ if __name__ == '__main__':
                     gene,
                     classification,
                     gene_dir,
+                    filter_cancer_types=(not model_options.filter_all_data),
                     batch_correction=model_options.batch_correction,
                     bc_cancer_type=model_options.bc_cancer_type,
                     drop_target=model_options.drop_target,

@@ -73,6 +73,10 @@ def process_args():
                       default='mad',
                       help='method to use for feature selection, only applied if '
                            '0 > num_features > total number of columns')
+    opts.add_argument('--filter_all_data', action='store_true',
+                      help='if true, filter all data at once using mutation count/'
+                           'proportion thresholds, default is to filter each cancer '
+                           'type individually')
     opts.add_argument('--n_dim', nargs='*', default=None,
                       help='list of compressed dimensions to use, defaults to '
                            'uncompressed data for all data types')
@@ -211,9 +215,12 @@ if __name__ == '__main__':
                                                   shuffle_labels,
                                                   model_options,
                                                   fold_no=fold_no)
-                tcga_data.process_data_for_gene(gene,
-                                                classification,
-                                                gene_dir)
+                tcga_data.process_data_for_gene(
+                    gene,
+                    classification,
+                    gene_dir,
+                    filter_cancer_types=(not model_options.filter_all_data)
+                )
             except ResultsFileExistsError:
                 # this happens if cross-validation for this gene has already been
                 # run (i.e. the results file already exists)

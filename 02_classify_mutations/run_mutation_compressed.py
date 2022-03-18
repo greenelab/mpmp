@@ -71,6 +71,10 @@ def process_args():
                            'the default which runs all folds in sequential order')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
+    opts.add_argument('--filter_all_data', action='store_true',
+                      help='if true, filter all data at once using mutation count/'
+                           'proportion thresholds, default is to filter each cancer '
+                           'type individually')
     opts.add_argument('--n_dim', type=int, default=100,
                       choices=[100, 1000, 5000], # TODO store this somewhere central
                       help='number of compressed components/dimensions to use')
@@ -183,9 +187,12 @@ if __name__ == '__main__':
                                                   shuffle_labels,
                                                   model_options,
                                                   fold_no=fold_no)
-                tcga_data.process_data_for_gene(gene,
-                                                classification,
-                                                gene_dir)
+                tcga_data.process_data_for_gene(
+                    gene,
+                    classification,
+                    gene_dir,
+                    filter_cancer_types=(not model_options.filter_all_data)
+                )
             except ResultsFileExistsError:
                 # this happens if cross-validation for this gene has already been
                 # run (i.e. the results file already exists)
