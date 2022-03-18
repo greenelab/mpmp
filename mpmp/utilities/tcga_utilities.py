@@ -22,6 +22,7 @@ def process_y_matrix(y_mutation,
                      filter_count,
                      filter_prop,
                      output_directory,
+                     apply_filter=True,
                      filter_cancer_types=True,
                      hyper_filter=5,
                      test=False,
@@ -40,7 +41,8 @@ def process_y_matrix(y_mutation,
     filter_count: the number of positives or negatives required per cancer-type
     filter_prop: the proportion of positives or negatives required per cancer-type
     output_directory: the name of the directory to store the gene summary
-    filter_cancer_types: if False, don't filter cancer types that don't meet criteria
+    apply_filter: if False, don't filter samples/cancer types at all
+    filter_cancer_types: if True, filter by cancer type; if False filter all at once
     hyper_filter: the number of std dev above log10 mutation burden to filter
     test: if True, don't write filtering info to disk
     overlap_data_types: if not None, use samples present for all included data types
@@ -81,34 +83,60 @@ def process_y_matrix(y_mutation,
     burden_filter = y_df["log10_mut"] < hyper_filter * y_df["log10_mut"].std()
     y_df = y_df.loc[burden_filter, :]
 
-    # Get statistics per gene and disease
-    disease_counts_df = pd.DataFrame(y_df.groupby("DISEASE").sum()["status"])
-
-    disease_proportion_df = disease_counts_df.divide(
-        y_df["DISEASE"].value_counts(sort=False).sort_index(), axis=0
-    )
-
     # Filter diseases with low counts or proportions for classification balance
-    filter_disease_df = (disease_counts_df > filter_count) & (
-        disease_proportion_df > filter_prop
-    )
-    filter_disease_df.columns = ["disease_included"]
-
-    disease_stats_df = disease_counts_df.merge(
-        disease_proportion_df,
-        left_index=True,
-        right_index=True,
-        suffixes=("_count", "_proportion"),
-    ).merge(filter_disease_df, left_index=True, right_index=True)
-
-    if not test and output_directory is not None:
-        filter_file = "{}_filtered_cancertypes.tsv".format(gene)
-        filter_file = os.path.join(output_directory, filter_file)
-        disease_stats_df.to_csv(filter_file, sep="\t")
-
     if filter_cancer_types:
-        use_diseases = disease_stats_df.query("disease_included").index.tolist()
-        y_df = y_df.query("DISEASE in @use_diseases")
+        # Get statistics per gene and disease
+        disease_counts_df = pd.DataFrame(y_df.groupby("DISEASE").sum()["status"])
+
+        disease_proportion_df = disease_counts_df.divide(
+            y_df["DISEASE"].value_counts(sort=False).sort_index(), axis=0
+        )
+
+        filter_disease_df = (disease_counts_df > filter_count) & (
+            disease_proportion_df > filter_prop
+        )
+        filter_disease_df.columns = ["disease_included"]
+
+        disease_stats_df = disease_counts_df.merge(
+            disease_proportion_df,
+            left_index=True,
+            right_index=True,
+            suffixes=("_count", "_proportion"),
+        ).merge(filter_disease_df, left_index=True, right_index=True)
+
+        if not test and output_directory is not None:
+            filter_file = "{}_filtered_cancertypes.tsv".format(gene)
+            filter_file = os.path.join(output_directory, filter_file)
+            disease_stats_df.to_csv(filter_file, sep="\t")
+
+        if apply_filter:
+            use_diseases = disease_stats_df.query("disease_included").index.tolist()
+            y_df = y_df.query("DISEASE in @use_diseases")
+
+    else:
+        # filter at the gene level rather than the disease level
+        # note that we still use the filter_count and filter_prop arguments here,
+        # we just apply them to the whole dataset rather than each cancer type
+        mutation_count = y_df.status.sum()
+        mutation_proportion = mutation_count / y_df.shape[0]
+        filter_gene = (
+            (mutation_count < filter_count) or
+            (mutation_proportion < filter_prop)
+        )
+
+        if not test and output_directory is not None:
+            filter_file = "{}_filtered.tsv".format(gene)
+            filter_file = os.path.join(output_directory, filter_file)
+            filter_df = pd.DataFrame(
+                [[mutation_count, mutation_proportion, filter_gene]],
+                columns=['mutation_count', 'mutation_proportion', 'filter_gene']
+            )
+            filter_df.to_csv(filter_file, sep="\t", index=False)
+
+        # if we want to filter the gene, just return an empty y_df
+        # this case will be handled by the calling function
+        if apply_filter and filter_gene:
+            y_df = pd.DataFrame([], columns=y_df.columns.copy())
 
     return y_df, valid_samples
 
