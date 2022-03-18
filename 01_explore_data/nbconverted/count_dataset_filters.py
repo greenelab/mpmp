@@ -3,9 +3,9 @@
 
 # ## Count number of valid genes after applying cancer type filters
 # 
-# In [the preprocessing code for our classifiers](https://github.com/greenelab/mpmp/blob/5d5fa0823b00fc3080d3a9db69d8d6704f554549/mpmp/utilities/tcga_utilities.py#L84), we filter out cancer types that don't contain at least 5% of samples mutated and at least 10 total samples mutated, for a given target gene.
+# In [the preprocessing code for our classifiers](https://github.com/greenelab/mpmp/blob/5d5fa0823b00fc3080d3a9db69d8d6704f554549/mpmp/utilities/tcga_utilities.py#L84), we originally filtered out cancer types that don't contain at least 5% of samples mutated and at least 10 total samples mutated, for a given target gene.
 # 
-# We were curious how many total genes these filters would give us, if we look at _all_ ~20,000 genes we have mutation data for. This script filters samples for each gene and counts the number of samples/cancer types that would be included in our classifiers.
+# Here, we want to try a different approach (TODO: describe)
 
 # In[1]:
 
@@ -40,7 +40,7 @@ genes_df = du.load_merged()
 genes_df.head()
 
 
-# In[4]:
+# In[7]:
 
 
 def gene_mutation_count(gene,
@@ -55,8 +55,34 @@ def gene_mutation_count(gene,
             './gene_mutation_counts',
             filter_cancer_types=filter_cancer_types
         )
+        count_df = pd.read_csv(
+            './gene_mutation_counts/{}_filtered.tsv'.format(gene),
+            sep='\t'
+        )
+        return count_df.loc[0].values.tolist()
     except KeyError:
-        return
+        return (0, 0, False)
         
 gene_mutation_count('TP53', tcga_data, 'TSG')
+
+
+# In[14]:
+
+
+gene_counts_df = []
+
+for g_id, g_series in genes_df.iterrows():
+    gene_info = gene_mutation_count(
+        g_series.gene,
+        tcga_data,
+        g_series.classification
+    )
+    gene_counts_df.append(gene_info)
+    
+gene_counts_df = pd.DataFrame(
+    gene_counts_df,
+    columns=['count', 'prop', 'filter_gene']
+)
+print(gene_counts_df.shape)
+gene_counts_df.head()
 
