@@ -38,6 +38,8 @@ new_results_dir = Path(cfg.results_dirs['mutation'],
 SIG_ALPHA = 0.001
 
 
+# ### Plot results with new filtering scheme
+
 # In[3]:
 
 
@@ -143,4 +145,101 @@ plu.plot_volcano_baseline(new_all_results_df,
                           SIG_ALPHA,
                           metric='aupr',
                           verbose=True)
+
+
+# ### Compare against results with old filtering scheme
+
+# In[14]:
+
+
+# load raw data
+old_results_df = au.load_stratified_prediction_results(orig_results_dir, 'gene')
+
+# here we want to use compressed data for methylation datasets (27k and 450k)
+# the results in 02_classify_compressed/compressed_vs_raw_results.ipynb show that
+# performance is equal or slightly better for PCA compressed methylation data,
+# and it's much easier/faster to fit models on
+old_results_df = old_results_df[old_results_df.training_data.isin(['expression', 'rppa', 'mirna', 'mut_sigs'])]
+
+# make sure that we're correctly pointing to raw data for non-methylation data types
+# and that we have data for two replicates (two random seeds)
+print(old_results_df.shape)
+print(old_results_df.seed.unique())
+print(old_results_df.training_data.unique())
+old_results_df.head()
+
+
+# In[16]:
+
+
+# load compressed data for me_27k and me_450k
+old_compressed_results_df = au.load_compressed_prediction_results(
+    orig_results_dir, 'gene')
+
+# make sure that we're correctly pointing to compressed methylation data
+# and that we have data for one dimension and two replicates (two random seeds)
+print(old_compressed_results_df.shape)
+print(old_compressed_results_df.seed.unique())
+print(old_compressed_results_df.training_data.unique())
+print(old_compressed_results_df.n_dims.unique())
+old_compressed_results_df.head()
+
+
+# In[17]:
+
+
+old_results_df['n_dims'] = 'raw'
+old_results_df = pd.concat((old_results_df, old_compressed_results_df))
+print(old_results_df.seed.unique())
+print(old_results_df.training_data.unique())
+print(old_results_df.n_dims.unique())
+print(old_results_df.shape)
+training_data_map = {
+    'expression': 'gene expression',
+    'me_27k': '27k methylation',
+    'me_450k': '450k methylation',
+    'rppa': 'RPPA',
+    'mirna': 'microRNA',
+    'mut_sigs': 'mutational signatures',
+}
+old_results_df.training_data.replace(to_replace=training_data_map, inplace=True)
+old_results_df.head()
+
+
+# In[19]:
+
+
+old_all_results_df = au.compare_all_data_types(old_results_df,
+                                               SIG_ALPHA,
+                                               metric='aupr')
+
+old_all_results_df.sort_values(by='p_value').head(10)
+
+
+# In[25]:
+
+
+overlap_genes = (
+    set(new_all_results_df.gene.unique())
+      .intersection(set(old_all_results_df.gene.unique()))
+)
+
+new_all_results_df = new_all_results_df[new_all_results_df.gene.isin(overlap_genes)]
+old_all_results_df = old_all_results_df[old_all_results_df.gene.isin(overlap_genes)]
+
+cols = ['gene', 'training_data', 'delta_mean']
+diff_df = (old_all_results_df
+  .loc[:, cols]
+  .merge(new_all_results_df.loc[:, cols],
+         left_on=['gene', 'training_data'],
+         right_on=['gene', 'training_data'])
+)
+
+diff_df.rename(
+    columns={'delta_mean_x': 'delta_mean_old',
+             'delta_mean_y': 'delta_mean_new'},
+    inplace=True
+)
+diff_df['old_vs_new'] = diff_df.delta_mean_old - diff_df.delta_mean_new
+diff_df.head()
 
