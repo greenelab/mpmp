@@ -27,8 +27,20 @@ get_ipython().run_line_magic('autoreload', '2')
 # In[2]:
 
 
+# data types to use
+overlap_data_types = [
+    'expression',
+    'me_27k',
+    'me_450k',
+    'rppa',
+    'mirna',
+    'mut_sigs',
+]
+
 # load sample info and mutation data, this takes some time
-tcga_data = TCGADataModel(seed=cfg.default_seed, verbose=False)
+tcga_data = TCGADataModel(seed=cfg.default_seed,
+                          verbose=False,
+                          overlap_data_types=overlap_data_types)
 pancancer_data = du.load_pancancer_data()
 
 
@@ -40,7 +52,7 @@ genes_df = du.load_merged()
 genes_df.head()
 
 
-# In[7]:
+# In[4]:
 
 
 def gene_mutation_count(gene,
@@ -61,12 +73,12 @@ def gene_mutation_count(gene,
         )
         return count_df.loc[0].values.tolist()
     except KeyError:
-        return (0, 0, False)
+        return [0, 0, True]
         
 gene_mutation_count('TP53', tcga_data, 'TSG')
 
 
-# In[14]:
+# In[5]:
 
 
 gene_counts_df = []
@@ -77,17 +89,17 @@ for g_id, g_series in genes_df.iterrows():
         tcga_data,
         g_series.classification
     )
-    gene_counts_df.append(gene_info)
+    gene_counts_df.append([g_series.gene] + gene_info)
     
 gene_counts_df = pd.DataFrame(
     gene_counts_df,
-    columns=['count', 'prop', 'filter_gene']
+    columns=['gene', 'count', 'prop', 'filter_gene']
 )
 print(gene_counts_df.shape)
-gene_counts_df.head()
+gene_counts_df.head(20)
 
 
-# In[23]:
+# In[6]:
 
 
 import seaborn as sns
@@ -105,8 +117,7 @@ prop_thresh = 0.01
 plt.gca().axhline(y=prop_thresh, linestyle='--')
 plt.gca().axvline(x=count_thresh, linestyle='--')
 
-thresh_genes = gene_counts_df[(gene_counts_df['count'] > count_thresh) &
-                              (gene_counts_df.prop > prop_thresh)]
+thresh_genes = gene_counts_df.shape[0] - gene_counts_df.filter_gene.sum()
 print('Number of genes passing filters: {} / {}'.format(
-    thresh_genes.shape[0], gene_counts_df.shape[0]))
+      thresh_genes, gene_counts_df.shape[0]))
 
