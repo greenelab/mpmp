@@ -299,10 +299,8 @@ def train_mlp_classifier(X_train,
     from skorch import NeuralNetBinaryClassifier
     from skorch.helper import SliceDataset
 
-    from mpmp.prediction.nn_models import LogisticRegression, ThreeLayerNet
+    from mpmp.prediction.nn_models import ThreeLayerNet
 
-    # TODO model toggle
-    # model = LogisticRegression(input_size=X_train.shape[1])
     model = ThreeLayerNet(input_size=X_train.shape[1])
 
     clf_parameters = {
@@ -321,7 +319,7 @@ def train_mlp_classifier(X_train,
         iterator_train__shuffle=True,
         verbose=0, # by default this prints loss for each epoch
         train_split=False,
-        # device='cuda'
+        device='cuda'
     )
 
     if n_folds == -1:
@@ -378,21 +376,12 @@ def train_mlp_classifier(X_train,
     # https://discuss.pytorch.org/t/multi-label-binary-classification-result-type-float-cant-be-cast-to-the-desired-output-type-long/117915/3
     cv_pipeline.fit(X=Xs, y=y_train.status.values.astype(np.float32))
 
-    # obtain cross validation results
-    # TODO: this isn't working
-    # TODO: are these even useful in general? seems like it would be
-    #       more useful to see results for each parameter choice
-    # y_cv = cross_val_predict(
-    #     cv_pipeline.best_estimator_,
-    #     X=X_train.values.astype(np.float32),
-    #     y=y_train.status.values,
-    #     cv=n_folds,
-    #     method='predict_proba',
-    # )[:, 1]
-
     # get all performance results
     y_predict_train = cv_pipeline.predict_proba(X_train.values.astype(np.float32))[:, 1]
     y_predict_test = cv_pipeline.predict_proba(X_test.values.astype(np.float32))[:, 1]
+
+    # this doesn't work for the NN models so just set it to the train preds
+    # we aren't using CV preds anyway, really
     y_cv = y_predict_train
 
     return cv_pipeline, y_predict_train, y_predict_test, y_cv

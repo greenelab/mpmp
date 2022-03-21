@@ -614,7 +614,7 @@ def split_stratified(data_df,
     ] = 'other'
 
     # now do stratified CV splitting and return the desired fold
-    if stratify: # TODO this is a mess, clean up
+    if stratify:
         kf = StratifiedKFold(n_splits=num_folds, shuffle=True, random_state=seed)
         for fold, (train_ixs, test_ixs) in enumerate(
                 kf.split(data_df, sample_info_df.id_for_stratification)):
@@ -747,7 +747,6 @@ def generate_param_grid(cv_results, fold_no):
     columns = ['fold']
 
     # add all of the classifier parameters to the parameter grid
-    # TODO: do they all look like this?
     for key_str in cv_results.keys():
         if key_str.startswith('param_'):
             results_grid.append(cv_results[key_str])
