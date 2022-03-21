@@ -243,3 +243,52 @@ diff_df.rename(
 diff_df['old_vs_new'] = diff_df.delta_mean_old - diff_df.delta_mean_new
 diff_df.head()
 
+
+# In[40]:
+
+
+sns.set({'figure.figsize': (12, 6)})
+
+sns.boxplot(data=diff_df, x='training_data', y='old_vs_new',
+            order=training_data_map.values())
+plt.xlabel('Training data')
+plt.ylabel('(Old - new) filtering scheme')
+
+
+# In[44]:
+
+
+metric = 'aupr'
+num_examples = 20
+
+top_df = (diff_df
+    .sort_values(by='old_vs_new', ascending=False)
+    .head(num_examples)
+)
+bottom_df = (diff_df
+    .sort_values(by='old_vs_new', ascending=False)
+    .tail(num_examples)
+)
+
+plot_df = pd.concat((top_df, bottom_df)).reset_index()
+
+sns.set({'figure.figsize': (30, 5)})
+sns.barplot(data=plot_df, x=plot_df.index, y='old_vs_new',
+            hue='training_data', dodge=False,
+            hue_order=training_data_map.values())
+
+def show_values_on_bars(ax):
+    for i in range(plot_df.shape[0]):
+        _x = i
+        _y = plot_df.loc[i, 'old_vs_new']
+        val = plot_df.loc[i, 'gene']
+        if _y > 0:
+            ax.text(_x, _y + 0.02, val, ha="center") 
+        else:
+            ax.text(_x, _y - 0.04, val, ha="center") 
+        
+show_values_on_bars(plt.gca())
+plt.gca().get_xaxis().set_visible(False)
+plt.ylabel('AUPR difference')
+plt.title('Performance difference between old and new filtering scheme', size=14)
+
