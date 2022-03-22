@@ -3,7 +3,9 @@
 
 # ## Compare dataset filtering methods
 # 
-# TODO: explain
+# Instead of applying our mutation count/percentage filters to samples from each cancer type independently, we could just look at the whole dataset - or in other words, we could choose genes to train classifiers for based on their overall percent/count of mutated samples.
+# 
+# This script compares the per-cancer type filtering method (or the "old" method) to the per-gene, across cancer types filtering method (or the "new" method).
 
 # In[1]:
 
@@ -97,7 +99,7 @@ new_results_df.training_data.replace(to_replace=training_data_map, inplace=True)
 new_results_df.head()
 
 
-# In[7]:
+# In[6]:
 
 
 new_all_results_df = au.compare_all_data_types(new_results_df,
@@ -107,7 +109,7 @@ new_all_results_df = au.compare_all_data_types(new_results_df,
 new_all_results_df.sort_values(by='p_value').head(10)
 
 
-# In[8]:
+# In[7]:
 
 
 sns.set({'figure.figsize': (22, 5)})
@@ -127,7 +129,7 @@ plu.plot_volcano_baseline(new_all_results_df,
                           verbose=True)
 
 
-# In[11]:
+# In[8]:
 
 
 sns.set({'figure.figsize': (22, 5)})
@@ -149,7 +151,7 @@ plu.plot_volcano_baseline(new_all_results_df,
 
 # ### Compare against results with old filtering scheme
 
-# In[14]:
+# In[9]:
 
 
 # load raw data
@@ -169,7 +171,7 @@ print(old_results_df.training_data.unique())
 old_results_df.head()
 
 
-# In[16]:
+# In[10]:
 
 
 # load compressed data for me_27k and me_450k
@@ -185,7 +187,7 @@ print(old_compressed_results_df.n_dims.unique())
 old_compressed_results_df.head()
 
 
-# In[17]:
+# In[11]:
 
 
 old_results_df['n_dims'] = 'raw'
@@ -206,7 +208,7 @@ old_results_df.training_data.replace(to_replace=training_data_map, inplace=True)
 old_results_df.head()
 
 
-# In[19]:
+# In[12]:
 
 
 old_all_results_df = au.compare_all_data_types(old_results_df,
@@ -216,7 +218,7 @@ old_all_results_df = au.compare_all_data_types(old_results_df,
 old_all_results_df.sort_values(by='p_value').head(10)
 
 
-# In[25]:
+# In[13]:
 
 
 overlap_genes = (
@@ -244,7 +246,7 @@ diff_df['old_vs_new'] = diff_df.delta_mean_old - diff_df.delta_mean_new
 diff_df.head()
 
 
-# In[40]:
+# In[14]:
 
 
 sns.set({'figure.figsize': (12, 6)})
@@ -255,7 +257,7 @@ plt.xlabel('Training data')
 plt.ylabel('(Old - new) filtering scheme')
 
 
-# In[44]:
+# In[15]:
 
 
 metric = 'aupr'
@@ -292,3 +294,7 @@ plt.gca().get_xaxis().set_visible(False)
 plt.ylabel('AUPR difference')
 plt.title('Performance difference between old and new filtering scheme', size=14)
 
+
+# The plots above show the difference for each gene between the "old" filtering scheme (per-cancer type) and the "new" filtering scheme (gene-level across all cancer types). A positive value for a gene means that gene's classifier performed better for the "old" filtering scheme and vice-versa for the "new" filtering scheme.
+# 
+# We can see that most genes have a positive old vs. new difference, indicating that filtering for each cancer type independently (the "old" approach) tends to lead to better classifier performance for most genes. This seems to hold across all the data types we looked at.
