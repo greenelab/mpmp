@@ -356,6 +356,9 @@ def train_mlp_classifier(X_train,
         )
 
     # convert dataframe to something that can be indexed by batch
+    # passing the dataframe directly to RandomizedSearchCV ends up
+    # loading all of the data onto the GPU at once - wrapping X_train
+    # in a SliceDataset seems to avoid this problem
     class MyDataset(Dataset):
 
         def __init__(self, df):
