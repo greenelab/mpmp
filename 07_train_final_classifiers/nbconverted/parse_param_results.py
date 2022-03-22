@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[2]:
+# In[1]:
 
 
 from pathlib import Path
@@ -15,7 +15,7 @@ get_ipython().run_line_magic('load_ext', 'autoreload')
 get_ipython().run_line_magic('autoreload', '2')
 
 
-# In[3]:
+# In[2]:
 
 
 # experiment results directory containing parameter lists
@@ -26,7 +26,7 @@ results_dir = Path(
 ).resolve()
 
 
-# In[28]:
+# In[3]:
 
 
 data_type_options = [
@@ -90,14 +90,47 @@ def get_best_params_folds(results_dir, gene):
                 .split('_')[-3]
                 .replace('s', '')
             )
-        # fold = ...
         param_names, params, metrics = get_best_params(results_file)
         all_best_params[data_type].append(
             (seed, param_names, params, metrics)
         )
     return all_best_params
 
-print(
-    get_best_params_folds(results_dir, 'BRAF')
-)
+
+all_best_params = get_best_params_folds(results_dir, 'BRAF')
+print(all_best_params)
+
+
+# In[4]:
+
+
+def sample_from_param_results(all_best_params, seed):
+    params_to_use = {}
+    for data_type in all_best_params.keys():
+        data_type_results = all_best_params[data_type]
+        params_to_use[data_type] = (
+            sample_from_single_results(data_type_results, seed)
+        )
+    return params_to_use
+
+def sample_from_single_results(data_type_results, seed):
+    param_names = None
+    params, metrics = [], []
+    for seed_result in data_type_results:
+        if param_names is None:
+            param_names = seed_result[1]
+        else:
+            assert param_names == seed_result[1]
+        params += seed_result[2]
+        metrics += seed_result[3]
+    select_ix = sample_ix_from_metrics(metrics)
+    params_to_use = params[select_ix]
+    return {param_names[ix]: params_to_use[ix]
+              for ix in range(len(param_names))}
+
+def sample_ix_from_metrics(metrics):
+    probs = [m / sum(metrics) for m in metrics]
+    return np.random.choice(range(len(metrics)), p=probs)
+
+print(sample_from_param_results(all_best_params, 1))
 
