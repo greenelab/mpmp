@@ -73,6 +73,9 @@ def process_args():
                       default='mad',
                       help='method to use for feature selection, only applied if '
                            '0 > num_features > total number of columns')
+    opts.add_argument('--model', choices=cfg.model_choices, default='elasticnet',
+                      help='what type of model to use for classification, defaults '
+                           'to logistic regression with elastic net regularization')
     opts.add_argument('--n_dim', nargs='*', default=None,
                       help='list of compressed dimensions to use, defaults to '
                            'uncompressed data for all data types')
@@ -269,7 +272,8 @@ if __name__ == '__main__':
                                                 num_features=model_options.num_features,
                                                 feature_selection_method=model_options.feature_selection,
                                                 bayes_opt=model_options.bayes_opt,
-                                                output_grid=io_args.save_hparams)
+                                                output_grid=io_args.save_hparams,
+                                                model=model_options.model)
                 # only save results if no exceptions
                 fold_no = (model_options.bayes_opt_fold_no if model_options.bayes_opt else None)
                 fu.save_results(gene_dir,

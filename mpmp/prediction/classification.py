@@ -17,20 +17,21 @@ from sklearn.metrics import (
 from sklearn.model_selection import (
     cross_val_predict,
     GridSearchCV,
+    RandomizedSearchCV,
 )
 
 import mpmp.config as cfg
 
-def train_classifier(X_train,
-                     X_test,
-                     y_train,
-                     alphas,
-                     l1_ratios,
-                     seed,
-                     n_folds=4,
-                     max_iter=1000):
+def train_linear_classifier(X_train,
+                            X_test,
+                            y_train,
+                            alphas,
+                            l1_ratios,
+                            seed,
+                            n_folds=4,
+                            max_iter=1000):
     """
-    Build the logic and sklearn pipelines to predict binary y from dataset x
+    Train a linear (elastic net logistic regression) classifier.
 
     Arguments
     ---------
@@ -39,6 +40,7 @@ def train_classifier(X_train,
     y_train: pandas DataFrame of processed y matrix (output from align_matrices())
     alphas: list of alphas to perform cross validation over
     l1_ratios: list of l1 mixing parameters to perform cross validation over
+    seed: seed for random number generator
     n_folds: int of how many folds of cross validation to perform
     max_iter: the maximum number of iterations to test until convergence
 
@@ -74,13 +76,13 @@ def train_classifier(X_train,
         # train/test split, this is much more computationally efficient
         # but could have higher variance
         from sklearn.model_selection import train_test_split
-        train_ixs, test_ixs = train_test_split(
+        train_ixs, valid_ixs = train_test_split(
             np.arange(X_train.shape[0]),
             test_size=cfg.inner_valid_prop,
             random_state=seed,
             shuffle=True
         )
-        cv = zip([train_ixs], [test_ixs])
+        cv = zip([train_ixs], [valid_ixs])
         cv_pipeline = GridSearchCV(
             estimator=estimator,
             param_grid=clf_parameters,
@@ -103,11 +105,11 @@ def train_classifier(X_train,
     # Fit the model
     cv_pipeline.fit(X=X_train, y=y_train.status)
 
-    # Obtain cross validation results
     # Get all performance results
     y_predict_train = cv_pipeline.decision_function(X_train)
     y_predict_test = cv_pipeline.decision_function(X_test)
 
+    # Obtain cross validation results, if applicable
     if n_folds == -1:
         y_cv = y_predict_train
     else:
@@ -168,11 +170,7 @@ def train_classifier_bo(X_train,
     # Fit the model
     cv_pipeline.fit(X=X_train, y=y_train.status)
 
-    # Obtain cross validation results
-    # Get all performance results
-    y_predict_train = cv_pipeline.decision_function(X_train)
-    y_predict_test = cv_pipeline.decision_function(X_test)
-
+    # obtain cross validation results
     y_cv = cross_val_predict(
         cv_pipeline.best_estimator_,
         X=X_train,
@@ -181,6 +179,9 @@ def train_classifier_bo(X_train,
         method='decision_function',
     )
 
+    # get all performance results
+    y_predict_train = cv_pipeline.decision_function(X_train)
+    y_predict_test = cv_pipeline.decision_function(X_test)
 
     return cv_pipeline, y_predict_train, y_predict_test, y_cv
 
@@ -233,31 +234,158 @@ def train_gb_classifier(X_train,
             )
         ]
     )
-
-    cv_pipeline = GridSearchCV(
-        estimator=estimator,
-        param_grid=clf_parameters,
-        n_jobs=-1,
-        cv=n_folds,
-        scoring='average_precision',
-        return_train_score=True,
-    )
+    if n_folds == -1:
+        # for this option we just want to do a grid search for a single
+        # train/test split, this is much more computationally efficient
+        # but could have higher variance
+        from sklearn.model_selection import train_test_split
+        train_ixs, valid_ixs = train_test_split(
+            np.arange(X_train.shape[0]),
+            test_size=cfg.inner_valid_prop,
+            random_state=seed,
+            shuffle=True
+        )
+        cv = zip([train_ixs], [valid_ixs])
+        cv_pipeline = GridSearchCV(
+            estimator=estimator,
+            param_grid=clf_parameters,
+            n_jobs=-1,
+            cv=cv,
+            scoring='average_precision',
+            return_train_score=True,
+        )
+    else:
+        cv_pipeline = GridSearchCV(
+            estimator=estimator,
+            param_grid=clf_parameters,
+            n_jobs=-1,
+            cv=n_folds,
+            scoring='average_precision',
+            return_train_score=True,
+        )
 
     # Fit the model
     cv_pipeline.fit(X=X_train, y=y_train.status)
 
-    # Obtain cross validation results
-    y_cv = cross_val_predict(
-        cv_pipeline.best_estimator_,
-        X=X_train,
-        y=y_train.status,
-        cv=n_folds,
-        method='predict_proba',
-    )[:, 1]
-
     # Get all performance results
     y_predict_train = cv_pipeline.predict_proba(X_train)[:, 1]
     y_predict_test = cv_pipeline.predict_proba(X_test)[:, 1]
+
+    # Obtain cross validation results, if applicable
+    if n_folds == -1:
+        y_cv = y_predict_train
+    else:
+        y_cv = cross_val_predict(
+            cv_pipeline.best_estimator_,
+            X=X_train,
+            y=y_train.status,
+            cv=n_folds,
+            method='decision_function',
+        )
+
+    return cv_pipeline, y_predict_train, y_predict_test, y_cv
+
+
+def train_mlp_classifier(X_train,
+                         X_test,
+                         y_train,
+                         params,
+                         seed,
+                         n_folds=4,
+                         max_iter=1000):
+    """Train multi-layer perceptron classifier."""
+    import torch.optim
+    from torch.utils.data import Dataset
+    from skorch import NeuralNetBinaryClassifier
+    from skorch.helper import SliceDataset
+
+    from mpmp.prediction.nn_models import ThreeLayerNet
+
+    model = ThreeLayerNet(input_size=X_train.shape[1])
+
+    clf_parameters = {
+        'lr': params['learning_rate'],
+        'module__input_size': [X_train.shape[1]],
+        'module__h1_size': params['h1_size'],
+        'module__dropout': params['dropout'],
+        'optimizer__weight_decay': params['weight_decay'],
+     }
+
+    net = NeuralNetBinaryClassifier(
+        model,
+        max_epochs=max_iter,
+        batch_size=512,
+        optimizer=torch.optim.Adam,
+        iterator_train__shuffle=True,
+        verbose=0, # by default this prints loss for each epoch
+        train_split=False,
+        device='cuda'
+    )
+
+    if n_folds == -1:
+        # for this option we just want to do a grid search for a single
+        # train/test split, this is much more computationally efficient
+        # but could have higher variance
+        from sklearn.model_selection import train_test_split
+        train_ixs, valid_ixs = train_test_split(
+            np.arange(X_train.shape[0]),
+            test_size=cfg.inner_valid_prop,
+            random_state=seed,
+            shuffle=True
+        )
+        cv = zip([train_ixs], [valid_ixs])
+        cv_pipeline = RandomizedSearchCV(
+            estimator=net,
+            param_distributions=clf_parameters,
+            n_iter=cfg.random_search_n_iter,
+            cv=cv,
+            scoring='average_precision',
+            return_train_score=True,
+            n_jobs=3,
+            verbose=2,
+        )
+    else:
+        cv_pipeline = RandomizedSearchCV(
+            estimator=net,
+            param_distributions=clf_parameters,
+            n_iter=cfg.random_search_n_iter,
+            cv=n_folds,
+            scoring='average_precision',
+            return_train_score=True,
+            verbose=2,
+        )
+
+    # convert dataframe to something that can be indexed by batch
+    # passing the dataframe directly to RandomizedSearchCV ends up
+    # loading all of the data onto the GPU at once - wrapping X_train
+    # in a SliceDataset seems to avoid this problem
+    class MyDataset(Dataset):
+
+        def __init__(self, df):
+            import torch
+            self.df = df
+            self.X = torch.tensor(df.values, dtype=torch.float32)
+
+        def __len__(self):
+            return len(self.X)
+
+        def __getitem__(self, idx):
+            return self.X[idx], None
+
+    dataset = MyDataset(X_train)
+    Xs = SliceDataset(dataset)
+
+    # labels have to be cast to floats
+    # https://discuss.pytorch.org/t/multi-label-binary-classification-result-type-float-cant-be-cast-to-the-desired-output-type-long/117915/3
+    cv_pipeline.fit(X=Xs, y=y_train.status.values.astype(np.float32))
+
+    # get all performance results
+    y_predict_train = cv_pipeline.predict_proba(X_train.values.astype(np.float32))[:, 1]
+    y_predict_test = cv_pipeline.predict_proba(X_test.values.astype(np.float32))[:, 1]
+
+    # this doesn't work for the NN models so just set it to the train preds
+    # we aren't using CV preds anyway, really
+    y_cv = y_predict_train
 
     return cv_pipeline, y_predict_train, y_predict_test, y_cv
 

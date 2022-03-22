@@ -71,6 +71,9 @@ def process_args():
                            'the default which runs all folds in sequential order')
     opts.add_argument('--debug', action='store_true',
                       help='use subset of data for fast debugging')
+    opts.add_argument('--model', choices=cfg.model_choices, default='elasticnet',
+                      help='what type of model to use for classification, defaults '
+                           'to logistic regression with elastic net regularization')
     opts.add_argument('--n_dim', type=int, default=100,
                       choices=[100, 1000, 5000], # TODO store this somewhere central
                       help='number of compressed components/dimensions to use')
@@ -221,6 +224,7 @@ if __name__ == '__main__':
                         model_options.bayes_opt_fold_no,
                         shuffle_labels=shuffle_labels,
                         standardize_columns=False,
+                        bayes_opt=model_options.bayes_opt,
                         output_grid=io_args.save_hparams,
                     )
                 else:
@@ -235,7 +239,8 @@ if __name__ == '__main__':
                                                'classify',
                                                shuffle_labels,
                                                standardize_columns=False,
-                                               output_grid=io_args.save_hparams)
+                                               output_grid=io_args.save_hparams,
+                                               model=model_options.model)
                 # only save results if no exceptions
                 fold_no = (model_options.bayes_opt_fold_no if model_options.bayes_opt else None)
                 fu.save_results(gene_dir,
