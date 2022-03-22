@@ -137,11 +137,13 @@ dataset_filter_count = 100
 # hyperparameters for classification experiments
 # folds == -1 => use a single train/valid split (useful for NN experiments)
 folds = 3
-# folds = -1
-# inner_valid_prop = 0.2
 max_iter = 200
 alphas = [1e-4, 0.001, 0.01, 0.1, 1, 10]
 l1_ratios = [0.0, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0]
+
+# this only applies in the case where folds==-1 (i.e. a
+# single inner train/valid split to select hyperparameters)
+inner_valid_prop = 0.35
 
 # number of iterations to run bayesian optimization for
 bo_num_iter = 80
@@ -268,6 +270,22 @@ titration_ratios = [0.0, 0.25, 0.5, 0.75, 1.]
 
 # whether or not to batch correct covariates
 bc_covariates = False
+
+# options for what model to use for classification
+model_choices = [
+    'elasticnet', # elastic net regularized logistic regression
+    'gbm', # gradient boosting, implemented in lightgbm
+    'mlp' # 3-layer multi-layer perceptron neural network
+]
+
+# parameter ranges for MLP search
+mlp_params = {
+    'learning_rate': [0.1, 0.01, 0.001, 5e-4, 1e-4],
+    'h1_size': [1000, 500, 250],
+    'dropout': [0.5, 0.75, 0.9],
+    'weight_decay': [0, 0.1, 1, 100]
+}
+random_search_n_iter = 20
 
 # location of data for GO enrichment analysis
 go_data_dir = repo_root / '01_explore_data' / 'go_data'

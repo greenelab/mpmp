@@ -91,14 +91,14 @@ def process_args():
                       help='if true, filter all data at once using mutation count/'
                            'proportion thresholds, default is to filter each cancer '
                            'type individually')
+    opts.add_argument('--model', choices=cfg.model_choices, default='elasticnet',
+                      help='what type of model to use for classification, defaults '
+                           'to logistic regression with elastic net regularization')
     opts.add_argument('--num_features', type=int, default=cfg.num_features_raw,
                       help='if included, select this number of features, using '
                            'feature selection method in feature_selection')
     opts.add_argument('--num_folds', type=int, default=4,
                       help='number of folds of cross-validation to run')
-    opts.add_argument('--nonlinear', action='store_true',
-                      help='use gradient-boosted classifier instead of the '
-                           'default elastic net classifier')
     opts.add_argument('--only_target', action='store_true',
                       help='use only target gene + non-gene covariates, '
                            'currently only implemented for expression data')
@@ -261,6 +261,7 @@ if __name__ == '__main__':
                         standardize_columns=standardize_columns,
                         num_features=model_options.num_features,
                         feature_selection_method=model_options.feature_selection,
+                        bayes_opt=model_options.bayes_opt,
                         output_grid=io_args.save_hparams,
                     )
                 else:
@@ -278,7 +279,7 @@ if __name__ == '__main__':
                         feature_selection_method=model_options.feature_selection,
                         bayes_opt=model_options.bayes_opt,
                         output_grid=io_args.save_hparams,
-                        nonlinear=model_options.nonlinear,
+                        model=model_options.model,
                         bc_train_test=model_options.bc_train_test
                     )
                 # only save results if no exceptions

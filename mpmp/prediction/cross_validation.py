@@ -39,7 +39,7 @@ def run_cv_stratified(data_model,
                       output_grid=False,
                       survival_fit_ridge=False,
                       stratify=True,
-                      nonlinear=False,
+                      model='elasticnet',
                       bc_train_test=False,
                       bc_titration_ratio=None,
                       results_dir=None):
@@ -190,15 +190,18 @@ def run_cv_stratified(data_model,
                                                            standardize_columns,
                                                            feature_selection_method,
                                                            num_features)
-        if nonlinear:
-            classify_function = clf.train_gb_classifier
-        elif bayes_opt:
-            classify_function = clf.train_classifier_bo
+        if bayes_opt:
+            linear_classifier = clf.train_classifier_bo
         else:
-            classify_function = clf.train_classifier
+            linear_classifier = clf.train_linear_classifier
 
+        classifiers_list = {
+            'elasticnet': linear_classifier,
+            'gbm': clf.train_gb_classifier,
+            'mlp': clf.train_mlp_classifier
+        }
         models_list = {
-            'classify': classify_function,
+            'classify': classifiers_list[model],
             'regress': reg.train_regressor,
             'survival': surv.train_survival
         }
@@ -225,7 +228,7 @@ def run_cv_stratified(data_model,
         # set the hyperparameters
         train_model_params = apply_model_params(train_model,
                                                 predictor,
-                                                nonlinear,
+                                                model,
                                                 bayes_opt)
 
         try:
@@ -262,20 +265,23 @@ def run_cv_stratified(data_model,
          y_cv_df) = model_results
 
         # get coefficients
-        coef_df = extract_coefficients(
-            cv_pipeline=cv_pipeline,
-            feature_names=X_train_df.columns,
-            signal=signal,
-            seed=data_model.seed,
-            name=predictor,
-            nonlinear=nonlinear
-        )
-        coef_df = coef_df.assign(identifier=identifier)
-        if isinstance(training_data, str):
-            coef_df = coef_df.assign(training_data=training_data)
+        if model == 'mlp':
+            coef_df = pd.DataFrame()
         else:
-            coef_df = coef_df.assign(training_data='.'.join(training_data))
-        coef_df = coef_df.assign(fold=fold_no)
+            coef_df = extract_coefficients(
+                cv_pipeline=cv_pipeline,
+                feature_names=X_train_df.columns,
+                signal=signal,
+                seed=data_model.seed,
+                name=predictor,
+                model=model
+            )
+            coef_df = coef_df.assign(identifier=identifier)
+            if isinstance(training_data, str):
+                coef_df = coef_df.assign(training_data=training_data)
+            else:
+                coef_df = coef_df.assign(training_data='.'.join(training_data))
+            coef_df = coef_df.assign(fold=fold_no)
         if '{}_coef'.format(exp_string) not in results:
             results['{}_coef'.format(exp_string)] = [coef_df]
         else:
@@ -336,18 +342,7 @@ def run_cv_stratified(data_model,
 
         if output_grid:
             results['{}_param_grid'.format(exp_string)].append(
-                pd.DataFrame(
-                    np.array([
-                        # TODO make this work with a variety of params
-                        [fold_no] * cv_pipeline.cv_results_['param_classify__alpha'].shape[0],
-                        cv_pipeline.cv_results_['param_classify__alpha'],
-                        cv_pipeline.cv_results_['param_classify__l1_ratio'],
-                        cv_pipeline.cv_results_['mean_train_score'],
-                        cv_pipeline.cv_results_['mean_test_score']
-
-                    ]).T,
-                    columns=['fold', 'alpha', 'l1_ratio', 'mean_train_score', 'mean_test_score']
-                )
+                generate_param_grid(cv_pipeline.cv_results_, fold_no)
             )
 
         if output_preds:
@@ -559,21 +554,9 @@ def run_cv_fold(data_model,
     results['{}_auc'.format(exp_string)].append(auc_df)
     results['{}_aupr'.format(exp_string)].append(aupr_df)
 
-
     if output_grid:
         results['{}_param_grid'.format(exp_string)].append(
-            pd.DataFrame(
-                np.array([
-                    # TODO make this work with a variety of params
-                    [fold_no] * cv_pipeline.cv_results_['param_classify__alpha'].shape[0],
-                    cv_pipeline.cv_results_['param_classify__alpha'],
-                    cv_pipeline.cv_results_['param_classify__l1_ratio'],
-                    cv_pipeline.cv_results_['mean_train_score'],
-                    cv_pipeline.cv_results_['mean_test_score']
-
-                ]).T,
-                columns=['fold', 'alpha', 'l1_ratio', 'mean_train_score', 'mean_test_score']
-            )
+            generate_param_grid(cv_pipeline.cv_results_, fold_no)
         )
 
     if output_preds:
@@ -631,7 +614,7 @@ def split_stratified(data_df,
     ] = 'other'
 
     # now do stratified CV splitting and return the desired fold
-    if stratify: # TODO this is a mess, clean up
+    if stratify:
         kf = StratifiedKFold(n_splits=num_folds, shuffle=True, random_state=seed)
         for fold, (train_ixs, test_ixs) in enumerate(
                 kf.split(data_df, sample_info_df.id_for_stratification)):
@@ -653,7 +636,7 @@ def extract_coefficients(cv_pipeline,
                          signal,
                          seed,
                          name='classify',
-                         nonlinear=False):
+                         model='elasticnet'):
     """
     Pull out the coefficients from the trained models
 
@@ -670,9 +653,11 @@ def extract_coefficients(cv_pipeline,
 
     if name == 'survival':
         weights = final_classifier.coef_.flatten()
-    elif nonlinear:
+    elif model == 'gbm':
         # use information gain for feature importance with nonlinear classifier
         weights = final_classifier.booster_.feature_importance(importance_type='gain')
+    elif model == 'mlp':
+        raise NotImplementedError('feature importance not implemented for MLP')
     else:
         weights = final_classifier.coef_[0]
 
@@ -716,8 +701,13 @@ def temp_seed(cntxt_seed):
         np.random.set_state(state)
 
 
-def apply_model_params(train_model, predictor, nonlinear, bayes_opt):
-    if predictor == 'classify' and nonlinear:
+def apply_model_params(train_model, predictor, model, bayes_opt):
+    if predictor == 'classify' and model == 'mlp':
+        return partial(
+            train_model,
+            params=cfg.mlp_params,
+        )
+    elif predictor == 'classify' and model == 'gbm':
         # non-linear classifier takes different hyperparameters,
         # pass them through here
         return partial(
@@ -745,5 +735,36 @@ def apply_model_params(train_model, predictor, nonlinear, bayes_opt):
             alphas=cfg.alphas_map[predictor],
             l1_ratios=cfg.l1_ratios_map[predictor],
         )
+
+def generate_param_grid(cv_results, fold_no):
+    """Generate dataframe with results of parameter search, from sklearn
+       cv_results object.
+    """
+    # add fold number to parameter grid
+    results_grid = [
+        [fold_no] * cv_results['mean_test_score'].shape[0]
+    ]
+    columns = ['fold']
+
+    # add all of the classifier parameters to the parameter grid
+    for key_str in cv_results.keys():
+        if key_str.startswith('param_'):
+            results_grid.append(cv_results[key_str])
+            columns.append(
+                # these prefixes indicate the step in the "pipeline", we
+                # don't really need them in our parameter search results
+                key_str.replace('param_', '')
+                       .replace('classify__', '')
+                       .replace('module__', '')
+                       .replace('optimizer__', '')
+            )
+
+    # add mean train/test scores across inner folds to parameter grid
+    results_grid.append(cv_results['mean_train_score'])
+    columns.append('mean_train_score')
+    results_grid.append(cv_results['mean_test_score'])
+    columns.append('mean_test_score')
+
+    return pd.DataFrame(np.array(results_grid).T, columns=columns)
 
 
