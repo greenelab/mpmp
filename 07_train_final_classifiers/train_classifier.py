@@ -2,6 +2,7 @@
 Script to train a single pan-cancer classifier, on the whole TCGA dataset,
 for a given gene and data type.
 """
+import sys
 import argparse
 from pathlib import Path
 
@@ -15,7 +16,7 @@ from mpmp.exceptions import (
     NoTestSamplesError,
     OneClassError,
 )
-# from mpmp.prediction.cross_validation import run_cv_stratified, run_cv_fold
+from mpmp.prediction.cross_validation import train_all_data
 import mpmp.utilities.data_utilities as du
 import mpmp.utilities.file_utilities as fu
 import mpmp.utilities.param_results_utilities as pru
@@ -119,5 +120,104 @@ if __name__ == '__main__':
     # get hyperparameters to use
     best_params = pru.get_best_params(io_args.params_dir, io_args.gene)
     params_to_use = pru.sample_from_param_results(best_params, model_options.seed)
-    print(params_to_use)
+    if io_args.verbose:
+        print(params_to_use)
+
+    # create empty log file if it doesn't exist
+    log_columns = [
+        'gene',
+        'training_data',
+        'skip_reason'
+    ]
+
+    tcga_data = TCGADataModel(seed=model_options.seed,
+                              training_data=model_options.training_data,
+                              overlap_data_types=model_options.overlap_data_types,
+                              sample_info_df=sample_info_df,
+                              verbose=io_args.verbose,
+                              debug=model_options.debug)
+
+    genes_df = tcga_data.load_gene_set('merged')
+    gene_series = genes_df[genes_df.gene == io_args.gene]
+    gene = gene_series.gene.values[0]
+    classification = gene_series.classification.values[0]
+
+    log_df = None
+
+    # load gene labels and related info
+    try:
+        gene_dir = fu.make_output_dir(experiment_dir, gene)
+        check_file = fu.check_output_file(gene_dir,
+                                          gene,
+                                          False,
+                                          model_options)
+        tcga_data.process_data_for_gene(
+            gene,
+            classification,
+            gene_dir
+        )
+    except ResultsFileExistsError:
+        # this happens if cross-validation for this gene has already been
+        # run (i.e. the results file already exists)
+        if io_args.verbose:
+            print('Skipping because results file exists already: gene {}'.format(
+                gene), file=sys.stderr)
+        log_df = fu.generate_log_df(
+            log_columns,
+            [gene, model_options.training_data, 'file_exists']
+        )
+        fu.write_log_file(log_df, io_args.log_file)
+        exit()
+    except KeyError:
+        # this can happen if the given gene isn't in the mutation data
+        print('Gene {} not found in mutation data, skipping'.format(gene),
+              file=sys.stderr)
+        log_df = fu.generate_log_df(
+            log_columns,
+            [gene, model_options.training_data, 'gene_not_found']
+        )
+        fu.write_log_file(log_df, io_args.log_file)
+        exit()
+
+    # train model
+    # TODO: save parameter selection
+    try:
+        standardize_columns = (model_options.training_data in cfg.standardize_data_types)
+        model_fit, results = train_all_data(
+            tcga_data,
+            'gene',
+            gene,
+            model_options.training_data,
+            sample_info_df,
+            params_to_use[model_options.training_data],
+            standardize_columns=standardize_columns,
+            num_features=model_options.num_features,
+            feature_selection_method=model_options.feature_selection,
+        )
+        fu.save_results(gene_dir,
+                        check_file,
+                        results,
+                        'gene',
+                        gene,
+                        False,
+                        model_options)
+    except NoTrainSamplesError:
+        if io_args.verbose:
+            print('Skipping due to no train samples: gene {}'.format(
+                gene), file=sys.stderr)
+        log_df = fu.generate_log_df(
+            log_columns,
+            [gene, model_options.training_data, shuffle_labels, 'no_train_samples']
+        )
+    except OneClassError:
+        if io_args.verbose:
+            print('Skipping due to one holdout class: gene {}'.format(
+                gene), file=sys.stderr)
+        log_df = fu.generate_log_df(
+            log_columns,
+            [gene, model_options.training_data, shuffle_labels, 'one_class']
+        )
+
+    if log_df is not None:
+        fu.write_log_file(log_df, io_args.log_file)
 
