@@ -139,7 +139,7 @@ class TCGADataModel():
                               classification,
                               gene_dir,
                               apply_filter=True,
-                              filter_cancer_types=True,
+                              filter_all_data=False,
                               batch_correction=False,
                               bc_cancer_type=False,
                               drop_target=False,
@@ -155,7 +155,7 @@ class TCGADataModel():
         gene_dir (str): directory to write output to, if None don't write output
         """
         y_df_raw, valid_samples = self._generate_gene_labels(
-            gene, classification, gene_dir, apply_filter, filter_cancer_types
+            gene, classification, gene_dir, apply_filter, filter_all_data
         )
 
         filtered_data = self._filter_data(
@@ -448,7 +448,7 @@ class TCGADataModel():
                               classification,
                               gene_dir,
                               apply_filter=True,
-                              filter_cancer_types=True):
+                              filter_all_data=False):
 
         # process the y matrix for the given gene or pathway
         y_mutation_df = self.mutation_df.loc[:, gene]
@@ -481,9 +481,9 @@ class TCGADataModel():
             sample_freeze=self.sample_freeze_df,
             mutation_burden=self.mut_burden_df,
             apply_filter=apply_filter,
-            filter_cancer_types=filter_cancer_types,
-            filter_count=(cfg.filter_count if filter_cancer_types else cfg.dataset_filter_count),
-            filter_prop=(cfg.filter_prop if filter_cancer_types else cfg.dataset_filter_prop),
+            filter_all_data=filter_all_data,
+            filter_count=(cfg.dataset_filter_count if filter_all_data else cfg.filter_count),
+            filter_prop=(cfg.dataset_filter_prop if filter_all_data else cfg.filter_prop),
             output_directory=gene_dir,
             hyper_filter=5,
             test=self.test,

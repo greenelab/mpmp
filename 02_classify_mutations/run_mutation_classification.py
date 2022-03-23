@@ -216,7 +216,7 @@ if __name__ == '__main__':
                     gene,
                     classification,
                     gene_dir,
-                    filter_cancer_types=(not model_options.filter_all_data),
+                    filter_all_data=model_options.filter_all_data,
                     batch_correction=model_options.batch_correction,
                     bc_cancer_type=model_options.bc_cancer_type,
                     drop_target=model_options.drop_target,

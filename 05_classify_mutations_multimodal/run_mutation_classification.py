@@ -222,7 +222,7 @@ if __name__ == '__main__':
                     gene,
                     classification,
                     gene_dir,
-                    filter_cancer_types=(not model_options.filter_all_data)
+                    filter_all_data=model_options.filter_all_data
                 )
             except ResultsFileExistsError:
                 # this happens if cross-validation for this gene has already been
