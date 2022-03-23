@@ -297,4 +297,6 @@ plt.title('Performance difference between old and new filtering scheme', size=14
 
 # The plots above show the difference for each gene between the "old" filtering scheme (per-cancer type) and the "new" filtering scheme (gene-level across all cancer types). A positive value for a gene means that gene's classifier performed better for the "old" filtering scheme and vice-versa for the "new" filtering scheme.
 # 
-# We can see that most genes have a positive old vs. new difference, indicating that filtering for each cancer type independently (the "old" approach) tends to lead to better classifier performance for most genes. This seems to hold across all the data types we looked at.
+# In the box plot, we can see that most genes have a positive old vs. new difference (means > 0 and small negative tails), indicating that filtering for each cancer type independently (the "old" approach) tends to lead to better classifier performance for most genes. This seems to hold across all the data types we looked at.
+# 
+# The bar plot shows the extremes on each end (i.e. genes with the largest negative or positive difference). The positive tails tend to be larger than the negative tails, supporting our observations from the box plot.

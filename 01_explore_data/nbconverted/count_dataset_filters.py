@@ -5,7 +5,7 @@
 # 
 # In [the preprocessing code for our classifiers](https://github.com/greenelab/mpmp/blob/5d5fa0823b00fc3080d3a9db69d8d6704f554549/mpmp/utilities/tcga_utilities.py#L84), we originally filtered out cancer types that don't contain at least 5% of samples mutated and at least 10 total samples mutated, for a given target gene.
 # 
-# Here, we want to try a different approach (TODO: describe)
+# Here, we want to try a different approach, where we filter the entire dataset at once for each gene. If the mutations in a gene make an overall threshold, we train a classifier across all cancer types, and if they don't we skip the gene entirely. In this script we'll check how many genes make a given threshold.
 
 # In[1]:
 
