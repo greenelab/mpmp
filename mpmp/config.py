@@ -129,8 +129,13 @@ num_features_raw = 8000
 filter_prop = 0.05
 # filter cancer types with less than this number of mutated samples
 filter_count = 15
+# filter datasets with less than this percent of mutated samples
+dataset_filter_prop = 0.01
+# filter datasets with less than this number of mutated samples
+dataset_filter_count = 100
 
 # hyperparameters for classification experiments
+# folds == -1 => use a single train/valid split (useful for NN experiments)
 folds = 3
 max_iter = 200
 alphas = [1e-4, 0.001, 0.01, 0.1, 1, 10]

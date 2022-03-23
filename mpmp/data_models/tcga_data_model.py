@@ -138,8 +138,8 @@ class TCGADataModel():
                               gene,
                               classification,
                               gene_dir,
-                              use_pancancer=False,
-                              filter_cancer_types=True,
+                              apply_filter=True,
+                              filter_all_data=False,
                               batch_correction=False,
                               bc_cancer_type=False,
                               drop_target=False,
@@ -153,10 +153,10 @@ class TCGADataModel():
         classification (str): 'oncogene' or 'TSG'; most likely cancer function for
                               the given gene
         gene_dir (str): directory to write output to, if None don't write output
-        use_pancancer (bool): whether or not to use pancancer data
         """
         y_df_raw, valid_samples = self._generate_gene_labels(
-                gene, classification, gene_dir, filter_cancer_types)
+            gene, classification, gene_dir, apply_filter, filter_all_data
+        )
 
         filtered_data = self._filter_data(
             self.data_df,
@@ -447,7 +447,8 @@ class TCGADataModel():
                               gene,
                               classification,
                               gene_dir,
-                              filter_cancer_types=True):
+                              apply_filter=True,
+                              filter_all_data=False):
 
         # process the y matrix for the given gene or pathway
         y_mutation_df = self.mutation_df.loc[:, gene]
@@ -479,9 +480,10 @@ class TCGADataModel():
             gene=gene,
             sample_freeze=self.sample_freeze_df,
             mutation_burden=self.mut_burden_df,
-            filter_cancer_types=filter_cancer_types,
-            filter_count=cfg.filter_count,
-            filter_prop=cfg.filter_prop,
+            apply_filter=apply_filter,
+            filter_all_data=filter_all_data,
+            filter_count=(cfg.dataset_filter_count if filter_all_data else cfg.filter_count),
+            filter_prop=(cfg.dataset_filter_prop if filter_all_data else cfg.filter_prop),
             output_directory=gene_dir,
             hyper_filter=5,
             test=self.test,
