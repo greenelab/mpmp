@@ -45,6 +45,8 @@ def process_args():
                          'to find the set of hyperparameters to use')
     io.add_argument('--results_dir', default=cfg.results_dirs['mutation'],
                     help='where to write results to')
+    io.add_argument('--save_model', action='store_true',
+                    help='if true, serialize model and save to results dir')
     io.add_argument('--verbose', action='store_true')
 
     # argument group for parameters related to model training/evaluation
@@ -118,10 +120,12 @@ if __name__ == '__main__':
     fu.save_model_options(experiment_dir, model_options)
 
     # get hyperparameters to use
+    if io_args.verbose:
+        print('Selecting best params from results directory', file=sys.stderr)
     best_params = pru.get_best_params(io_args.params_dir, io_args.gene)
     params_to_use = pru.sample_from_param_results(best_params, model_options.seed)
     if io_args.verbose:
-        print(params_to_use)
+        print('Params:', params_to_use, file=sys.stderr)
 
     # create empty log file if it doesn't exist
     log_columns = [
@@ -201,6 +205,8 @@ if __name__ == '__main__':
                         gene,
                         False,
                         model_options)
+        if io_args.save_model:
+            fu.save_model(gene_dir, model_fit, gene, model_options)
     except NoTrainSamplesError:
         if io_args.verbose:
             print('Skipping due to no train samples: gene {}'.format(
@@ -220,4 +226,5 @@ if __name__ == '__main__':
 
     if log_df is not None:
         fu.write_log_file(log_df, io_args.log_file)
+
 
