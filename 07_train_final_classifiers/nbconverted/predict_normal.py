@@ -142,7 +142,7 @@ print(normal_data_df.shape)
 normal_data_df.iloc[:5, :5]
 
 
-# ### Preprocessing for normal samples
+# ### Add covariates for train/normal samples
 # 
 # This is a bit nuanced since we don't have mutation calling information for the normal samples, so we can't generate a log(mutation burden) covariate.
 # 
@@ -240,4 +240,48 @@ X_normal_df = add_dummies_from_model(normal_data_df,
                                      model_fit)
 print(X_normal_df.shape)
 X_normal_df.iloc[:5, -20:]
+
+
+# ### Preprocessing for train/normal samples
+# 
+# We want to do the following for preprocessing:
+# 
+# * Make sure we're using the same set of gene features that the model was trained on (or subset to those gene features if not)
+# * Standardize the train/normal samples (we'll do this for each dataset independently, for now)
+
+# In[18]:
+
+
+non_gene_features = list(valid_cancer_types) + ['log10_mut']
+train_gene_features = [
+    f for f in model_fit.feature_names_in_ if f not in non_gene_features
+]
+print(train_gene_features[:5])
+print(train_gene_features[-5:])
+
+
+# In[19]:
+
+
+# we don't want to standardize the non-gene features
+is_gene_feature = np.array(
+    [(f in train_gene_features) for f in model_fit.feature_names_in_]
+)
+print(is_gene_feature[:5])
+print(is_gene_feature[-5:])
+print(sum(is_gene_feature))
+
+
+# In[20]:
+
+
+X_train_std_df = tu.standardize_features(X_train_df, is_gene_feature)
+X_train_std_df.iloc[:5, :5]
+
+
+# In[21]:
+
+
+X_normal_std_df = tu.standardize_features(X_normal_df, is_gene_feature)
+X_normal_std_df.iloc[:5, :5]
 
