@@ -47,6 +47,7 @@ print(genes)
 
 
 gene = 'TP53'
+classification = 'TSG'
 training_data = 'expression'
 
 model_filename = '{}_{}_elasticnet_classify_s42_model.pkl'.format(gene, training_data)
@@ -301,14 +302,50 @@ print(y_normal_preds.shape)
 # In[23]:
 
 
+def get_mutations_for_gene(gene, classification, samples):
+    # get classification
+    # build labels
+    gene_mutation_df = mutation_df.loc[:, gene]
+    if classification == "Oncogene":
+        copy_number_df = copy_gain_df.loc[:, gene]
+    elif classification == "TSG":
+        copy_number_df = copy_loss_df.loc[:, gene]
+    elif classification == "Oncogene, TSG":
+        # some genes may act as both (i.e. in a cancer type-specific
+        # or tissue-specific manner), in this case we'll just use the
+        # union of the gain/loss dfs to define positive labeled samples
+        copy_number_df = (
+            copy_gain_df.loc[:, gene] | copy_loss_df.loc[:, gene]
+        )
+    else:
+        copy_number_df = pd.DataFrame()
+        include_copy = False
+    # subset and return
+    y_df = copy_number_df + gene_mutation_df
+    return y_df.reindex(samples)
+    
+y_train_labels = get_mutations_for_gene(gene, 'Oncogene', X_train_std_df.index)
+y_train_labels.head()
+
+
+# In[24]:
+
+
+def get_name(ix):
+    if y_train_labels[ix] == 1:
+        return 'tumor, mutated'
+    else:
+        return 'tumor, not mutated'
+    
+train_names = [get_name(ix) for ix in X_train_std_df.index]
 plot_df = pd.DataFrame(
     {'pred': np.concatenate((y_train_preds, y_normal_preds)),
-     'dataset': (['tumor'] * y_train_preds.shape[0]) + (['normal'] * y_normal_preds.shape[0])}
+     'dataset': (train_names) + (['normal'] * y_normal_preds.shape[0])}
 )
 plot_df.head()
 
 
-# In[24]:
+# In[25]:
 
 
 sns.set({'figure.figsize': (8, 6)})
