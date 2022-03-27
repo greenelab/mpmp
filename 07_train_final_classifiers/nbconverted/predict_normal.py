@@ -285,3 +285,36 @@ X_train_std_df.iloc[:5, :5]
 X_normal_std_df = tu.standardize_features(X_normal_df, is_gene_feature)
 X_normal_std_df.iloc[:5, :5]
 
+
+# ### Make predictions and visualize results
+
+# In[22]:
+
+
+y_train_preds = model_fit.predict_proba(X_train_std_df)[:, 1]
+y_normal_preds = model_fit.predict_proba(X_normal_std_df)[:, 1]
+
+print(y_train_preds.shape)
+print(y_normal_preds.shape)
+
+
+# In[23]:
+
+
+plot_df = pd.DataFrame(
+    {'pred': np.concatenate((y_train_preds, y_normal_preds)),
+     'dataset': (['tumor'] * y_train_preds.shape[0]) + (['normal'] * y_normal_preds.shape[0])}
+)
+plot_df.head()
+
+
+# In[24]:
+
+
+sns.set({'figure.figsize': (8, 6)})
+
+sns.violinplot(data=plot_df, x='dataset', y='pred', cut=0)
+plt.title('Tumor vs. normal predictions, {}'.format(gene))
+plt.xlabel('')
+plt.ylabel('Predicted mutation probability')
+
