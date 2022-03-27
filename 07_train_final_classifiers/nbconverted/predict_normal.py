@@ -46,7 +46,7 @@ print(genes)
 # In[3]:
 
 
-gene = 'SETD2'
+gene = 'TP53'
 training_data = 'expression'
 
 model_filename = '{}_{}_elasticnet_classify_s42_model.pkl'.format(gene, training_data)
@@ -349,6 +349,7 @@ plot_df.head()
 # In[25]:
 
 
+# plot predicted mutation probabilities, aggregated across cancer types
 sns.set({'figure.figsize': (8, 6)})
 
 sns.violinplot(data=plot_df, x='dataset', y='pred', cut=0)
@@ -356,4 +357,38 @@ plt.title('Tumor vs. normal predictions, {}'.format(gene))
 plt.ylim((-0.1, 1.1))
 plt.xlabel('')
 plt.ylabel('Predicted mutation probability')
+
+
+# In[26]:
+
+
+# plot predicted mutation probabilities, faceted by cancer type
+sns.set({'figure.figsize': (18, 10)})
+fig, axarr = plt.subplots(2, 3)
+
+for ix, cancer_type in enumerate(train_cancer_types[:6]):
+    ax = axarr[ix // 3, ix % 3]
+    
+    cancer_samples = sample_info_df[sample_info_df.cancer_type == cancer_type].index
+    
+    train_samples = cancer_samples.intersection(X_train_std_df.index)
+    train_pred_ixs = [X_train_std_df.index.get_loc(ix) for ix in train_samples]
+    train_preds_cancer_type = y_train_preds[train_pred_ixs]
+    train_names = [get_name(ix) for ix in train_samples]
+    
+    normal_samples = cancer_samples.intersection(X_normal_std_df.index)
+    normal_pred_ixs = [X_normal_std_df.index.get_loc(ix) for ix in normal_samples]
+    normal_preds_cancer_type = y_train_preds[train_pred_ixs]
+    
+    plot_df = pd.DataFrame(
+        {'pred': np.concatenate((train_preds_cancer_type, normal_preds_cancer_type)),
+         'dataset': (train_names) + (['normal'] * normal_preds_cancer_type.shape[0])}
+    )
+    sns.violinplot(data=plot_df, x='dataset', y='pred', cut=0, ax=ax)
+    ax.set_title('Tumor vs. normal predictions, {}_{}'.format(gene, cancer_type))
+    ax.set_ylim((-0.1, 1.1))
+    ax.set_xlabel('')
+    ax.set_ylabel('Predicted mutation probability')
+    
+plt.tight_layout()
 
