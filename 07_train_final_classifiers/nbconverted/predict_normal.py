@@ -81,6 +81,49 @@ data_df.iloc[:5, :5]
 # In[6]:
 
 
+# load mutation data
+pancancer_data = du.load_pancancer_data()
+(sample_freeze_df,
+ mutation_df,
+ copy_loss_df,
+ copy_gain_df,
+ mut_burden_df) = pancancer_data
+
+
+# ### Subset expression data to get train and control samples
+# 
+# We want to compare predictions made using the trained model on the control samples to predictions on the (tumor-derived) data used to train the model, so we'll load both expression datasets here.
+
+# In[7]:
+
+
+# get cancer types that were used to train the model
+valid_cancer_types = sample_info_df.cancer_type.unique()
+train_cancer_types = [
+    f for f in model_fit.feature_names_in_ if f in valid_cancer_types
+]
+print(train_cancer_types)
+
+
+# In[8]:
+
+
+# get samples that were used to train the model
+train_samples = (
+    sample_info_df[sample_info_df.cancer_type.isin(train_cancer_types)]
+      .index
+      .intersection(data_df.index)
+      .intersection(mut_burden_df.index)
+)
+train_data_df = data_df.loc[train_samples, :]
+print(train_data_df.shape)
+train_data_df.iloc[:5, :5]
+
+
+# In[9]:
+
+
+# get normal samples that we have expression data for
 normal_ids = (
     sample_info_df[sample_info_df.sample_type.str.contains('Normal')]
       .index
@@ -90,9 +133,10 @@ print(len(normal_ids))
 print(normal_ids[:5])
 
 
-# In[7]:
+# In[10]:
 
 
+# get normal expression data
 normal_data_df = data_df.loc[normal_ids, :]
 print(normal_data_df.shape)
 normal_data_df.iloc[:5, :5]
@@ -104,33 +148,35 @@ normal_data_df.iloc[:5, :5]
 # 
 # For now we'll just take the mean mutation burden from the tumor dataset and apply it to all the normal samples.
 
-# In[8]:
-
-
-# load mutation data
-pancancer_data = du.load_pancancer_data()
-(sample_freeze_df,
- mutation_df,
- copy_loss_df,
- copy_gain_df,
- mut_burden_df) = pancancer_data
-
-
-# In[9]:
+# In[11]:
 
 
 print(mut_burden_df.shape)
 mut_burden_df.head()
 
 
-# In[10]:
+# In[12]:
+
+
+# construct covariate matrix for train samples
+train_info_df = (
+    mut_burden_df.loc[train_samples, :]
+      .merge(sample_info_df, left_index=True, right_index=True)    
+      .drop(columns={'id_for_stratification'})
+      .rename(columns={'cancer_type': 'DISEASE'})
+)
+print(train_info_df.shape)
+train_info_df.head()
+
+
+# In[13]:
 
 
 mean_mutation_burden = mut_burden_df.sum() / mut_burden_df.shape[0]
 print(mean_mutation_burden)
 
 
-# In[11]:
+# In[14]:
 
 
 # construct covariate matrix for normal samples
@@ -138,13 +184,7 @@ normal_info_df = pd.DataFrame(
     {'log10_mut': mean_mutation_burden.values[0]},
     index=normal_ids
 )
-# add cancer type
-# TODO: this needs to use the same dummies as the training data,
-# how to do that?
-# 1) if normal samples are not in the set of cancer types the model
-#    was trained on, drop them
-# 2) if normal samples are in the set of cancer types the model
-#    was trained on, set the dummies *the same way*
+# add cancer type info for normal samples
 normal_info_df = (normal_info_df
     .merge(sample_info_df, left_index=True, right_index=True)    
     .drop(columns={'id_for_stratification'})
@@ -154,24 +194,21 @@ print(normal_info_df.shape)
 normal_info_df.head()
 
 
-# In[12]:
+# In[15]:
 
 
 def add_dummies_from_model(data_df, info_df, model):
+    """TODO: document what info_df looks like, etc"""
     # get cancer type covariates used in original model,
     # in the correct order
-    valid_cancer_types = sample_info_df.cancer_type.unique()
-    cancer_type_covs = [
-        f for f in model.feature_names_in_ if f in valid_cancer_types
-    ]
-    cov_matrix = np.zeros((info_df.shape[0], len(cancer_type_covs)))
+    cov_matrix = np.zeros((info_df.shape[0], len(train_cancer_types)))
     for sample_ix, (_, row) in enumerate(info_df.iterrows()):
         try:
             row_cancer_type = row.DISEASE
-            cov_ix = cancer_type_covs.index(row_cancer_type)
+            cov_ix = train_cancer_types.index(row_cancer_type)
             cov_matrix[sample_ix, cov_ix] = 1
         except ValueError:
-            # if cancer type is not in model,
+            # if cancer type is not in train set (e.g. for a normal sample),
             # just leave it an all-zeros row
             continue
     mut_burden = info_df.log10_mut.values.reshape(-1, 1)
@@ -185,8 +222,22 @@ def add_dummies_from_model(data_df, info_df, model):
         columns=model.feature_names_in_[:]
     )
     return X_df
-    
-X_df = add_dummies_from_model(normal_data_df, normal_info_df, model_fit)
-print(X_df.shape)
-X_df.iloc[:5, -20:]
+
+
+# In[16]:
+
+
+X_train_df = add_dummies_from_model(train_data_df,
+                                    train_info_df,
+                                    model_fit)
+
+
+# In[17]:
+
+
+X_normal_df = add_dummies_from_model(normal_data_df,
+                                     normal_info_df,
+                                     model_fit)
+print(X_normal_df.shape)
+X_normal_df.iloc[:5, -20:]
 
