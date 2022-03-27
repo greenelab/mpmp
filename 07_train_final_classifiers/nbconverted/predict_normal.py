@@ -46,8 +46,7 @@ print(genes)
 # In[3]:
 
 
-gene = 'TP53'
-classification = 'TSG'
+gene = 'SETD2'
 training_data = 'expression'
 
 model_filename = '{}_{}_elasticnet_classify_s42_model.pkl'.format(gene, training_data)
@@ -305,6 +304,8 @@ print(y_normal_preds.shape)
 def get_mutations_for_gene(gene, classification, samples):
     # get classification
     # build labels
+    classification = du.get_classification(gene)
+    print(gene, classification)
     gene_mutation_df = mutation_df.loc[:, gene]
     if classification == "Oncogene":
         copy_number_df = copy_gain_df.loc[:, gene]
@@ -352,6 +353,7 @@ sns.set({'figure.figsize': (8, 6)})
 
 sns.violinplot(data=plot_df, x='dataset', y='pred', cut=0)
 plt.title('Tumor vs. normal predictions, {}'.format(gene))
+plt.ylim((-0.1, 1.1))
 plt.xlabel('')
 plt.ylabel('Predicted mutation probability')
 
