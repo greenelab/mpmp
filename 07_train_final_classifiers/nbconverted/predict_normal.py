@@ -359,7 +359,7 @@ plt.xlabel('')
 plt.ylabel('Predicted mutation probability')
 
 
-# In[26]:
+# In[27]:
 
 
 # plot predicted mutation probabilities, faceted by cancer type
@@ -384,7 +384,8 @@ for ix, cancer_type in enumerate(train_cancer_types[:6]):
         {'pred': np.concatenate((train_preds_cancer_type, normal_preds_cancer_type)),
          'dataset': (train_names) + (['normal'] * normal_preds_cancer_type.shape[0])}
     )
-    sns.violinplot(data=plot_df, x='dataset', y='pred', cut=0, ax=ax)
+    sns.violinplot(data=plot_df, x='dataset', y='pred', cut=0, ax=ax,
+                   order=['tumor, not mutated', 'tumor, mutated', 'normal'])
     ax.set_title('Tumor vs. normal predictions, {}_{}'.format(gene, cancer_type))
     ax.set_ylim((-0.1, 1.1))
     ax.set_xlabel('')
@@ -392,3 +393,7 @@ for ix, cancer_type in enumerate(train_cancer_types[:6]):
     
 plt.tight_layout()
 
+
+# In general, across different genes, we can see that predictions for the normal samples are generally lower than they are for the mutated samples (true positives), but not as low as they are for the non-mutated tumor samples (true negatives).
+# 
+# This makes some sense since the normal samples are "out of distribution" (they weren't present in the training set and probably don't exactly "look like" any of the tumor samples), so it makes sense that they have mutation probabilities closer to 0.5 than the "true" negative tumor samples that we fit the model on.
