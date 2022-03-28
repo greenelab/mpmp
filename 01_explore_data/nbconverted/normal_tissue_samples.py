@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# ## Explore TCGA healthy normal samples
+# ## Explore TCGA normal tissue samples
 # 
 # We want to answer the following:
 # 
-# * how many healthy normals per cancer type
-# * do any of them have positive labels
-# * are these getting included in final dataset
+# * How many healthy normals per cancer type
+# * Do any of them have positive labels
+# * Are these getting included in final dataset
 
 # In[1]:
 
@@ -29,7 +29,7 @@ import mpmp.utilities.tcga_utilities as tu
 
 # just do the analysis for expression data for now
 # we could look at the overlap if we want to in the future
-sample_info_df = du.load_sample_info('me_27k')
+sample_info_df = du.load_sample_info('expression')
 print(sample_info_df.sample_type.unique())
 sample_info_df.head()
 
@@ -139,6 +139,6 @@ df
 
 # So, to answer our questions:
 # 
-# * there are quite a few normal samples for which we have -omics data, the proportion varies by cancer type
-# * none of them have mutation calling data, thus none of them have positive samples
-# * these are not included in the sample freeze/mutation data so they are not being included in our experiments
+# * There are quite a few normal samples for which we have -omics data, the proportion varies by cancer type
+# * None of them have mutation calling data, thus none of them have positive samples
+# * These are not included in the sample freeze/mutation data so they are not being included in our experiments
