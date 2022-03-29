@@ -90,7 +90,7 @@ class TCGADataModel():
         elif gene_set == '50_random':
             genes_df = du.load_random_genes()
         elif gene_set == 'merged':
-            genes_df = du.load_merged_genes()
+            genes_df = du.load_merged()
         elif gene_set == 'vogelstein':
             genes_df = du.load_vogelstein()
         elif gene_set == 'cosmic':

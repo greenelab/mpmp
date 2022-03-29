@@ -14,6 +14,7 @@ from sklearn.model_selection import KFold, StratifiedKFold
 from sklearn.preprocessing import MinMaxScaler
 
 import mpmp.config as cfg
+from mpmp.exceptions import GenesNotFoundError
 from mpmp.utilities.tcga_utilities import (
     compress_and_save_data,
     get_compress_output_prefix
@@ -296,7 +297,6 @@ def load_custom_genes(gene_set):
         # we could allow gene_set to be a subset of the union of all of them,
         # but that would take a bit more work and is probably not a super
         # common use case for us
-        from mpmp.exceptions import GenesNotFoundError
         raise GenesNotFoundError(
             'Gene list was not a subset of any existing gene set'
         )
@@ -307,16 +307,12 @@ def load_custom_genes(gene_set):
 def get_classification(gene, genes_df=None):
     """Get oncogene/TSG classification from existing datasets for given gene."""
     classification = 'neither'
-    if (genes_df is not None) and (gene in genes_df.gene):
+    try:
+        genes_df = load_custom_genes([gene])
         classification = genes_df[genes_df.gene == gene].classification.iloc[0]
-    else:
-        genes_df = load_vogelstein()
-        if gene in genes_df.gene:
-            classification = genes_df[genes_df.gene == gene].classification.iloc[0]
-        else:
-            genes_df = load_top_genes()
-            if gene in genes_df.gene:
-                classification = genes_df[genes_df.gene == gene].classification.iloc[0]
+    except GenesNotFoundError:
+        # just return 'neither' as classification if gene not found
+        pass
     return classification
 
 

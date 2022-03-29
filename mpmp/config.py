@@ -11,6 +11,7 @@ results_dirs = {
     'msi': repo_root / '04_predict_controls' / 'results' / 'msi',
     'multimodal': repo_root / '05_classify_mutations_multimodal' / 'results',
     'survival': repo_root / '06_predict_survival' / 'results',
+    'final': repo_root / '07_train_final_classifiers' / 'results',
 }
 images_dirs = {
     'data': repo_root / '00_download_data' / 'images',

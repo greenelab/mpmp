@@ -567,6 +567,109 @@ def run_cv_fold(data_model,
 
     return results
 
+def train_all_data(data_model,
+                   exp_string,
+                   identifier,
+                   training_data,
+                   sample_info,
+                   params,
+                   standardize_columns=False,
+                   num_features=-1,
+                   feature_selection_method='mad',
+                   model='elasticnet'):
+
+    if model != 'elasticnet':
+        raise NotImplementedError('model fit to all data only implemented for elastic net')
+
+    results = {
+        '{}_metrics'.format(exp_string): [],
+        '{}_auc'.format(exp_string): [],
+        '{}_aupr'.format(exp_string): [],
+        '{}_preds'.format(exp_string): [],
+    }
+    if hasattr(data_model, 'gene_data_types'):
+        X_train_df, _ = tu.preprocess_multi_data(data_model.X_df,
+                                                 data_model.X_df,
+                                                 data_model.gene_features,
+                                                 data_model.gene_data_types,
+                                                 standardize_columns,
+                                                 num_features)
+    else:
+        X_train_df, _ = tu.preprocess_data(data_model.X_df,
+                                           data_model.X_df,
+                                           data_model.gene_features,
+                                           standardize_columns,
+                                           feature_selection_method,
+                                           num_features)
+
+    model_fit, y_pred = clf.train_linear_params(
+        X_train_df,
+        data_model.y_df.status,
+        alpha=params['alpha'],
+        l1_ratio=params['l1_ratio'],
+        seed=data_model.seed,
+    )
+    coef_df = extract_coefficients(
+        cv_pipeline=model_fit,
+        feature_names=X_train_df.columns,
+        signal='signal',
+        seed=data_model.seed,
+        name='classify',
+        model=model
+    )
+    coef_df = coef_df.assign(identifier=identifier)
+    if isinstance(training_data, str):
+        coef_df = coef_df.assign(training_data=training_data)
+    else:
+        coef_df = coef_df.assign(training_data='.'.join(training_data))
+    if '{}_coef'.format(exp_string) not in results:
+        results['{}_coef'.format(exp_string)] = [coef_df]
+    else:
+        results['{}_coef'.format(exp_string)].append(coef_df)
+
+    try:
+        y_train_results = clf.get_threshold_metrics(
+            data_model.y_df.status, y_pred, drop=False
+        )
+        # summarize all results in dataframes
+        metric_cols = [
+            "auroc",
+            "aupr",
+            "identifier",
+            "training_data",
+            "signal",
+            "seed",
+            "data_type",
+            "fold"
+        ]
+        train_metrics_, train_roc_df, train_pr_df = clf.summarize_results(
+            y_train_results, identifier, training_data, 'signal',
+            data_model.seed, 'train', 'N/A'
+        )
+        # compile summary metrics
+        metric_df = pd.DataFrame([train_metrics_], columns=metric_cols)
+        auc_df = train_roc_df
+        aupr_df = train_pr_df
+    except ValueError as e:
+        if 'Only one class' in str(e):
+            raise OneClassError(
+                'Only one class present in test set for identifier: '
+                '{}'.format(identifier)
+            )
+        else:
+            # if not only one class error, just re-raise
+            raise e
+
+    results['{}_metrics'.format(exp_string)].append(metric_df)
+    results['{}_auc'.format(exp_string)].append(auc_df)
+    results['{}_aupr'.format(exp_string)].append(aupr_df)
+    results['{}_preds'.format(exp_string)].append(
+        clf.get_preds(X_train_df, data_model.y_df, model_fit, 'N/A')
+    )
+
+    return model_fit, results
+
+
 def split_stratified(data_df,
                      sample_info_df,
                      num_folds=4,
@@ -648,8 +751,13 @@ def extract_coefficients(cv_pipeline,
     signal: the signal of interest
     seed: the seed used to compress the data
     """
-    final_pipeline = cv_pipeline.best_estimator_
-    final_classifier = final_pipeline.named_steps[name]
+    try:
+        final_pipeline = cv_pipeline.best_estimator_
+        final_classifier = final_pipeline.named_steps[name]
+    except AttributeError:
+        # sometimes we just pass the classifier in directly, e.g. when
+        # we're just training a single model/set of params
+        final_classifier = cv_pipeline
 
     if name == 'survival':
         weights = final_classifier.coef_.flatten()

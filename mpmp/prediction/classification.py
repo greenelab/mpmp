@@ -124,6 +124,27 @@ def train_linear_classifier(X_train,
 
     return cv_pipeline, y_predict_train, y_predict_test, y_cv
 
+
+def train_linear_params(X_train,
+                        y_train,
+                        alpha,
+                        l1_ratio,
+                        seed,
+                        max_iter=1000):
+    clf = SGDClassifier(
+        random_state=seed,
+        class_weight='balanced',
+        loss='log',
+        penalty='elasticnet',
+        alpha=alpha,
+        l1_ratio=l1_ratio,
+        max_iter=max_iter,
+        tol=1e-3,
+    )
+    clf.fit(X_train, y_train)
+    return clf, clf.decision_function(X_train)
+
+
 def train_classifier_bo(X_train,
                         X_test,
                         y_train,
@@ -390,19 +411,24 @@ def train_mlp_classifier(X_train,
     return cv_pipeline, y_predict_train, y_predict_test, y_cv
 
 
-def get_preds(X_test_df, y_test_df, cv_pipeline, fold_no):
+def get_preds(X_test_df, y_test_df, model_or_pipeline, fold_no):
     """Get model-predicted probability of positive class for test data.
 
     Also returns true class, to enable quantitative comparisons in analyses.
     """
-
     # get probability of belonging to positive class
-    y_scores_test = cv_pipeline.decision_function(X_test_df)
-    y_probs_test = cv_pipeline.predict_proba(X_test_df)
+    y_scores_test = model_or_pipeline.decision_function(X_test_df)
+    y_probs_test = model_or_pipeline.predict_proba(X_test_df)
 
-    # make sure we're actually looking at positive class prob
-    assert np.array_equal(cv_pipeline.best_estimator_.classes_,
-                          np.array([0, 1]))
+    try:
+        # make sure we're actually looking at positive class prob
+        assert np.array_equal(model_or_pipeline.best_estimator_.classes_,
+                              np.array([0, 1]))
+    except AttributeError:
+        # this happens when model_or_pipeline is just a single model, rather
+        # than a pipeline (so we don't have to get the best estimator from the
+        # CV step of the pipeline)
+        assert np.array_equal(model_or_pipeline.classes_, np.array([0, 1]))
 
     return pd.DataFrame({
         'fold_no': fold_no,
