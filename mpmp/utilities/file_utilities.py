@@ -103,6 +103,27 @@ def save_model(output_dir, model, gene, model_options, predictor='classify'):
         pkl.dump(model, f)
 
 
+def save_best_params(output_dir, best_params, gene, model_options, predictor='classify'):
+    """Save parameter info to output directory."""
+
+    if not isinstance(model_options.training_data, str):
+        training_data = '.'.join(model_options.training_data)
+    else:
+        training_data = model_options.training_data
+
+    output_file = construct_filename(output_dir,
+                                     'params',
+                                     '.pkl',
+                                     gene,
+                                     training_data,
+                                     model_options.model,
+                                     predictor,
+                                     s=model_options.seed)
+
+    with open(output_file, 'wb') as f:
+        pkl.dump(best_params, f)
+
+
 def check_output_file(output_dir,
                       identifier,
                       shuffle_labels,

@@ -184,7 +184,6 @@ if __name__ == '__main__':
         exit()
 
     # train model
-    # TODO: save parameter selection
     try:
         standardize_columns = (model_options.training_data in cfg.standardize_data_types)
         model_fit, results = train_all_data(
@@ -205,6 +204,12 @@ if __name__ == '__main__':
                         gene,
                         False,
                         model_options)
+        fu.save_best_params(
+            gene_dir,
+            params_to_use[model_options.training_data],
+            gene,
+            model_options
+        )
         if io_args.save_model:
             fu.save_model(gene_dir, model_fit, gene, model_options)
     except NoTrainSamplesError:
