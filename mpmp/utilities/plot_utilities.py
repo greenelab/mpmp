@@ -444,6 +444,201 @@ def plot_heatmap(heatmap_df,
     plt.tight_layout()
 
 
+def plot_heatmap_split(heatmap_df,
+                       results_df,
+                       raw_results_df,
+                       metric='aupr',
+                       id_name='gene',
+                       scale=None,
+                       origin_eps_x=0.0,
+                       origin_eps_y=0.0,
+                       length_x=1.0,
+                       length_y=1.0):
+    """Plot heatmap comparing data types for each gene, split into two rows.
+
+    Arguments
+    ---------
+    heatmap_df (pd.DataFrame): dataframe with rows as data types, columns as
+                               genes, entries are mean AUPR differences
+    results_df (pd.DataFrame): dataframe with processed results/p-values
+    """
+    # get data types that are equivalent to best-performing data type
+    results_df = get_different_from_best(results_df,
+                                         raw_results_df,
+                                         metric=metric,
+                                         id_name=id_name)
+
+    num_genes = heatmap_df.shape[1]
+    fig, axarr = plt.subplots(2, 1)
+
+    heatmap1_df = heatmap_df.iloc[:, :(num_genes // 2)]
+    ax1 = sns.heatmap(heatmap1_df,
+                      cmap='Greens',
+                      cbar_kws={'aspect': 10, 'fraction': 0.1, 'pad': 0.01},
+                      ax=axarr[0])
+    ax1.xaxis.labelpad = 15
+
+    # outline around heatmap
+    for _, spine in ax1.spines.items():
+        spine.set_visible(True)
+        spine.set_color('black')
+
+    # outline around colorbar
+    cbar = ax1.collections[0].colorbar
+    cbar.set_label('{}(signal) - {}(shuffled)'.format(
+                       metric.upper(), metric.upper()),
+                   labelpad=15)
+    cbar.outline.set_edgecolor('black')
+    cbar.outline.set_linewidth(1)
+
+    heatmap2_df = heatmap_df.iloc[:, (num_genes // 2):]
+    ax2 = sns.heatmap(heatmap2_df,
+                      cmap='Greens',
+                      cbar_kws={'aspect': 10, 'fraction': 0.1, 'pad': 0.01},
+                      ax=axarr[1])
+    ax2.xaxis.labelpad = 15
+
+    # outline around heatmap
+    for _, spine in ax2.spines.items():
+        spine.set_visible(True)
+        spine.set_color('black')
+
+    # outline around colorbar
+    cbar = ax2.collections[0].colorbar
+    cbar.set_label('{}(signal) - {}(shuffled)'.format(
+                       metric.upper(), metric.upper()),
+                   labelpad=15)
+    cbar.outline.set_edgecolor('black')
+    cbar.outline.set_linewidth(1)
+
+    # add grey dots to cells that are significant over baseline
+    # add black dots to cells that are significant and "best" predictor for that gene
+    for ix, heatmap_df in enumerate([heatmap1_df, heatmap2_df]):
+        ax = axarr[ix]
+        if ix != 0:
+            ax.set_xlabel('{} name'.format(id_name.capitalize().replace('_', ' ')))
+        else:
+            ax.set_xlabel('')
+        ax.set_ylabel('Training data type')
+        for id_ix, identifier in enumerate(heatmap_df.columns):
+            for data_ix, data_type in enumerate(heatmap_df.index):
+                if _check_data_type(results_df, identifier, data_type, id_name):
+                    ax.scatter(id_ix + 0.5, data_ix + 0.5, color='0.8', edgecolors='black', s=200)
+                if (_check_data_type(results_df, identifier, data_type, id_name) and
+                    _check_equal_to_best(results_df, identifier, data_type, id_name)):
+                    ax.scatter(id_ix + 0.5, data_ix + 0.5, color='black', edgecolor='black', s=60)
+
+
+def get_different_from_best(results_df,
+                            raw_results_df,
+                            metric='aupr',
+                            id_name='gene'):
+    """Identify best-performing data types for each gene.
+
+    As an alternative to just identifying the data type with the best average
+    performance, we want to also identify data types that are "statistically
+    equivalent" to the best performer. For each gene, we do the following:
+
+    1) get all data types that significantly outperform the permuted baseline
+       ("well-performing" data types)
+    2) do pairwise t-tests comparing the best performing data types with
+       other well-performing data types
+    3) apply an FDR correction for the total number of t-tests
+
+    In each case where the null hypothesis is accepted, we say both data types
+    are statistically equivalent. If the null is rejected, the relevant data
+    type does not provide statistically equivalent performance to the best
+    performing data type.
+    """
+    from scipy.stats import ttest_rel
+
+    comparison_pvals = []
+    for identifier in results_df[id_name].unique():
+        # compare best with other data types that are significant from
+        # baseline, using pairwise t-tests
+        # null hypothesis = each pair of results distributions is the same
+
+        # get best data type
+        best_data_ix = (
+            results_df[results_df[id_name] == identifier]
+              .loc[:, 'delta_mean']
+              .idxmax()
+        )
+        best_data_type = results_df.iloc[best_data_ix, :].training_data
+
+        # get other significant data types
+        other_data_types = (
+            results_df[(results_df[id_name] == identifier) &
+                       (results_df.training_data != best_data_type) &
+                       (results_df.reject_null)]
+        )['training_data'].values
+
+        best_data_dist = (
+            raw_results_df[(raw_results_df.identifier == identifier) &
+                           (raw_results_df.training_data == best_data_type) &
+                           (raw_results_df.signal == 'signal') &
+                           (raw_results_df.data_type == 'test')]
+        ).sort_values(by=['seed', 'fold'])[metric].values
+
+        if len(other_data_types) == 0:
+            continue
+
+        for other_data_type in other_data_types:
+            # do pairwise t-tests
+            other_data_dist = (
+                raw_results_df[(raw_results_df.identifier == identifier) &
+                               (raw_results_df.training_data == other_data_type) &
+                               (raw_results_df.signal == 'signal') &
+                               (raw_results_df.data_type == 'test')]
+            ).sort_values(by=['seed', 'fold'])[metric].values
+
+            p_value = ttest_rel(best_data_dist, other_data_dist)[1]
+
+            best_id = '{}, {}'.format(identifier, best_data_type)
+            other_id = '{}, {}'.format(identifier, other_data_type)
+
+            comparison_pvals.append([identifier, best_data_type,
+                                     other_data_type, p_value])
+
+    comparison_df = pd.DataFrame(
+        comparison_pvals,
+        columns=[id_name, 'best_data_type', 'other_data_type', 'p_value']
+    )
+
+    # apply multiple testing correction and identify significant similarities
+    from statsmodels.stats.multitest import multipletests
+    corr = multipletests(comparison_df['p_value'],
+                         alpha=0.05,
+                         method='fdr_bh')
+    comparison_df = comparison_df.assign(corr_pval=corr[1],
+                                         accept_null=~corr[0])
+
+    # add column to results_df for statistically equal to best
+    equal_to_best = []
+    for _, vals in results_df.iterrows():
+        if not vals['reject_null']:
+            equal_to_best.append(False)
+        else:
+            comp_gene_df = comparison_df[comparison_df[id_name] == vals[id_name]]
+            if vals['training_data'] in comp_gene_df.best_data_type.values:
+                equal_to_best.append(True)
+            elif vals['training_data'] in comp_gene_df.other_data_type.values:
+                # reject null = means are significantly different
+                # accept null = means are statistically the same
+                # so accept null = alternate data type is statistically the
+                # same as the best data type
+                equal_to_best.append(
+                    comp_gene_df[comp_gene_df.other_data_type == vals['training_data']]
+                      .accept_null.values[0]
+                )
+            else:
+                # this happens when the data type is the only significant one
+                equal_to_best.append(True)
+
+    results_df = results_df.assign(equal_to_best=equal_to_best)
+    return results_df
+
+
 def get_different_from_best(results_df,
                             raw_results_df,
                             metric='aupr',

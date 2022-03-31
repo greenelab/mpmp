@@ -83,9 +83,7 @@ results_df.head()
 
 
 # load compressed data for me_27k and me_450k
-compressed_results_df = au.load_compressed_prediction_results(results_dir,
-                                                              'gene',
-                                                              old_filenames=True)
+compressed_results_df = au.load_compressed_prediction_results(results_dir, 'gene')
 
 # make sure that we're correctly pointing to compressed methylation data
 # and that we have data for one dimension and two replicates (two random seeds)
@@ -313,24 +311,36 @@ heatmap_df.iloc[:, :5]
 
 
 if merged_geneset:
-    # there are way more genes so we need a bigger figure
-    # TODO: this probably needs to be separated into multiple rows
-    sns.set({'figure.figsize': (75, 6)})
+    # for the larger gene set we need a bigger figure, since we
+    # separate the heatmap into multiple rows
+    sns.set({'figure.figsize': (38, 13)})
 else:
     sns.set({'figure.figsize': (28, 6)})
     
 sns.set_context('notebook', font_scale=1.5)
 
-ax = plu.plot_heatmap(heatmap_df,
-                      all_results_df.reset_index(drop=True),
-                      results_df,
-                      metric=plot_metric,
-                      origin_eps_x=0.02,
-                      origin_eps_y=0.015,
-                      length_x=0.85,
-                      length_y=0.95)
+if merged_geneset:
+    ax = plu.plot_heatmap_split(heatmap_df,
+                                all_results_df.reset_index(drop=True),
+                                results_df,
+                                metric=plot_metric,
+                                origin_eps_x=0.02,
+                                origin_eps_y=0.015,
+                                length_x=0.85,
+                                length_y=0.95)
+    plt.suptitle('Performance by data type for Vogelstein et al. genes, all data types')
+    plt.tight_layout()
+else:
+    ax = plu.plot_heatmap_split(heatmap_df,
+                                all_results_df.reset_index(drop=True),
+                                results_df,
+                                metric=plot_metric,
+                                origin_eps_x=0.02,
+                                origin_eps_y=0.015,
+                                length_x=0.85,
+                                length_y=0.95)
+    plt.title('Performance by data type for Vogelstein et al. genes, all data types')
 
-plt.title('Performance by data type for Vogelstein et al. genes, all data types', pad=15)
 
 if SAVE_FIGS:
     plt.savefig(images_dir / 'all_heatmap.svg', bbox_inches='tight')
