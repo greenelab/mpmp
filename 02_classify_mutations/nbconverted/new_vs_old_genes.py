@@ -174,3 +174,71 @@ plu.plot_volcano_baseline(all_results_df[all_results_df.gene.isin(non_vogelstein
 plt.suptitle('Results for non-Vogelstein genes in merged gene set', size=18)
 plt.tight_layout()
 
+
+# ### Explore results for DNA damage repair genes
+
+# In[12]:
+
+
+# this list of genes in DDR pathways comes from Table S1 in Knijnenburg et al. 2018
+# https://doi.org/10.1016/j.celrep.2018.03.076
+ddr_genes_df = pd.read_excel(
+    cfg.data_dir / 'mmc2.xlsx',
+    skiprows = 3
+)
+
+print(ddr_genes_df.shape)
+ddr_genes_df.head()
+
+
+# In[13]:
+
+
+ddr_genes = set(ddr_genes_df['Gene Symbol'])
+ddr_vogelstein_genes = ddr_genes.intersection(vogelstein_genes)
+print(len(ddr_vogelstein_genes))
+print(ddr_vogelstein_genes)
+
+
+# In[14]:
+
+
+ddr_non_vogelstein_genes = ddr_genes.intersection(non_vogelstein_genes)
+print(len(ddr_non_vogelstein_genes))
+print(ddr_non_vogelstein_genes)
+
+
+# In[15]:
+
+
+print(ddr_vogelstein_genes.union(ddr_non_vogelstein_genes))
+ddr_df = all_results_df[all_results_df.gene.isin(ddr_vogelstein_genes.union(
+                                                  ddr_non_vogelstein_genes))]
+print(ddr_df.gene.unique())
+
+
+# In[16]:
+
+
+sns.set({'figure.figsize': (21, 6)})
+sns.set_style('whitegrid')
+
+fig, axarr = plt.subplots(1, 3)
+
+# plot mutation prediction from expression, in a volcano-like plot
+datasets = ['gene expression', '27k methylation', '450k methylation']
+filtered_data_map = {k: v for k, v in training_data_map.items() if v in datasets}
+
+plu.plot_volcano_baseline(all_results_df[
+                              all_results_df.gene.isin(ddr_vogelstein_genes.union(
+                                                       ddr_non_vogelstein_genes))
+                          ],
+                          axarr,
+                          filtered_data_map,
+                          SIG_ALPHA,
+                          metric='aupr',
+                          verbose=True)
+
+plt.suptitle('Results for DDR genes only', size=18)
+plt.tight_layout()
+
