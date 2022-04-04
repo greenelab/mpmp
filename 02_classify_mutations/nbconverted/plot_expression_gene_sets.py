@@ -52,9 +52,6 @@ if merged_geneset:
     random_50_results_dir = Path(cfg.results_dirs['mutation'],
                                  'expression_random',
                                  'gene').resolve()
-    # if True, save figures to ./images directory
-    # set this to False for cosmic genes, for now
-    SAVE_FIGS = False
 else:
     cancer_genes_results_dir = Path(cfg.results_dirs['mutation'],
                                     'shuffle_cancer_type',
@@ -68,9 +65,9 @@ else:
                                  'shuffle_cancer_type',
                                  'expression_random',
                                  'gene').resolve()
-    # currently we're using the vogelstein figures for the paper
-    SAVE_FIGS = True
     
+# if True, save figures to the directory specified in images_dir below
+SAVE_FIGS = True
 
 # set significance cutoff after FDR correction
 SIG_ALPHA = 0.001
@@ -205,8 +202,8 @@ plu.plot_volcano_baseline(all_results_df,
 
 if SAVE_FIGS:
     images_dir.mkdir(exist_ok=True)
-    plt.savefig(images_dir / 'expression_vogelstein.svg', bbox_inches='tight')
-    plt.savefig(images_dir / 'expression_vogelstein.png',
+    plt.savefig(images_dir / 'expression_cancer_genes.svg', bbox_inches='tight')
+    plt.savefig(images_dir / 'expression_cancer_genes.png',
                 dpi=300, bbox_inches='tight')
 
 
