@@ -17,6 +17,8 @@ def plot_volcano_baseline(results_df,
                           predict_str='Mutation prediction',
                           xlim=None,
                           ylim=None,
+                          label_x_lower_bounds=None,
+                          label_y_lower_bounds=None,
                           verbose=False,
                           mark_overlap=False):
     """Make a scatter plot comparing classifier results to shuffled baseline.
@@ -104,11 +106,27 @@ def plot_volcano_baseline(results_df,
 
         # label genes and adjust text to not overlap
         # automatic alignment isn't perfect, can align by hand in inkscape if necessary
-        text_labels = _label_points(data_results_df['delta_mean'],
-                                    data_results_df['nlog10_p'],
-                                    data_results_df[identifier],
-                                    ax,
-                                    sig_alpha)
+        if (label_x_lower_bounds is not None) or (label_y_lower_bounds is not None):
+            if label_x_lower_bounds is None:
+                label_x_lower_bound = 0
+            else:
+                label_x_lower_bound = label_x_lower_bounds[ix]
+            if label_y_lower_bounds is None:
+                label_y_lower_bound = -np.log10(sig_alpha)
+            else:
+                label_y_lower_bound = label_y_lower_bounds[ix]
+            text_labels = _label_points_bound(data_results_df['delta_mean'],
+                                              data_results_df['nlog10_p'],
+                                              data_results_df[identifier],
+                                              ax,
+                                              label_x_lower_bound,
+                                              label_y_lower_bound)
+        else:
+            text_labels = _label_points(data_results_df['delta_mean'],
+                                        data_results_df['nlog10_p'],
+                                        data_results_df[identifier],
+                                        ax,
+                                        sig_alpha)
         adjust_text(text_labels,
                     ax=ax,
                     expand_text=(1., 1.),
@@ -681,6 +699,17 @@ def _label_points(x, y, labels, ax, sig_alpha):
     pts = pd.DataFrame({'x': x, 'y': y, 'label': labels})
     for i, point in pts.iterrows():
         if point['y'] > -np.log10(sig_alpha):
+            text_labels.append(
+                ax.text(point['x'], point['y'], str(point['label']))
+            )
+    return text_labels
+
+
+def _label_points_bound(x, y, labels, ax, x_lower, y_lower):
+    text_labels = []
+    pts = pd.DataFrame({'x': x, 'y': y, 'label': labels})
+    for i, point in pts.iterrows():
+        if point['x'] > x_lower and point['y'] > y_lower:
             text_labels.append(
                 ax.text(point['x'], point['y'], str(point['label']))
             )
