@@ -174,8 +174,8 @@ plu.plot_volcano_baseline(all_results_df,
                           verbose=True,
                           label_x_lower_bounds=[0.2, 0.2, 0.4],
                           label_y_lower_bounds=[4, 4, 5],
-                          # TODO: fix overlap for merged cancer genes
-                          mark_overlap=True)
+                          mark_overlap=True,
+                          overlap_reference='cancer gene set')
 
 if SAVE_FIGS:
     images_dir.mkdir(exist_ok=True)

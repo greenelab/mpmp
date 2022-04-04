@@ -20,7 +20,8 @@ def plot_volcano_baseline(results_df,
                           label_x_lower_bounds=None,
                           label_y_lower_bounds=None,
                           verbose=False,
-                          mark_overlap=False):
+                          mark_overlap=False,
+                          overlap_reference='Vogelstein et al.'):
     """Make a scatter plot comparing classifier results to shuffled baseline.
 
     Arguments
@@ -57,7 +58,8 @@ def plot_volcano_baseline(results_df,
 
         if mark_overlap:
             overlap_genes = _get_overlap_genes(results_df,
-                                               training_data)
+                                               training_data,
+                                               reference=overlap_reference)
             data_results_df['overlap'] = data_results_df.gene.isin(overlap_genes)
             sns.scatterplot(data=data_results_df, x='delta_mean', y='nlog10_p',
                             hue='reject_null', hue_order=[False, True],
