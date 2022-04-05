@@ -153,7 +153,8 @@ def plot_volcano_comparison(results_df,
                             sig_genes=None,
                             xlim=None,
                             ylim=None,
-                            verbose=False):
+                            verbose=False,
+                            add_labels=True):
     """Make a scatter plot comparing classifier results to expression.
 
     Arguments
@@ -265,16 +266,17 @@ def plot_volcano_comparison(results_df,
 
         # label genes and adjust text to not overlap
         # automatic alignment isn't perfect, can align by hand if necessary
-        text_labels = _label_points_compare(
-                          compare_results_df['delta_mean'],
-                          compare_results_df['nlog10_p'],
-                          compare_results_df['gene'],
-                          ax,
-                          sig_alpha)
-        adjust_text(text_labels,
-                    ax=ax,
-                    expand_text=(1., 1.),
-                    lim=5)
+        if add_labels:
+            text_labels = _label_points_compare(
+                              compare_results_df['delta_mean'],
+                              compare_results_df['nlog10_p'],
+                              compare_results_df['gene'],
+                              ax,
+                              sig_alpha)
+            adjust_text(text_labels,
+                        ax=ax,
+                        expand_text=(1., 1.),
+                        lim=5)
 
         if verbose:
             print('{}: {}/{}'.format(training_data,
