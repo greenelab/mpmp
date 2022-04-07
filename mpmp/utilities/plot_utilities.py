@@ -136,11 +136,25 @@ def plot_volcano_baseline(results_df,
 
         if verbose:
             # print significant gene count for each training data type
-            print('{}: {}/{}'.format(
-                training_data,
-                np.count_nonzero(data_results_df.reject_null),
-                data_results_df.shape[0]
-            ))
+            if mark_overlap:
+                num_overlap = (data_results_df
+                    [data_results_df.reject_null]
+                      .overlap
+                      .sum()
+                )
+                print('{}: {}/{} (overlap {}/{})'.format(
+                    training_data,
+                    np.count_nonzero(data_results_df.reject_null),
+                    data_results_df.shape[0],
+                    num_overlap,
+                    np.count_nonzero(data_results_df.reject_null)
+                ))
+            else:
+                print('{}: {}/{}'.format(
+                    training_data,
+                    np.count_nonzero(data_results_df.reject_null),
+                    data_results_df.shape[0]
+                ))
 
 
 def plot_volcano_comparison(results_df,
