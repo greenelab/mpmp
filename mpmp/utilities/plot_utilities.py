@@ -228,10 +228,10 @@ def plot_volcano_comparison(results_df,
             compare_results_df = (compare_results_df
                 .merge(sig_genes_comparison, on=['gene'])
             )
-            # then plot using the baseline results as the marker style,
-            # and inter-omics results as the marker hue
-            sns.scatterplot(data=compare_results_df, x='delta_mean', y='nlog10_p',
-                            hue='reject_null', style='reject_null_baseline',
+            # then plot only genes that beat the baseline, using inter-omics
+            # significance as the marker hue
+            sns.scatterplot(data=compare_results_df[compare_results_df.reject_null_baseline],
+                            x='delta_mean', y='nlog10_p', hue='reject_null',
                             hue_order=[False, True], ax=ax, legend=(ix == 0))
         else:
             sns.scatterplot(data=compare_results_df, x='delta_mean', y='nlog10_p',
@@ -263,15 +263,8 @@ def plot_volcano_comparison(results_df,
 
         # only add a legend to the first subplot
         if ix == 0:
-            if sig_genes is not None:
-                h, l = ax.get_legend_handles_labels()
-                l[0] = r'Reject $H_0$'
-                l[3] = r'Reject baseline $H_0$'
-                ax.legend(h, l, loc='upper right',
-                          fontsize=13, title_fontsize=13)
-            else:
-                ax.legend(title=r'Reject $H_0$', loc='upper left',
-                          fontsize=14, title_fontsize=14)
+            ax.legend(title=r'Reject $H_0$', loc='upper left',
+                      fontsize=14, title_fontsize=14)
 
         ax.set_title(
             r'{}, expression vs. {}'.format(predict_str, training_data),
@@ -293,9 +286,15 @@ def plot_volcano_comparison(results_df,
                         lim=5)
 
         if verbose:
-            print('{}: {}/{}'.format(training_data,
-                                     np.count_nonzero(compare_results_df.reject_null),
-                                     compare_results_df.shape[0]))
+            if sig_genes is not None:
+                sig_df = compare_results_df[compare_results_df.reject_null_baseline]
+                print('{}: {}/{}'.format(training_data,
+                                         np.count_nonzero(sig_df.reject_null),
+                                         sig_df.shape[0]))
+            else:
+                print('{}: {}/{}'.format(training_data,
+                                         np.count_nonzero(compare_results_df.reject_null),
+                                         compare_results_df.shape[0]))
 
 
 def plot_boxes(results_df,

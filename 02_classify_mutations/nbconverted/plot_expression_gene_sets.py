@@ -242,16 +242,15 @@ for tick in ax.get_xticklabels():
     
 plt.tight_layout()
 
-if not merged_geneset:
-    tests_df = plu.add_annotation(ax,
-                                  all_results_df.rename(
-                                      columns={'gene_set': 'training_data'}
-                                  ),
-                                  all_pairs=(gene_set_map.values()),
-                                  metric=plot_metric,
-                                  box_pairs=[('random', 'most mutated'),
-                                             ('most mutated', 'cancer gene set'),
-                                             ('random', 'cancer gene set')])
+tests_df = plu.add_annotation(ax,
+                              all_results_df.rename(
+                                  columns={'gene_set': 'training_data'}
+                              ),
+                              all_pairs=(gene_set_map.values()),
+                              metric=plot_metric,
+                              box_pairs=[('random', 'most mutated'),
+                                         ('most mutated', 'cancer gene set'),
+                                         ('random', 'cancer gene set')])
 
 if SAVE_FIGS:
     plt.savefig(images_dir / 'expression_boxes.svg', bbox_inches='tight')
