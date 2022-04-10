@@ -42,8 +42,14 @@ get_ipython().run_line_magic('autoreload', '2')
 # if False, plot results for Vogelstein et al. 2013 gene set
 merged_geneset = True
 
+# if True, use "alternate" per-gene filtering method (described in 01_explore_data/count_dataset_filters.ipynb)
+filter_all = False
+
 if merged_geneset:
-    results_dir = Path(cfg.results_dirs['mutation'], 'merged_all', 'gene').resolve()
+    if filter_all:
+        results_dir = Path(cfg.results_dirs['mutation'], 'merged_filter_all', 'gene').resolve()
+    else:
+        results_dir = Path(cfg.results_dirs['mutation'], 'merged_all', 'gene').resolve()
 else:
     results_dir = Path(cfg.results_dirs['mutation'],
                        'all_data_types_results_shuffle_cancer_type',
@@ -156,10 +162,16 @@ plu.plot_volcano_baseline(all_results_df,
                           label_y_lower_bounds=[4, 4, 4])
 
 if SAVE_FIGS:
-    images_dir.mkdir(exist_ok=True)
-    plt.savefig(images_dir / 'all_vs_shuffled_extended.svg', bbox_inches='tight')
-    plt.savefig(images_dir / 'all_vs_shuffled_extended.png',
-                dpi=300, bbox_inches='tight')
+    if filter_all:
+        images_dir.mkdir(exist_ok=True)
+        plt.savefig(images_dir / 'all_vs_shuffled_extended_filter_all.svg', bbox_inches='tight')
+        plt.savefig(images_dir / 'all_vs_shuffled_extended_filter_all.png',
+                    dpi=300, bbox_inches='tight')
+    else:
+        images_dir.mkdir(exist_ok=True)
+        plt.savefig(images_dir / 'all_vs_shuffled_extended.svg', bbox_inches='tight')
+        plt.savefig(images_dir / 'all_vs_shuffled_extended.png',
+                    dpi=300, bbox_inches='tight')
 
 
 # In[8]:
@@ -184,9 +196,14 @@ plu.plot_volcano_baseline(all_results_df,
                           label_y_lower_bounds=[3, 3, 3])
     
 if SAVE_FIGS:
-    plt.savefig(images_dir / 'all_vs_shuffled.svg', bbox_inches='tight')
-    plt.savefig(images_dir / 'all_vs_shuffled.png',
-                dpi=300, bbox_inches='tight')
+    if filter_all:
+        plt.savefig(images_dir / 'all_vs_shuffled_filter_all.svg', bbox_inches='tight')
+        plt.savefig(images_dir / 'all_vs_shuffled_filter_all.png',
+                    dpi=300, bbox_inches='tight')
+    else:
+        plt.savefig(images_dir / 'all_vs_shuffled.svg', bbox_inches='tight')
+        plt.savefig(images_dir / 'all_vs_shuffled.png',
+                    dpi=300, bbox_inches='tight')
 
 
 # In[9]:
