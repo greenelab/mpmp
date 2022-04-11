@@ -331,14 +331,14 @@ if merged_geneset:
     plt.suptitle('Performance by data type for Vogelstein et al. genes, all data types')
     plt.tight_layout()
 else:
-    ax = plu.plot_heatmap_split(heatmap_df,
-                                all_results_df.reset_index(drop=True),
-                                results_df,
-                                metric=plot_metric,
-                                origin_eps_x=0.02,
-                                origin_eps_y=0.015,
-                                length_x=0.85,
-                                length_y=0.95)
+    ax = plu.plot_heatmap(heatmap_df,
+                          all_results_df.reset_index(drop=True),
+                          results_df,
+                          metric=plot_metric,
+                          origin_eps_x=0.02,
+                          origin_eps_y=0.015,
+                          length_x=0.85,
+                          length_y=0.95)
     plt.title('Performance by data type for Vogelstein et al. genes, all data types')
 
 
