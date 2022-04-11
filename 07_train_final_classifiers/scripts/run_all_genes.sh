@@ -1,6 +1,6 @@
 #!/bin/bash
-PARAMS_DIR=./02_classify_mutations/results/merged_filter_all
-RESULTS_DIR=./07_train_final_classifiers/results/merged_genes
+PARAMS_DIR=./02_classify_mutations/results/merged_all_params
+RESULTS_DIR=./07_train_final_classifiers/results/merged_all_params
 ERRORS_DIR=./final_merged_errors
 SEED=42
 
@@ -33,7 +33,7 @@ for gene in "${genes[@]}"; do
     cmd+="--results_dir $RESULTS_DIR "
     cmd+="--training_data expression "
     cmd+="--seed $SEED "
-    cmd+="--overlap_data_types expression me_27k me_450k "
+    cmd+="--overlap_data_types expression me_27k me_450k rppa mirna mut_sigs "
     cmd+="--save_model "
     cmd+="2>$ERRORS_DIR/errors_expression_${gene}.txt"
     echo "Running: $cmd"

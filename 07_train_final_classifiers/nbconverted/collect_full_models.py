@@ -27,7 +27,7 @@ get_ipython().run_line_magic('autoreload', '2')
 
 
 results_dir = Path(cfg.results_dirs['final'],
-                   'merged_genes',
+                   'merged_all_params',
                    'gene').resolve()
 
 
@@ -74,12 +74,14 @@ print(all_feats.shape)
 
 
 coefs = {}
+genes = []
 
 # load coefficient vectors from output files, into dict
 for gene_dir in results_dir.iterdir():
     gene_name = gene_dir.stem
     gene_dir = Path(results_dir, gene_dir)
     if gene_dir.is_file(): continue
+    genes.append(gene_name)
     for results_file in gene_dir.iterdir():
         if not results_file.is_file(): continue
         results_filename = str(results_file.stem)
@@ -92,11 +94,20 @@ for gene_dir in results_dir.iterdir():
             .rename(columns={'weight': gene_name})
         )
                     
-print(list(coefs.keys())[:5])
-print(len(coefs.keys()))
+print(genes[:5])
+print(len(genes))
 
 
 # In[7]:
+
+
+# make sure all genes with parameters have classifiers
+# the set difference should be empty
+print(len(set(genes) - set(coefs.keys())))
+print(set(genes) - set(coefs.keys()))
+
+
+# In[8]:
 
 
 gene = 'PIK3CA'
@@ -104,13 +115,13 @@ print(coefs[gene].isna().sum())
 coefs[gene].head()
 
 
-# In[8]:
+# In[9]:
 
 
 coefs[gene][coefs[gene][gene].isna()].head()
 
 
-# In[9]:
+# In[10]:
 
 
 # concatenate coefficient vectors into a single dataframe
@@ -118,12 +129,13 @@ coefs_df = (
     pd.concat(coefs.values(), axis='columns')
       .sort_index(axis='columns')
 )
+coefs_df.index.name = None
 
 print(coefs_df.shape)
 coefs_df.iloc[:5, :5]
 
 
-# In[10]:
+# In[11]:
 
 
 (cfg.data_dir / 'final_models').mkdir(exist_ok=True)
@@ -132,7 +144,7 @@ coefs_df.to_csv(cfg.final_coefs_df, sep='\t')
 
 # ### Load parameters and assemble into dataframe
 
-# In[11]:
+# In[12]:
 
 
 params = {}
@@ -156,13 +168,13 @@ print(list(params.keys())[:5])
 print(len(params.keys()))
 
 
-# In[12]:
+# In[13]:
 
 
 params[gene].head()
 
 
-# In[13]:
+# In[14]:
 
 
 # concatenate coefficient vectors into a single dataframe
@@ -175,7 +187,7 @@ print(params_df.shape)
 params_df.iloc[:5, :5]
 
 
-# In[14]:
+# In[15]:
 
 
 params_df.to_csv(cfg.final_params_df, sep='\t')
