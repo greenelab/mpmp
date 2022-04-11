@@ -44,7 +44,7 @@ bayes_opt_results_dir = Path(
 
 mlp_results_dir = Path(
     cfg.results_dirs['multimodal'],
-    'test_mlp',
+    'mlp_pilot',
     'gene'
 ).resolve()
 
@@ -56,7 +56,7 @@ mlp_results_dir = Path(
 grid_results_df = au.load_stratified_prediction_results(grid_results_dir, 'gene')
 
 # drop TET2 for now
-grid_results_df = grid_results_df[~(grid_results_df.identifier.isin(['TP53', 'IDH1', 'TET2']))]
+grid_results_df = grid_results_df[~(grid_results_df.identifier.isin(['TET2']))]
 grid_results_df['model'] = 'elasticnet, grid'
 
 # make sure that we have data for all data types and for two replicates (random seeds)
@@ -109,7 +109,7 @@ group_df[~group_df.duplicated()].head(10)
 bayes_opt_results_df = au.load_stratified_prediction_results(
     bayes_opt_results_dir, 'gene')
 
-bayes_opt_results_df = bayes_opt_results_df[~(bayes_opt_results_df.identifier.isin(['TP53', 'IDH1', 'TET2']))]
+bayes_opt_results_df = bayes_opt_results_df[~(bayes_opt_results_df.identifier.isin(['TET2']))]
 bayes_opt_results_df = bayes_opt_results_df[~(bayes_opt_results_df.training_data.isin(['expression']))].copy()
 bayes_opt_results_df['model'] = 'elasticnet, bayes'
 
@@ -164,39 +164,38 @@ group_df[~group_df.duplicated()].head(10)
 
 
 # load raw data
-mlp_results_df = au.load_stratified_prediction_results(
-    mlp_results_dir, 'gene')
-
-mlp_results_df['model'] = 'mlp, random'
+mlp_results_df = au.load_compressed_prediction_results(mlp_results_dir, 'gene', multimodal=True)
+mlp_results_df = mlp_results_df.loc[
+    mlp_results_df.training_data.str.contains('\.'), :
+]
+mlp_results_df.loc[mlp_results_df.n_dims == 1000, 'model'] = 'mlp, random, 1000 PCs'
+mlp_results_df.loc[mlp_results_df.n_dims == 5000, 'model'] = 'mlp, random, 5000 PCs'
+mlp_results_df.drop(columns='n_dims', inplace=True)
 
 # make sure that we have data for all data types and for two replicates (random seeds)
 print(mlp_results_df.shape)
 print(mlp_results_df.seed.unique())
 print(mlp_results_df.identifier.unique())
 print(mlp_results_df.training_data.unique())
+print(mlp_results_df.model.unique())
 mlp_results_df.head()
 
 
 # In[10]:
 
 
-# load expression and me_27k results
-mlp_u_results_df = au.load_compressed_prediction_results(
-    mlp_results_dir, 'gene')
-
-# filter to genes/dims we're using here
-mlp_u_results_df = mlp_u_results_df[
-    (mlp_u_results_df.n_dims == 1000) &
-    (mlp_u_results_df.identifier.isin(genes))
-].copy()
+mlp_u_results_df = au.load_compressed_prediction_results(mlp_results_dir, 'gene')
+mlp_u_results_df.loc[mlp_u_results_df.n_dims == 1000, 'model'] = 'mlp, random, 1000 PCs'
+mlp_u_results_df.loc[mlp_u_results_df.n_dims == 5000, 'model'] = 'mlp, random, 5000 PCs'
 mlp_u_results_df.drop(columns='n_dims', inplace=True)
-mlp_u_results_df['model'] = 'mlp, random'
+mlp_u_results_df = mlp_u_results_df.loc[mlp_u_results_df.model == 'mlp, random, 5000 PCs', :]
 
 # make sure data loaded matches our expectations
 print(mlp_u_results_df.shape)
 print(mlp_u_results_df.seed.unique())
 print(mlp_u_results_df.identifier.unique())
 print(mlp_u_results_df.training_data.unique())
+print(mlp_u_results_df.model.unique())
 mlp_u_results_df.head()
 
 
@@ -232,7 +231,7 @@ results_df.head()
 
 # each subplot will show results for one gene
 sns.set({'figure.figsize': (20, 14)})
-fig, axarr = plt.subplots(2, 2)
+fig, axarr = plt.subplots(2, 3)
 results_df.sort_values(by=['identifier', 'signal', 'training_data'], inplace=True)
 
 data_order =['expression',
@@ -244,7 +243,7 @@ data_order =['expression',
              'expression.me_27k.me_450k']
 
 for ix, gene in enumerate(results_df.identifier.unique()):
-    ax = axarr[ix // 2, ix % 2]
+    ax = axarr[ix // 3, ix % 3]
     plot_df = results_df[(results_df.identifier == gene) &
                          (results_df.data_type == 'test') &
                          (results_df.signal == 'signal')]
@@ -259,4 +258,10 @@ for ix, gene in enumerate(results_df.identifier.unique()):
         ax.legend_.remove()
         
 plt.tight_layout()
+
+
+# In[ ]:
+
+
+
 
