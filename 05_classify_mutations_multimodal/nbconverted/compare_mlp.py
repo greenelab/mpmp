@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ## Compare multi-omics results for MLP and elastic net
+# 
+# In this analysis we want to directly compare performance on the 6 gene multi-omics pilot experiment for our 3-layer MLP neural networks with our original elastic net logistic regression models.
+
 # In[1]:
 
 
@@ -260,8 +264,62 @@ for ix, gene in enumerate(results_df.identifier.unique()):
 plt.tight_layout()
 
 
-# In[ ]:
+# In[14]:
 
 
+# then, for each training data type, get the AUPR difference between signal and shuffled
+compare_df = pd.DataFrame()
+for training_data in results_df.training_data.unique():
+    for model in results_df.model.unique():
+        results_df.sort_values(by=['seed', 'fold'], inplace=True)
+        data_compare_df = au.compare_control_ind(
+            results_df[(results_df.training_data == training_data) &
+                       (results_df.model == model)],
+            identifier='identifier',
+            metric='aupr',
+            verbose=True
+        )
+        data_compare_df['training_data'] = training_data
+        data_compare_df['model'] = model
+        data_compare_df.rename(columns={'identifier': 'gene'}, inplace=True)
+        compare_df = pd.concat((compare_df, data_compare_df))
+    
+compare_df.head(10)
 
 
+# In[15]:
+
+
+# each subplot will show results for one gene
+sns.set({'figure.figsize': (20, 17)})
+sns.set_style('whitegrid')
+
+fig, axarr = plt.subplots(2, 3)
+
+data_names = {
+    'expression': 'gene expression',
+    'me_27k': '27K methylation',
+    'me_450k': '450K methylation',
+    'expression.me_27k': 'expression + 27K methylation',
+    'expression.me_450k': 'expression + 450K methylation',
+    'me_27k.me_450k': '27K methylation + 450K methylation',
+    'expression.me_27k.me_450k': 'expression + 27K methylation + 450K methylation'
+}
+
+plu.plot_multi_omics_results(compare_df,
+                             axarr,
+                             data_names,
+                             colors=[],
+                             metric='aupr')
+plt.tight_layout()
+
+images_dir = Path(cfg.images_dirs['multimodal'], 'mlp')
+images_dir.mkdir(exist_ok=True)
+
+svg_filename = 'multi_omics_compare_mlp.svg'
+png_filename = 'multi_omics_compare_mlp.png'
+plt.savefig(images_dir / svg_filename, bbox_inches='tight')
+plt.savefig(images_dir / png_filename, dpi=300, bbox_inches='tight')
+
+
+# In general we can see that the MLP sometimes outperforms the elastic net models, particularly on the multi-omics data (e.g. for EGFR and TP53), but sometimes it considerably underperforms the elastic net models, particularly on single-omics data (e.g. for PIK3CA and EGFR). Performance for the elastic net models seems to be a bit more robust across cross-validation folds and hyperparameter choices.

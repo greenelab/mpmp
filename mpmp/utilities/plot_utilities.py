@@ -602,16 +602,34 @@ def plot_multi_omics_results(results_df,
         plot_df = results_df[(results_df.gene == gene)].copy()
         plot_df.training_data.replace(data_names, inplace=True)
 
-        sns.boxplot(data=plot_df, x='training_data', y=delta_metric,
-                    order=list(data_names.values()), palette=colors, ax=ax)
+        model_compare = ('model' in plot_df.columns)
+
+        if model_compare:
+            sns.boxplot(data=plot_df, x='training_data', y=delta_metric,
+                        hue='model', order=list(data_names.values()), ax=ax)
+        else:
+            sns.boxplot(data=plot_df, x='training_data', y=delta_metric,
+                        order=list(data_names.values()), palette=colors, ax=ax)
+
         ax.set_title('Prediction for {} mutation'.format(gene), size=13)
-        ax.set_xlabel('Training data type', size=13)
-        # hide x-axis tick text
-        ax.get_xaxis().set_ticklabels([])
+
+        if model_compare:
+            if ix != 0:
+                ax.get_legend().remove()
+            if ix >= 3:
+                ax.set_xlabel('Training data type', size=13)
+            else:
+                ax.set_xlabel('')
+            for tick in ax.get_xticklabels():
+                tick.set_rotation(60)
+        else:
+            ax.set_xlabel('')
+            ax.get_xaxis().set_ticklabels([])
+
         ax.set_ylabel('{}(signal) - {}(shuffled)'.format(
                           metric.upper(), metric.upper()),
                       size=13)
-        ax.set_ylim(-0.2, max_aupr)
+        ax.set_ylim(-0.2, max_aupr+0.1)
 
 
 def plot_best_multi_omics_results(results_df,
