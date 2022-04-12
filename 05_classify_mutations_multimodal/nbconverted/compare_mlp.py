@@ -296,6 +296,13 @@ sns.set_style('whitegrid')
 
 fig, axarr = plt.subplots(2, 3)
 
+# don't show bayes results for this figure
+compare_df = compare_df[~compare_df.model.str.contains('bayes')]
+compare_df['model'] = (compare_df.model.str
+    .replace('elasticnet, grid', 'elastic net')
+    .replace('mlp, random, 5000 PCs', 'fully-connected NN')
+)
+
 data_names = {
     'expression': 'gene expression',
     'me_27k': '27K methylation',
