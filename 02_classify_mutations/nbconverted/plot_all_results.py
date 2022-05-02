@@ -336,7 +336,7 @@ heatmap_df = (all_results_df
 heatmap_df.iloc[:, :5]
 
 
-# In[16]:
+# In[ ]:
 
 
 plt.rcParams['svg.fonttype'] = 'path'
@@ -358,7 +358,7 @@ if merged_geneset:
                                 origin_eps_y=0.015,
                                 length_x=0.85,
                                 length_y=0.95)
-    plt.suptitle('Performance by data type for Vogelstein et al. genes, all data types')
+    plt.suptitle('Performance by data type for cancer-related genes, all data types')
     plt.tight_layout()
 else:
     ax = plu.plot_heatmap_split(heatmap_df,
@@ -383,3 +383,52 @@ if SAVE_FIGS:
 # * A grey dot = significantly better than label-permuted baseline, but significantly worse than best-performing data type
 # * A grey dot with black dot inside = significantly better than label-permuted baseline, and not significantly different from best-performing data type (i.e. "statistically equivalent to best")
 # * No dot = not significantly better than label-permuted baseline
+
+# In[ ]:
+
+
+sig_genes = all_results_df[all_results_df.reject_null].gene.unique()
+print(len(sig_genes))
+print(sig_genes)
+
+
+# In[ ]:
+
+
+heatmap_sig_df = (all_results_df[all_results_df.gene.isin(sig_genes)]
+    .pivot(index='training_data', columns='gene', values='delta_mean')
+    .reindex(training_data_map.values())
+)
+heatmap_sig_df.iloc[:, :5]
+
+
+# In[ ]:
+
+
+sns.set({'figure.figsize': (38, 16)})
+sns.set_context('notebook', font_scale=2.5)
+
+# only plot genes with at least one significant predictor
+heatmap_sig_df = plu.plot_heatmap_split(heatmap_sig_df,
+                                        all_results_df.reset_index(drop=True),
+                                        results_df,
+                                        metric=plot_metric,
+                                        origin_eps_x=0.02,
+                                        origin_eps_y=0.015,
+                                        length_x=0.85,
+                                        length_y=0.95)
+plt.suptitle('Performance by data type, for genes with at least one significant predictor')
+plt.tight_layout()
+
+if SAVE_FIGS:
+    plt.savefig(images_dir / 'all_heatmap_sig.svg', bbox_inches='tight')
+    plt.savefig(images_dir / 'all_heatmap_sig.png',
+                dpi=300, bbox_inches='tight')
+
+
+# In[ ]:
+
+
+print(heatmap_sig_df.shape)
+heatmap_sig_df.iloc[:, :10]
+

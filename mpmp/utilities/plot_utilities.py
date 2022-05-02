@@ -548,7 +548,14 @@ def plot_heatmap_split(heatmap_df,
 
     # add grey dots to cells that are significant over baseline
     # add black dots to cells that are significant and "best" predictor for that gene
+    heatmap_dfs = []
+
     for ix, heatmap_df in enumerate([heatmap1_df, heatmap2_df]):
+        heatmap_sig_df = pd.DataFrame(
+            np.zeros(heatmap_df.shape),
+            index=heatmap_df.index.copy(),
+            columns=heatmap_df.columns.copy()
+        )
         ax = axarr[ix]
         if ix != 0:
             ax.set_xlabel('{} name'.format(id_name.capitalize().replace('_', ' ')))
@@ -559,9 +566,14 @@ def plot_heatmap_split(heatmap_df,
             for data_ix, data_type in enumerate(heatmap_df.index):
                 if _check_data_type(results_df, identifier, data_type, id_name):
                     ax.scatter(id_ix + 0.5, data_ix + 0.5, color='0.8', edgecolors='black', s=200)
+                    heatmap_sig_df.iloc[data_ix, id_ix] += 1
                 if (_check_data_type(results_df, identifier, data_type, id_name) and
                     _check_equal_to_best(results_df, identifier, data_type, id_name)):
                     ax.scatter(id_ix + 0.5, data_ix + 0.5, color='black', edgecolor='black', s=60)
+                    heatmap_sig_df.iloc[data_ix, id_ix] += 1
+        heatmap_dfs.append(heatmap_sig_df)
+
+    return pd.concat(heatmap_dfs, axis=1)
 
 
 def get_different_from_best(results_df,
