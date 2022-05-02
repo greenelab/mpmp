@@ -149,7 +149,7 @@ coefs_df.to_csv(cfg.final_coefs_df, sep='\t')
 
 params = {}
 
-# load coefficient vectors from output files, into dict
+# load parameter lists from output files, into dict
 for gene_dir in results_dir.iterdir():
     gene_name = gene_dir.stem
     gene_dir = Path(results_dir, gene_dir)
@@ -177,7 +177,7 @@ params[gene].head()
 # In[14]:
 
 
-# concatenate coefficient vectors into a single dataframe
+# concatenate lists of selected parameters into a single dataframe
 params_df = (
     pd.concat(params.values(), axis='rows')
       .sort_index(axis='rows')
