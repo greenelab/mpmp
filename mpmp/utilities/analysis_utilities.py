@@ -47,7 +47,9 @@ def load_stratified_prediction_results(results_dir,
     return results_df
 
 
-def load_compressed_prediction_results(results_dir, experiment_descriptor):
+def load_compressed_prediction_results(results_dir,
+                                       experiment_descriptor,
+                                       multimodal=False):
     """Load results of compressed prediction experiments.
 
     Arguments
@@ -70,7 +72,7 @@ def load_compressed_prediction_results(results_dir, experiment_descriptor):
         for results_file in identifier_dir.iterdir():
             if not results_file.is_file(): continue
             results_filename = str(results_file.stem)
-            if not check_compressed_file(results_filename): continue
+            if not check_compressed_file(results_filename, multimodal): continue
             if ('classify' not in results_filename or
                 'metrics' not in results_filename): continue
             if results_filename[0] == '.': continue
@@ -79,7 +81,10 @@ def load_compressed_prediction_results(results_dir, experiment_descriptor):
                 n_dims = int(results_filename.split('_')[-3].replace('n', ''))
             except ValueError:
                 # new filename convention
-                n_dims = int(results_filename.split('_')[-2].replace('n', ''))
+                if multimodal:
+                    n_dims = int(results_filename.split('_')[-2].split('.')[0].replace('n', ''))
+                else:
+                    n_dims = int(results_filename.split('_')[-2].replace('n', ''))
             id_results_df = pd.read_csv(results_file, sep='\t')
             id_results_df['n_dims'] = n_dims
             id_results_df['experiment'] = experiment_descriptor
@@ -257,7 +262,7 @@ def calculate_metrics_for_cancer_type(id_results_df,
                                  'fold_no', 'cancer_type'] + metric_names)
 
 
-def check_compressed_file(results_filename):
+def check_compressed_file(results_filename, multimodal=False):
     """Check if results file is from compressed experiments."""
 
     def string_is_int(s):
@@ -271,6 +276,12 @@ def check_compressed_file(results_filename):
     # if a file uses compressed data, one component of the filename
     # should have the format 'n{integer}'
     for rs in results_filename.split('_'):
+        if multimodal:
+            mm_format = rs.startswith('n')
+            for substr in rs.split('.'):
+                mm_format == mm_format and string_is_int(substr.replace('n', ''))
+            if mm_format:
+                return True
         if rs.startswith('n') and string_is_int(rs.split('n')[1]):
             return True
     return False
