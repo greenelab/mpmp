@@ -602,6 +602,10 @@ def plot_multi_omics_results(results_df,
         plot_df = results_df[(results_df.gene == gene)].copy()
         plot_df.training_data.replace(data_names, inplace=True)
 
+        # we can use this same code either for a single model across
+        # training data, or to compare multiple models (multiple boxes
+        # for each training feature set). if there is a "model" column
+        # we'll do the latter comparison with paired boxes
         model_compare = ('model' in plot_df.columns)
 
         if model_compare:
@@ -613,6 +617,9 @@ def plot_multi_omics_results(results_df,
 
         ax.set_title('Prediction for {} mutation'.format(gene), size=13)
 
+        # if we're comparing models we want to add x-labels for the
+        # second row, and a legend describing the models only for the
+        # first plot since they're all the same
         if model_compare:
             if ix != 0:
                 ax.get_legend().remove()
@@ -622,6 +629,9 @@ def plot_multi_omics_results(results_df,
                 ax.set_xlabel('')
             for tick in ax.get_xticklabels():
                 tick.set_rotation(60)
+        # if we're not comparing models we don't need x-labels since
+        # they will go in the legend (describes training data rather
+        # than models)
         else:
             ax.set_xlabel('')
             ax.get_xaxis().set_ticklabels([])
