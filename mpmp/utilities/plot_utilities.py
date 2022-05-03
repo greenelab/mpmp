@@ -602,16 +602,44 @@ def plot_multi_omics_results(results_df,
         plot_df = results_df[(results_df.gene == gene)].copy()
         plot_df.training_data.replace(data_names, inplace=True)
 
-        sns.boxplot(data=plot_df, x='training_data', y=delta_metric,
-                    order=list(data_names.values()), palette=colors, ax=ax)
+        # we can use this same code either for a single model across
+        # training data, or to compare multiple models (multiple boxes
+        # for each training feature set). if there is a "model" column
+        # we'll do the latter comparison with paired boxes
+        model_compare = ('model' in plot_df.columns)
+
+        if model_compare:
+            sns.boxplot(data=plot_df, x='training_data', y=delta_metric,
+                        hue='model', order=list(data_names.values()), ax=ax)
+        else:
+            sns.boxplot(data=plot_df, x='training_data', y=delta_metric,
+                        order=list(data_names.values()), palette=colors, ax=ax)
+
         ax.set_title('Prediction for {} mutation'.format(gene), size=13)
-        ax.set_xlabel('Training data type', size=13)
-        # hide x-axis tick text
-        ax.get_xaxis().set_ticklabels([])
+
+        # if we're comparing models we want to add x-labels for the
+        # second row, and a legend describing the models only for the
+        # first plot since they're all the same
+        if model_compare:
+            if ix != 0:
+                ax.get_legend().remove()
+            if ix >= 3:
+                ax.set_xlabel('Training data type', size=13)
+            else:
+                ax.set_xlabel('')
+            for tick in ax.get_xticklabels():
+                tick.set_rotation(60)
+        # if we're not comparing models we don't need x-labels since
+        # they will go in the legend (describes training data rather
+        # than models)
+        else:
+            ax.set_xlabel('')
+            ax.get_xaxis().set_ticklabels([])
+
         ax.set_ylabel('{}(signal) - {}(shuffled)'.format(
                           metric.upper(), metric.upper()),
                       size=13)
-        ax.set_ylim(-0.2, max_aupr)
+        ax.set_ylim(-0.2, max_aupr+0.1)
 
 
 def plot_best_multi_omics_results(results_df,

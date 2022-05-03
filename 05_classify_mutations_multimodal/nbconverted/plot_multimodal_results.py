@@ -30,7 +30,8 @@ get_ipython().run_line_magic('autoreload', '2')
 # In[2]:
 
 
-BAYES_OPT = True
+BAYES_OPT = False
+MLP = True
 
 if BAYES_OPT:
     results_dir = Path(
@@ -41,6 +42,17 @@ if BAYES_OPT:
     unimodal_results_dir = Path(
         cfg.results_dirs['multimodal'],
         'bayes_opt',
+        'gene'
+    )
+elif MLP:
+    results_dir = Path(
+        cfg.results_dirs['multimodal'],
+        'mlp_pilot',
+        'gene'
+    ).resolve()
+    unimodal_results_dir = Path(
+        cfg.results_dirs['multimodal'],
+        'mlp_pilot',
         'gene'
     )
 else:
@@ -56,7 +68,7 @@ else:
     )
 
 # if True, save figures to ./images directory
-SAVE_FIGS = False
+SAVE_FIGS = True
 
 # if True, plot AUROC instead of AUPR
 PLOT_AUROC = False
@@ -65,7 +77,10 @@ if PLOT_AUROC:
     images_dir = Path(cfg.images_dirs['multimodal'], 'auroc')
 else:
     plot_metric = 'aupr'
-    images_dir = Path(cfg.images_dirs['multimodal'])
+    if MLP:
+        images_dir = Path(cfg.images_dirs['multimodal'], 'mlp')
+    else:
+        images_dir = Path(cfg.images_dirs['multimodal'])
 
 
 # ## Results with compressed features (figures in main paper)
@@ -78,7 +93,15 @@ else:
 
 
 # load raw data
-results_df = au.load_stratified_prediction_results(results_dir, 'gene')
+if MLP:
+    results_df = au.load_compressed_prediction_results(results_dir,
+                                                       'gene',
+                                                       multimodal=True)
+    results_df = results_df[(results_df.n_dims == 5000) &
+                            (results_df.training_data.str.contains('\.'))].copy()
+    results_df.drop(columns='n_dims', inplace=True)
+else:
+    results_df = au.load_stratified_prediction_results(results_dir, 'gene')
 
 # drop TET2 for now
 results_df = results_df[~(results_df.identifier == 'TET2')].copy()
@@ -385,7 +408,7 @@ print(compare_df.training_data.unique())
 compare_df[compare_df.gene == 'TP53'].head(10)
 
 
-# In[17]:
+# In[ ]:
 
 
 sns.set({'figure.figsize': (13, 6)})
