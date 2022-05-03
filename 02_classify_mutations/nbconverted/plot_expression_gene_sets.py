@@ -163,6 +163,8 @@ gene_set_map = {
 }
 all_results_df.training_data.replace(to_replace=gene_set_map, inplace=True)
 
+# labeling lower bounds are chosen to show only key genes (well-performing,
+# i.e. up and to the right) otherwise labels will overlap and be unreadable
 plu.plot_volcano_baseline(all_results_df,
                           axarr,
                           gene_set_map,

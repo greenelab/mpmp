@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ## Plot Vogelstein ("old") vs. non-Vogelstein ("new") classification results
+# 
+# Since we saw that our results changed when we started using a larger gene set in addition to the Vogelstein genes, we want to look at the results of each gene set in isolation, to better understand the new results.
+
 # In[1]:
 
 
@@ -39,7 +43,7 @@ SIG_ALPHA = 0.001
 results_df = au.load_stratified_prediction_results(results_dir, 'gene')
 
 # here we want to use compressed data for methylation datasets (27k and 450k)
-# the results in 02_classify_compressed/compressed_vs_raw_results.ipynb show that
+# the results in 02_classify_mutations/plot_results_n_dims.ipynb show that
 # performance is equal or slightly better for PCA compressed methylation data,
 # and it's much easier/faster to fit models on
 results_df = results_df[results_df.training_data.isin(['expression', 'rppa', 'mirna', 'mut_sigs'])]
@@ -226,6 +230,8 @@ sns.set_style('whitegrid')
 fig, axarr = plt.subplots(1, 3)
 
 # plot mutation prediction from expression, in a volcano-like plot
+# here we want to do this only for genes annotated as DNA damage repair genes
+# in Knijnenburg et al. 2018, that are in our gene set
 datasets = ['gene expression', '27k methylation', '450k methylation']
 filtered_data_map = {k: v for k, v in training_data_map.items() if v in datasets}
 
@@ -239,6 +245,6 @@ plu.plot_volcano_baseline(all_results_df[
                           metric='aupr',
                           verbose=True)
 
-plt.suptitle('Results for DDR genes only', size=18)
+plt.suptitle('Results for DDR genes in cancer-related gene set', size=18)
 plt.tight_layout()
 

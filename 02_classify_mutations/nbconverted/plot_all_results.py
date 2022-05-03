@@ -152,6 +152,8 @@ fig, axarr = plt.subplots(1, 3)
 datasets = ['gene expression', '27k methylation', '450k methylation']
 filtered_data_map = {k: v for k, v in training_data_map.items() if v in datasets}
 
+# labeling lower bounds are chosen to show only key genes (well-performing,
+# i.e. up and to the right) otherwise labels will overlap and be unreadable
 plu.plot_volcano_baseline(all_results_df,
                           axarr,
                           filtered_data_map,
@@ -336,7 +338,7 @@ heatmap_df = (all_results_df
 heatmap_df.iloc[:, :5]
 
 
-# In[ ]:
+# In[16]:
 
 
 plt.rcParams['svg.fonttype'] = 'path'
@@ -384,7 +386,7 @@ if SAVE_FIGS:
 # * A grey dot with black dot inside = significantly better than label-permuted baseline, and not significantly different from best-performing data type (i.e. "statistically equivalent to best")
 # * No dot = not significantly better than label-permuted baseline
 
-# In[ ]:
+# In[17]:
 
 
 sig_genes = all_results_df[all_results_df.reject_null].gene.unique()
@@ -392,7 +394,7 @@ print(len(sig_genes))
 print(sig_genes)
 
 
-# In[ ]:
+# In[18]:
 
 
 heatmap_sig_df = (all_results_df[all_results_df.gene.isin(sig_genes)]
@@ -402,7 +404,7 @@ heatmap_sig_df = (all_results_df[all_results_df.gene.isin(sig_genes)]
 heatmap_sig_df.iloc[:, :5]
 
 
-# In[ ]:
+# In[19]:
 
 
 sns.set({'figure.figsize': (38, 16)})
@@ -426,7 +428,7 @@ if SAVE_FIGS:
                 dpi=300, bbox_inches='tight')
 
 
-# In[ ]:
+# In[20]:
 
 
 print(heatmap_sig_df.shape)

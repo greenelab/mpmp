@@ -74,7 +74,7 @@ else:
 results_df = au.load_stratified_prediction_results(results_dir, 'gene')
 
 # here we want to use compressed data for methylation datasets (27k and 450k)
-# the results in 02_classify_compressed/compressed_vs_raw_results.ipynb show that
+# the results in 02_classify_mutations/plot_results_n_dims.ipynb show that
 # performance is equal or slightly better for PCA compressed methylation data,
 # and it's much easier/faster to fit models on
 results_df = results_df[results_df.training_data.isin(['expression'])].copy()
@@ -140,6 +140,8 @@ sns.set_style('whitegrid')
 
 fig, axarr = plt.subplots(1, 3)
 
+# labeling lower bounds are chosen to show only key genes (well-performing,
+# i.e. up and to the right) otherwise labels will overlap and be unreadable
 plu.plot_volcano_baseline(all_results_df,
                           axarr,
                           training_data_map,
