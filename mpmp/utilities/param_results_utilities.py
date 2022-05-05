@@ -70,13 +70,21 @@ def _get_data_type(results_filename, data_types):
     return None
 
 
-def sample_from_param_results(all_best_params, seed=cfg.default_seed):
+def sample_from_param_results(all_best_params,
+                              seed=cfg.default_seed,
+                              data_type=None):
     params_to_use = {}
-    for data_type in all_best_params.keys():
+    if data_type is not None:
         data_type_results = all_best_params[data_type]
         params_to_use[data_type] = (
             _sample_from_single_results(data_type_results, seed)
         )
+    else:
+        for data_type in all_best_params.keys():
+            data_type_results = all_best_params[data_type]
+            params_to_use[data_type] = (
+                _sample_from_single_results(data_type_results, seed)
+            )
     return params_to_use
 
 
