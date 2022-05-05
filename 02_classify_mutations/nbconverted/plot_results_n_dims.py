@@ -209,18 +209,7 @@ for row_ix, n_dims in enumerate(compressed_results_df.n_dims.unique()):
         ax.set_title(r'{} PCs, {}'.format(n_dims, train_names[train_data]),
                      size=13, pad=10)
         
-
-        # label genes and adjust text to not overlap
-        # automatic alignment isn't perfect, can align by hand in inkscape if necessary
-        # text_labels = label_points(compare_df['delta_mean'],
-        #                            compare_df['nlog10_p'],
-        #                            compare_df.gene,
-        #                            compare_df.reject_null,
-        #                            ax)
-        # adjust_text(text_labels,
-        #             ax=ax, 
-        #             expand_text=(1., 1.),
-        #             lim=5)
+        # don't label points here, there are too many
 
 plt.suptitle('Mutation prediction, raw vs. compressed results', size=16)
 plt.tight_layout(w_pad=2, h_pad=2)

@@ -241,7 +241,7 @@ heatmap_df = (all_results_df
 heatmap_df.iloc[:, :5]
 
 
-# In[16]:
+# In[13]:
 
 
 plt.rcParams['svg.fonttype'] = 'path'
@@ -258,7 +258,7 @@ if merged_geneset:
                                 origin_eps_y=0.015,
                                 length_x=0.85,
                                 length_y=0.95)
-    plt.suptitle('Performance by data type for Vogelstein et al. genes, all data types')
+    plt.suptitle('Performance by data type for cancer-related genes, all data types')
     plt.tight_layout()
 else:
     sns.set({'figure.figsize': (38, 5)})
