@@ -19,6 +19,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+# svgutils sometimes doesn't deal well with text as paths in svgs
+# so for this file, we'll save the text as text, then convert it by hand
+# in inkscape to paths which seem to work fine in svgutils
+# 
+# for some reason just the plots in this file have this issue, plots from
+# other analysis scripts don't have this issue so we don't have to do all this
+plt.rcParams['svg.fonttype'] = 'none'
+
 import mpmp.config as cfg
 import mpmp.utilities.analysis_utilities as au
 import mpmp.utilities.plot_utilities as plu
@@ -34,17 +42,21 @@ get_ipython().run_line_magic('autoreload', '2')
 # if False, plot results for Vogelstein et al. 2013 gene set
 merged_geneset = True
 
+# if True, use "alternate" per-gene filtering method (described in 01_explore_data/count_dataset_filters.ipynb)
+filter_all = False
+
 if merged_geneset:
-    results_dir = Path(cfg.results_dirs['mutation'], 'merged_all', 'gene').resolve()
-    # if True, save figures to ./images directory
-    # set this to False for cosmic genes, for now
-    SAVE_FIGS = False
+    if filter_all:
+        results_dir = Path(cfg.results_dirs['mutation'], 'merged_filter_all', 'gene').resolve()
+    else:
+        results_dir = Path(cfg.results_dirs['mutation'], 'merged_all', 'gene').resolve()
 else:
     results_dir = Path(cfg.results_dirs['mutation'],
                        'all_data_types_results_shuffle_cancer_type',
                        'gene').resolve()
-    # currently we're using the vogelstein figures for the paper
-    SAVE_FIGS = True
+    
+# if True, save figures to ./images directory
+SAVE_FIGS = True
 
 # set significance cutoff after FDR correction
 SIG_ALPHA = 0.001
@@ -83,9 +95,7 @@ results_df.head()
 
 
 # load compressed data for me_27k and me_450k
-compressed_results_df = au.load_compressed_prediction_results(results_dir,
-                                                              'gene',
-                                                              old_filenames=True)
+compressed_results_df = au.load_compressed_prediction_results(results_dir, 'gene')
 
 # make sure that we're correctly pointing to compressed methylation data
 # and that we have data for one dimension and two replicates (two random seeds)
@@ -142,18 +152,28 @@ fig, axarr = plt.subplots(1, 3)
 datasets = ['gene expression', '27k methylation', '450k methylation']
 filtered_data_map = {k: v for k, v in training_data_map.items() if v in datasets}
 
+# labeling lower bounds are chosen to show only key genes (well-performing,
+# i.e. up and to the right) otherwise labels will overlap and be unreadable
 plu.plot_volcano_baseline(all_results_df,
                           axarr,
                           filtered_data_map,
                           SIG_ALPHA,
                           metric=plot_metric,
-                          verbose=True)
+                          verbose=True,
+                          label_x_lower_bounds=[0.45, 0.3, 0.3],
+                          label_y_lower_bounds=[4, 4, 4])
 
 if SAVE_FIGS:
-    images_dir.mkdir(exist_ok=True)
-    plt.savefig(images_dir / 'all_vs_shuffled_extended.svg', bbox_inches='tight')
-    plt.savefig(images_dir / 'all_vs_shuffled_extended.png',
-                dpi=300, bbox_inches='tight')
+    if filter_all:
+        images_dir.mkdir(exist_ok=True)
+        plt.savefig(images_dir / 'all_vs_shuffled_extended_filter_all.svg', bbox_inches='tight')
+        plt.savefig(images_dir / 'all_vs_shuffled_extended_filter_all.png',
+                    dpi=300, bbox_inches='tight')
+    else:
+        images_dir.mkdir(exist_ok=True)
+        plt.savefig(images_dir / 'all_vs_shuffled_extended.svg', bbox_inches='tight')
+        plt.savefig(images_dir / 'all_vs_shuffled_extended.png',
+                    dpi=300, bbox_inches='tight')
 
 
 # In[8]:
@@ -173,12 +193,19 @@ plu.plot_volcano_baseline(all_results_df,
                           filtered_data_map,
                           SIG_ALPHA,
                           metric=plot_metric,
-                          verbose=True)
+                          verbose=True,
+                          label_x_lower_bounds=[0.4, 0.4, 0],
+                          label_y_lower_bounds=[3, 3, 3])
     
 if SAVE_FIGS:
-    plt.savefig(images_dir / 'all_vs_shuffled.svg', bbox_inches='tight')
-    plt.savefig(images_dir / 'all_vs_shuffled.png',
-                dpi=300, bbox_inches='tight')
+    if filter_all:
+        plt.savefig(images_dir / 'all_vs_shuffled_filter_all.svg', bbox_inches='tight')
+        plt.savefig(images_dir / 'all_vs_shuffled_filter_all.png',
+                    dpi=300, bbox_inches='tight')
+    else:
+        plt.savefig(images_dir / 'all_vs_shuffled.svg', bbox_inches='tight')
+        plt.savefig(images_dir / 'all_vs_shuffled.png',
+                    dpi=300, bbox_inches='tight')
 
 
 # In[9]:
@@ -214,7 +241,8 @@ plu.plot_volcano_comparison(results_df,
                             SIG_ALPHA,
                             metric=plot_metric,
                             sig_genes=id_to_sig,
-                            verbose=True)
+                            verbose=True,
+                            add_labels=False)
 
 if SAVE_FIGS:
     plt.savefig(images_dir / 'all_comparison_extended.svg', bbox_inches='tight')
@@ -241,7 +269,8 @@ plu.plot_volcano_comparison(results_df,
                             SIG_ALPHA,
                             metric=plot_metric,
                             sig_genes=id_to_sig,
-                            verbose=True)
+                            verbose=True,
+                            add_labels=False)
 
 if SAVE_FIGS:
     plt.savefig(images_dir / 'all_comparison.svg', bbox_inches='tight')
@@ -312,25 +341,38 @@ heatmap_df.iloc[:, :5]
 # In[16]:
 
 
+plt.rcParams['svg.fonttype'] = 'path'
 if merged_geneset:
-    # there are way more genes so we need a bigger figure
-    # TODO: this probably needs to be separated into multiple rows
-    sns.set({'figure.figsize': (75, 6)})
+    # for the larger gene set we need a bigger figure, since we
+    # separate the heatmap into multiple rows
+    sns.set({'figure.figsize': (38, 13)})
 else:
     sns.set({'figure.figsize': (28, 6)})
     
 sns.set_context('notebook', font_scale=1.5)
 
-ax = plu.plot_heatmap(heatmap_df,
-                      all_results_df.reset_index(drop=True),
-                      results_df,
-                      metric=plot_metric,
-                      origin_eps_x=0.02,
-                      origin_eps_y=0.015,
-                      length_x=0.85,
-                      length_y=0.95)
+if merged_geneset:
+    ax = plu.plot_heatmap_split(heatmap_df,
+                                all_results_df.reset_index(drop=True),
+                                results_df,
+                                metric=plot_metric,
+                                origin_eps_x=0.02,
+                                origin_eps_y=0.015,
+                                length_x=0.85,
+                                length_y=0.95)
+    plt.suptitle('Performance by data type for cancer-related genes, all data types')
+    plt.tight_layout()
+else:
+    ax = plu.plot_heatmap_split(heatmap_df,
+                                all_results_df.reset_index(drop=True),
+                                results_df,
+                                metric=plot_metric,
+                                origin_eps_x=0.02,
+                                origin_eps_y=0.015,
+                                length_x=0.85,
+                                length_y=0.95)
+    plt.title('Performance by data type for Vogelstein et al. genes, all data types')
 
-plt.title('Performance by data type for Vogelstein et al. genes, all data types', pad=15)
 
 if SAVE_FIGS:
     plt.savefig(images_dir / 'all_heatmap.svg', bbox_inches='tight')
@@ -343,3 +385,52 @@ if SAVE_FIGS:
 # * A grey dot = significantly better than label-permuted baseline, but significantly worse than best-performing data type
 # * A grey dot with black dot inside = significantly better than label-permuted baseline, and not significantly different from best-performing data type (i.e. "statistically equivalent to best")
 # * No dot = not significantly better than label-permuted baseline
+
+# In[17]:
+
+
+sig_genes = all_results_df[all_results_df.reject_null].gene.unique()
+print(len(sig_genes))
+print(sig_genes)
+
+
+# In[18]:
+
+
+heatmap_sig_df = (all_results_df[all_results_df.gene.isin(sig_genes)]
+    .pivot(index='training_data', columns='gene', values='delta_mean')
+    .reindex(training_data_map.values())
+)
+heatmap_sig_df.iloc[:, :5]
+
+
+# In[19]:
+
+
+sns.set({'figure.figsize': (38, 16)})
+sns.set_context('notebook', font_scale=2.5)
+
+# only plot genes with at least one significant predictor
+heatmap_sig_df = plu.plot_heatmap_split(heatmap_sig_df,
+                                        all_results_df.reset_index(drop=True),
+                                        results_df,
+                                        metric=plot_metric,
+                                        origin_eps_x=0.02,
+                                        origin_eps_y=0.015,
+                                        length_x=0.85,
+                                        length_y=0.95)
+plt.suptitle('Performance by data type, for genes with at least one significant predictor')
+plt.tight_layout()
+
+if SAVE_FIGS:
+    plt.savefig(images_dir / 'all_heatmap_sig.svg', bbox_inches='tight')
+    plt.savefig(images_dir / 'all_heatmap_sig.png',
+                dpi=300, bbox_inches='tight')
+
+
+# In[20]:
+
+
+print(heatmap_sig_df.shape)
+heatmap_sig_df.iloc[:, :10]
+

@@ -123,7 +123,9 @@ if __name__ == '__main__':
     if io_args.verbose:
         print('Selecting best params from results directory', file=sys.stderr)
     best_params = pru.get_best_params(io_args.params_dir, io_args.gene)
-    params_to_use = pru.sample_from_param_results(best_params, model_options.seed)
+    params_to_use = pru.sample_from_param_results(best_params,
+                                                  model_options.seed,
+                                                  model_options.training_data)
     if io_args.verbose:
         print('Params:', params_to_use, file=sys.stderr)
 
