@@ -291,3 +291,7 @@ random_search_n_iter = 20
 # location of data for GO enrichment analysis
 go_data_dir = repo_root / '01_explore_data' / 'go_data'
 go_output_dir = repo_root / '01_explore_data' / 'go_output'
+
+# location to save final models to
+final_coefs_df = data_dir / 'final_models' / 'final_expression_all_merged_coefs.tsv'
+final_params_df = data_dir / 'final_models' / 'final_expression_all_merged_params.tsv'

@@ -52,9 +52,6 @@ if merged_geneset:
     random_50_results_dir = Path(cfg.results_dirs['mutation'],
                                  'expression_random',
                                  'gene').resolve()
-    # if True, save figures to ./images directory
-    # set this to False for cosmic genes, for now
-    SAVE_FIGS = False
 else:
     cancer_genes_results_dir = Path(cfg.results_dirs['mutation'],
                                     'shuffle_cancer_type',
@@ -68,9 +65,9 @@ else:
                                  'shuffle_cancer_type',
                                  'expression_random',
                                  'gene').resolve()
-    # currently we're using the vogelstein figures for the paper
-    SAVE_FIGS = True
     
+# if True, save figures to the directory specified in images_dir below
+SAVE_FIGS = True
 
 # set significance cutoff after FDR correction
 SIG_ALPHA = 0.001
@@ -166,14 +163,18 @@ gene_set_map = {
 }
 all_results_df.training_data.replace(to_replace=gene_set_map, inplace=True)
 
+# labeling lower bounds are chosen to show only key genes (well-performing,
+# i.e. up and to the right) otherwise labels will overlap and be unreadable
 plu.plot_volcano_baseline(all_results_df,
                           axarr,
                           gene_set_map,
                           SIG_ALPHA,
                           metric=plot_metric,
                           verbose=True,
-                          # TODO: fix overlap for merged cancer genes
-                          mark_overlap=(not merged_geneset))
+                          label_x_lower_bounds=[0.2, 0.2, 0.4],
+                          label_y_lower_bounds=[4, 4, 5],
+                          mark_overlap=True,
+                          overlap_reference='cancer gene set')
 
 if SAVE_FIGS:
     images_dir.mkdir(exist_ok=True)
@@ -203,8 +204,8 @@ plu.plot_volcano_baseline(all_results_df,
 
 if SAVE_FIGS:
     images_dir.mkdir(exist_ok=True)
-    plt.savefig(images_dir / 'expression_vogelstein.svg', bbox_inches='tight')
-    plt.savefig(images_dir / 'expression_vogelstein.png',
+    plt.savefig(images_dir / 'expression_cancer_genes.svg', bbox_inches='tight')
+    plt.savefig(images_dir / 'expression_cancer_genes.png',
                 dpi=300, bbox_inches='tight')
 
 
@@ -243,16 +244,15 @@ for tick in ax.get_xticklabels():
     
 plt.tight_layout()
 
-if not merged_geneset:
-    tests_df = plu.add_annotation(ax,
-                                  all_results_df.rename(
-                                      columns={'gene_set': 'training_data'}
-                                  ),
-                                  all_pairs=(gene_set_map.values()),
-                                  metric=plot_metric,
-                                  box_pairs=[('random', 'most mutated'),
-                                             ('most mutated', 'cancer gene set'),
-                                             ('random', 'cancer gene set')])
+tests_df = plu.add_annotation(ax,
+                              all_results_df.rename(
+                                  columns={'gene_set': 'training_data'}
+                              ),
+                              all_pairs=(gene_set_map.values()),
+                              metric=plot_metric,
+                              box_pairs=[('random', 'most mutated'),
+                                         ('most mutated', 'cancer gene set'),
+                                         ('random', 'cancer gene set')])
 
 if SAVE_FIGS:
     plt.savefig(images_dir / 'expression_boxes.svg', bbox_inches='tight')

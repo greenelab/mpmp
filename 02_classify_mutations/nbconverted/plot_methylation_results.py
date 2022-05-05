@@ -20,6 +20,14 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from adjustText import adjust_text
 
+# svgutils sometimes doesn't deal well with text as paths in svgs
+# so for this file, we'll save the text as text, then convert it by hand
+# in inkscape to paths which seem to work fine in svgutils
+# 
+# for some reason just the plots in this file have this issue, plots from
+# other analysis scripts don't have this issue so we don't have to do all this
+plt.rcParams['svg.fonttype'] = 'none'
+
 import mpmp.config as cfg
 import mpmp.utilities.analysis_utilities as au
 import mpmp.utilities.plot_utilities as plu
@@ -38,15 +46,10 @@ if merged_geneset:
     results_dir = Path(cfg.results_dirs['mutation'],
                        'merged_methylation',
                        'gene').resolve()
-    # if True, save figures to ./images directory
-    # set this to False for cosmic genes, for now
-    SAVE_FIGS = False
 else:
     results_dir = Path(cfg.results_dirs['mutation'],
                        'methylation_results_shuffle_cancer_type',
                        'gene').resolve()
-    # currently we're using the vogelstein figures for the paper
-    SAVE_FIGS = True
 
 # set significance cutoff after FDR correction
 SIG_ALPHA = 0.001
@@ -71,7 +74,7 @@ else:
 results_df = au.load_stratified_prediction_results(results_dir, 'gene')
 
 # here we want to use compressed data for methylation datasets (27k and 450k)
-# the results in 02_classify_compressed/compressed_vs_raw_results.ipynb show that
+# the results in 02_classify_mutations/plot_results_n_dims.ipynb show that
 # performance is equal or slightly better for PCA compressed methylation data,
 # and it's much easier/faster to fit models on
 results_df = results_df[results_df.training_data.isin(['expression'])].copy()
@@ -137,12 +140,16 @@ sns.set_style('whitegrid')
 
 fig, axarr = plt.subplots(1, 3)
 
+# labeling lower bounds are chosen to show only key genes (well-performing,
+# i.e. up and to the right) otherwise labels will overlap and be unreadable
 plu.plot_volcano_baseline(all_results_df,
                           axarr,
                           training_data_map,
                           SIG_ALPHA,
                           metric=plot_metric,
-                          verbose=True)
+                          verbose=True,
+                          label_x_lower_bounds=[0.5, 0.4, 0.4],
+                          label_y_lower_bounds=[4, 4, 4])
     
 if SAVE_FIGS:
     images_dir.mkdir(exist_ok=True)
@@ -181,9 +188,10 @@ plu.plot_volcano_comparison(results_df,
                             training_data_map,
                             SIG_ALPHA,
                             metric=plot_metric,
-                            xlim=(-0.6, 0.6),
+                            xlim=(-0.8, 0.8),
                             sig_genes=id_to_sig,
-                            verbose=True)
+                            verbose=True,
+                            add_labels=False)
 
 if SAVE_FIGS:
     plt.savefig(images_dir / 'methylation_comparison.svg', bbox_inches='tight')
@@ -236,6 +244,8 @@ heatmap_df.iloc[:, :5]
 # In[16]:
 
 
+plt.rcParams['svg.fonttype'] = 'path'
+sns.set({'figure.figsize': (100, 5)})
 sns.set_context('notebook', font_scale=1.5)
 
 if merged_geneset:

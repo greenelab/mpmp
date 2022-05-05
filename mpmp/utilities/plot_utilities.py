@@ -17,8 +17,11 @@ def plot_volcano_baseline(results_df,
                           predict_str='Mutation prediction',
                           xlim=None,
                           ylim=None,
+                          label_x_lower_bounds=None,
+                          label_y_lower_bounds=None,
                           verbose=False,
-                          mark_overlap=False):
+                          mark_overlap=False,
+                          overlap_reference='Vogelstein et al.'):
     """Make a scatter plot comparing classifier results to shuffled baseline.
 
     Arguments
@@ -55,7 +58,8 @@ def plot_volcano_baseline(results_df,
 
         if mark_overlap:
             overlap_genes = _get_overlap_genes(results_df,
-                                               training_data)
+                                               training_data,
+                                               reference=overlap_reference)
             data_results_df['overlap'] = data_results_df.gene.isin(overlap_genes)
             sns.scatterplot(data=data_results_df, x='delta_mean', y='nlog10_p',
                             hue='reject_null', hue_order=[False, True],
@@ -104,11 +108,27 @@ def plot_volcano_baseline(results_df,
 
         # label genes and adjust text to not overlap
         # automatic alignment isn't perfect, can align by hand in inkscape if necessary
-        text_labels = _label_points(data_results_df['delta_mean'],
-                                    data_results_df['nlog10_p'],
-                                    data_results_df[identifier],
-                                    ax,
-                                    sig_alpha)
+        if (label_x_lower_bounds is not None) or (label_y_lower_bounds is not None):
+            if label_x_lower_bounds is None:
+                label_x_lower_bound = 0
+            else:
+                label_x_lower_bound = label_x_lower_bounds[ix]
+            if label_y_lower_bounds is None:
+                label_y_lower_bound = -np.log10(sig_alpha)
+            else:
+                label_y_lower_bound = label_y_lower_bounds[ix]
+            text_labels = _label_points_bound(data_results_df['delta_mean'],
+                                              data_results_df['nlog10_p'],
+                                              data_results_df[identifier],
+                                              ax,
+                                              label_x_lower_bound,
+                                              label_y_lower_bound)
+        else:
+            text_labels = _label_points(data_results_df['delta_mean'],
+                                        data_results_df['nlog10_p'],
+                                        data_results_df[identifier],
+                                        ax,
+                                        sig_alpha)
         adjust_text(text_labels,
                     ax=ax,
                     expand_text=(1., 1.),
@@ -116,11 +136,25 @@ def plot_volcano_baseline(results_df,
 
         if verbose:
             # print significant gene count for each training data type
-            print('{}: {}/{}'.format(
-                training_data,
-                np.count_nonzero(data_results_df.reject_null),
-                data_results_df.shape[0]
-            ))
+            if mark_overlap:
+                num_overlap = (data_results_df
+                    [data_results_df.reject_null]
+                      .overlap
+                      .sum()
+                )
+                print('{}: {}/{} (overlap {}/{})'.format(
+                    training_data,
+                    np.count_nonzero(data_results_df.reject_null),
+                    data_results_df.shape[0],
+                    num_overlap,
+                    np.count_nonzero(data_results_df.reject_null)
+                ))
+            else:
+                print('{}: {}/{}'.format(
+                    training_data,
+                    np.count_nonzero(data_results_df.reject_null),
+                    data_results_df.shape[0]
+                ))
 
 
 def plot_volcano_comparison(results_df,
@@ -133,7 +167,8 @@ def plot_volcano_comparison(results_df,
                             sig_genes=None,
                             xlim=None,
                             ylim=None,
-                            verbose=False):
+                            verbose=False,
+                            add_labels=True):
     """Make a scatter plot comparing classifier results to expression.
 
     Arguments
@@ -193,10 +228,10 @@ def plot_volcano_comparison(results_df,
             compare_results_df = (compare_results_df
                 .merge(sig_genes_comparison, on=['gene'])
             )
-            # then plot using the baseline results as the marker style,
-            # and inter-omics results as the marker hue
-            sns.scatterplot(data=compare_results_df, x='delta_mean', y='nlog10_p',
-                            hue='reject_null', style='reject_null_baseline',
+            # then plot only genes that beat the baseline, using inter-omics
+            # significance as the marker hue
+            sns.scatterplot(data=compare_results_df[compare_results_df.reject_null_baseline],
+                            x='delta_mean', y='nlog10_p', hue='reject_null',
                             hue_order=[False, True], ax=ax, legend=(ix == 0))
         else:
             sns.scatterplot(data=compare_results_df, x='delta_mean', y='nlog10_p',
@@ -228,15 +263,8 @@ def plot_volcano_comparison(results_df,
 
         # only add a legend to the first subplot
         if ix == 0:
-            if sig_genes is not None:
-                h, l = ax.get_legend_handles_labels()
-                l[0] = r'Reject $H_0$'
-                l[3] = r'Reject baseline $H_0$'
-                ax.legend(h, l, loc='upper right',
-                          fontsize=13, title_fontsize=13)
-            else:
-                ax.legend(title=r'Reject $H_0$', loc='upper left',
-                          fontsize=14, title_fontsize=14)
+            ax.legend(title=r'Reject $H_0$', loc='upper left',
+                      fontsize=14, title_fontsize=14)
 
         ax.set_title(
             r'{}, expression vs. {}'.format(predict_str, training_data),
@@ -245,21 +273,28 @@ def plot_volcano_comparison(results_df,
 
         # label genes and adjust text to not overlap
         # automatic alignment isn't perfect, can align by hand if necessary
-        text_labels = _label_points_compare(
-                          compare_results_df['delta_mean'],
-                          compare_results_df['nlog10_p'],
-                          compare_results_df['gene'],
-                          ax,
-                          sig_alpha)
-        adjust_text(text_labels,
-                    ax=ax,
-                    expand_text=(1., 1.),
-                    lim=5)
+        if add_labels:
+            text_labels = _label_points_compare(
+                              compare_results_df['delta_mean'],
+                              compare_results_df['nlog10_p'],
+                              compare_results_df['gene'],
+                              ax,
+                              sig_alpha)
+            adjust_text(text_labels,
+                        ax=ax,
+                        expand_text=(1., 1.),
+                        lim=5)
 
         if verbose:
-            print('{}: {}/{}'.format(training_data,
-                                     np.count_nonzero(compare_results_df.reject_null),
-                                     compare_results_df.shape[0]))
+            if sig_genes is not None:
+                sig_df = compare_results_df[compare_results_df.reject_null_baseline]
+                print('{}: {}/{}'.format(training_data,
+                                         np.count_nonzero(sig_df.reject_null),
+                                         sig_df.shape[0]))
+            else:
+                print('{}: {}/{}'.format(training_data,
+                                         np.count_nonzero(compare_results_df.reject_null),
+                                         compare_results_df.shape[0]))
 
 
 def plot_boxes(results_df,
@@ -513,7 +548,14 @@ def plot_heatmap_split(heatmap_df,
 
     # add grey dots to cells that are significant over baseline
     # add black dots to cells that are significant and "best" predictor for that gene
+    heatmap_dfs = []
+
     for ix, heatmap_df in enumerate([heatmap1_df, heatmap2_df]):
+        heatmap_sig_df = pd.DataFrame(
+            np.zeros(heatmap_df.shape),
+            index=heatmap_df.index.copy(),
+            columns=heatmap_df.columns.copy()
+        )
         ax = axarr[ix]
         if ix != 0:
             ax.set_xlabel('{} name'.format(id_name.capitalize().replace('_', ' ')))
@@ -524,9 +566,14 @@ def plot_heatmap_split(heatmap_df,
             for data_ix, data_type in enumerate(heatmap_df.index):
                 if _check_data_type(results_df, identifier, data_type, id_name):
                     ax.scatter(id_ix + 0.5, data_ix + 0.5, color='0.8', edgecolors='black', s=200)
+                    heatmap_sig_df.iloc[data_ix, id_ix] += 1
                 if (_check_data_type(results_df, identifier, data_type, id_name) and
                     _check_equal_to_best(results_df, identifier, data_type, id_name)):
                     ax.scatter(id_ix + 0.5, data_ix + 0.5, color='black', edgecolor='black', s=60)
+                    heatmap_sig_df.iloc[data_ix, id_ix] += 1
+        heatmap_dfs.append(heatmap_sig_df)
+
+    return pd.concat(heatmap_dfs, axis=1)
 
 
 def get_different_from_best(results_df,
@@ -797,16 +844,44 @@ def plot_multi_omics_results(results_df,
         plot_df = results_df[(results_df.gene == gene)].copy()
         plot_df.training_data.replace(data_names, inplace=True)
 
-        sns.boxplot(data=plot_df, x='training_data', y=delta_metric,
-                    order=list(data_names.values()), palette=colors, ax=ax)
+        # we can use this same code either for a single model across
+        # training data, or to compare multiple models (multiple boxes
+        # for each training feature set). if there is a "model" column
+        # we'll do the latter comparison with paired boxes
+        model_compare = ('model' in plot_df.columns)
+
+        if model_compare:
+            sns.boxplot(data=plot_df, x='training_data', y=delta_metric,
+                        hue='model', order=list(data_names.values()), ax=ax)
+        else:
+            sns.boxplot(data=plot_df, x='training_data', y=delta_metric,
+                        order=list(data_names.values()), palette=colors, ax=ax)
+
         ax.set_title('Prediction for {} mutation'.format(gene), size=13)
-        ax.set_xlabel('Training data type', size=13)
-        # hide x-axis tick text
-        ax.get_xaxis().set_ticklabels([])
+
+        # if we're comparing models we want to add x-labels for the
+        # second row, and a legend describing the models only for the
+        # first plot since they're all the same
+        if model_compare:
+            if ix != 0:
+                ax.get_legend().remove()
+            if ix >= 3:
+                ax.set_xlabel('Training data type', size=13)
+            else:
+                ax.set_xlabel('')
+            for tick in ax.get_xticklabels():
+                tick.set_rotation(60)
+        # if we're not comparing models we don't need x-labels since
+        # they will go in the legend (describes training data rather
+        # than models)
+        else:
+            ax.set_xlabel('')
+            ax.get_xaxis().set_ticklabels([])
+
         ax.set_ylabel('{}(signal) - {}(shuffled)'.format(
                           metric.upper(), metric.upper()),
                       size=13)
-        ax.set_ylim(-0.2, max_aupr)
+        ax.set_ylim(-0.2, max_aupr+0.1)
 
 
 def plot_best_multi_omics_results(results_df,
@@ -876,6 +951,17 @@ def _label_points(x, y, labels, ax, sig_alpha):
     pts = pd.DataFrame({'x': x, 'y': y, 'label': labels})
     for i, point in pts.iterrows():
         if point['y'] > -np.log10(sig_alpha):
+            text_labels.append(
+                ax.text(point['x'], point['y'], str(point['label']))
+            )
+    return text_labels
+
+
+def _label_points_bound(x, y, labels, ax, x_lower, y_lower):
+    text_labels = []
+    pts = pd.DataFrame({'x': x, 'y': y, 'label': labels})
+    for i, point in pts.iterrows():
+        if point['x'] > x_lower and point['y'] > y_lower:
             text_labels.append(
                 ax.text(point['x'], point['y'], str(point['label']))
             )

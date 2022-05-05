@@ -36,6 +36,7 @@ data/vogelstein_preds/*
 
 # don't track images files
 figures/*
+figures_pre_revision/*
 **/images/*
 
 # don't track results files
