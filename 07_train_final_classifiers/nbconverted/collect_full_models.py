@@ -51,7 +51,7 @@ print(cancer_types)
 # the columns will include the sample id, so use all but the first one
 gene_features = pd.read_csv(
     cfg.data_types['expression'], sep='\t', nrows=0
-).columns[1:].values
+).columns[1:].to_numpy()
 
 print(gene_features.shape)
 gene_features[:5]
@@ -90,6 +90,8 @@ for gene_dir in results_dir.iterdir():
         coefs[gene_name] = (coefs_df
             .loc[:, ['feature', 'weight']]
             .set_index('feature')
+            # reindex will add NaN rows for features that weren't used,
+            # this is what we want here
             .reindex(all_feats)
             .rename(columns={'weight': gene_name})
         )
@@ -110,18 +112,32 @@ print(set(genes) - set(coefs.keys()))
 # In[8]:
 
 
-gene = 'PIK3CA'
-print(coefs[gene].isna().sum())
-coefs[gene].head()
+assert len(set(genes) - set(coefs.keys())) == 0
 
 
 # In[9]:
 
 
-coefs[gene][coefs[gene][gene].isna()].head()
+gene = 'PIK3CA'
+print(coefs[gene].isna().sum())
+coefs[gene].head()
 
 
 # In[10]:
+
+
+coefs[gene][coefs[gene][gene].isna()].head()
+
+
+# In[11]:
+
+
+na_feats = coefs[gene][coefs[gene][gene].isna()].index
+print(len(na_feats), len(coefs[gene].index))
+assert len(na_feats) < len(coefs[gene].index)
+
+
+# In[12]:
 
 
 # concatenate coefficient vectors into a single dataframe
@@ -135,16 +151,19 @@ print(coefs_df.shape)
 coefs_df.iloc[:5, :5]
 
 
-# In[11]:
+# In[13]:
 
 
 (cfg.data_dir / 'final_models').mkdir(exist_ok=True)
+
+# cfg.final_coefs_df should be a Path object, set in config.py
 coefs_df.to_csv(cfg.final_coefs_df, sep='\t')
+print(cfg.final_coefs_df)
 
 
 # ### Load parameters and assemble into dataframe
 
-# In[12]:
+# In[14]:
 
 
 params = {}
@@ -168,13 +187,13 @@ print(list(params.keys())[:5])
 print(len(params.keys()))
 
 
-# In[13]:
+# In[15]:
 
 
 params[gene].head()
 
 
-# In[14]:
+# In[16]:
 
 
 # concatenate lists of selected parameters into a single dataframe
@@ -187,8 +206,10 @@ print(params_df.shape)
 params_df.iloc[:5, :5]
 
 
-# In[15]:
+# In[17]:
 
 
+# cfg.final_params_df should be a Path object, set in config.py
 params_df.to_csv(cfg.final_params_df, sep='\t')
+print(cfg.final_params_df)
 
