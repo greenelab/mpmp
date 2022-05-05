@@ -23,13 +23,19 @@ from adjustText import adjust_text
 import mpmp.config as cfg
 import mpmp.utilities.analysis_utilities as au
 
+get_ipython().run_line_magic('load_ext', 'autoreload')
+get_ipython().run_line_magic('autoreload', '2')
+
 
 # In[2]:
 
 
 # set results directories
 results_dir = Path(cfg.results_dirs['mutation'],
-                   'methylation_results_shuffle_cancer_type',
+                   'merged_methylation',
+                   'gene').resolve()
+extra_results_dir = Path(cfg.results_dirs['mutation'],
+                   'methylation_dims',
                    'gene').resolve()
 
 # set significance cutoff after FDR correction
@@ -63,6 +69,34 @@ raw_results_df.head()
 # In[4]:
 
 
+# load raw data
+extra_raw_results_df = au.load_stratified_prediction_results(extra_results_dir, 'gene')
+
+print(extra_raw_results_df.shape)
+print(extra_raw_results_df.seed.unique())
+print(extra_raw_results_df.training_data.unique())
+extra_raw_results_df.head()
+
+
+# In[5]:
+
+
+raw_results_df = pd.concat((
+    raw_results_df, extra_raw_results_df
+))
+group_df = (raw_results_df
+    .groupby(['identifier', 'training_data'])
+    .count()
+)
+
+# all of these should come up as duplicates (so only one row will print)
+# if not, there are either missing folds or duplicated folds
+group_df[~group_df.duplicated()].head(10)
+
+
+# In[6]:
+
+
 # load compressed data
 compressed_results_df = au.load_compressed_prediction_results(results_dir, 'gene')
 
@@ -73,7 +107,36 @@ print(compressed_results_df.training_data.unique())
 compressed_results_df.head()
 
 
-# In[5]:
+# In[7]:
+
+
+# load compressed data
+extra_compressed_results_df = au.load_compressed_prediction_results(
+    extra_results_dir, 'gene')
+
+print(extra_compressed_results_df.shape)
+print(extra_compressed_results_df.seed.unique())
+print(extra_compressed_results_df.training_data.unique())
+extra_compressed_results_df.head()
+
+
+# In[8]:
+
+
+compressed_results_df = pd.concat((
+    compressed_results_df, extra_compressed_results_df
+))
+group_df = (compressed_results_df
+    .groupby(['identifier', 'training_data'])
+    .count()
+)
+
+# all of these should come up as duplicates (so only one row will print)
+# if not, there are either missing folds or duplicated folds
+group_df[~group_df.duplicated()].head(10)
+
+
+# In[9]:
 
 
 def label_points(x, y, gene, sig, ax):
@@ -149,22 +212,22 @@ for row_ix, n_dims in enumerate(compressed_results_df.n_dims.unique()):
 
         # label genes and adjust text to not overlap
         # automatic alignment isn't perfect, can align by hand in inkscape if necessary
-        text_labels = label_points(compare_df['delta_mean'],
-                                   compare_df['nlog10_p'],
-                                   compare_df.gene,
-                                   compare_df.reject_null,
-                                   ax)
-        adjust_text(text_labels,
-                    ax=ax, 
-                    expand_text=(1., 1.),
-                    lim=5)
+        # text_labels = label_points(compare_df['delta_mean'],
+        #                            compare_df['nlog10_p'],
+        #                            compare_df.gene,
+        #                            compare_df.reject_null,
+        #                            ax)
+        # adjust_text(text_labels,
+        #             ax=ax, 
+        #             expand_text=(1., 1.),
+        #             lim=5)
 
 plt.suptitle('Mutation prediction, raw vs. compressed results', size=16)
 plt.tight_layout(w_pad=2, h_pad=2)
 plt.subplots_adjust(top=0.94)
 
 
-# In[6]:
+# In[10]:
 
 
 raw_compare_df = au.compare_all_data_types(raw_results_df,
@@ -177,7 +240,7 @@ raw_compare_df.sort_values(by=['training_data'], inplace=True)
 raw_compare_df.head(5)
 
 
-# In[7]:
+# In[11]:
 
 
 raw_compare_all_df = au.compare_all_data_types(raw_results_df,
@@ -189,7 +252,7 @@ raw_compare_all_df.sort_values(by=['nlog10_p'], inplace=True)
 raw_compare_all_df.head(5)
 
 
-# In[8]:
+# In[12]:
 
 
 cmp_compare_df = au.compare_data_types_and_dims(compressed_results_df,
@@ -202,7 +265,7 @@ cmp_compare_df.sort_values(by=['training_data', 'n_dims'], inplace=True)
 cmp_compare_df.head(5)
 
 
-# In[9]:
+# In[13]:
 
 
 cmp_compare_all_df = au.compare_data_types_and_dims(compressed_results_df,
@@ -214,7 +277,7 @@ cmp_compare_all_df.sort_values(by=['nlog10_p'], inplace=True)
 cmp_compare_all_df.head(5)
 
 
-# In[10]:
+# In[14]:
 
 
 from matplotlib.patches import Rectangle
@@ -315,7 +378,7 @@ if SAVE_FIGS:
                 dpi=300, bbox_inches='tight')
 
 
-# In[11]:
+# In[15]:
 
 
 raw_compare_all_df['n_dims'] = 'raw'
@@ -327,7 +390,7 @@ compare_df.training_data.replace(to_replace=train_names, inplace=True)
 compare_df.head()
 
 
-# In[12]:
+# In[16]:
 
 
 sns.set({'figure.figsize': (18, 12)})
@@ -374,7 +437,7 @@ ax.set_ylabel('{}(signal) - {}(shuffled)'.format(
 ax.set_ylim(-0.2, max(compare_df.delta_mean + 0.05))
 
 
-# In[13]:
+# In[17]:
 
 
 # same plot but only the first row (box plots)
