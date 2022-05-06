@@ -248,21 +248,33 @@ plt.rcParams['svg.fonttype'] = 'path'
 sns.set({'figure.figsize': (100, 5)})
 sns.set_context('notebook', font_scale=1.5)
 
-ax = plu.plot_heatmap(heatmap_df,
-                      all_results_df.reset_index(drop=True),
-                      results_df,
-                      metric=plot_metric,
-                      origin_eps_x=0.02,
-                      origin_eps_y=0.015,
-                      length_x=0.85,
-                      length_y=0.95)
+if merged_geneset:
+    sns.set({'figure.figsize': (50, 12)})
+    ax = plu.plot_heatmap_split(heatmap_df,
+                                all_results_df.reset_index(drop=True),
+                                results_df,
+                                metric=plot_metric,
+                                origin_eps_x=0.02,
+                                origin_eps_y=0.015,
+                                length_x=0.85,
+                                length_y=0.95)
+    plt.suptitle('Performance by data type for cancer-related genes, all data types')
+    plt.tight_layout()
+else:
+    sns.set({'figure.figsize': (38, 5)})
+    ax = plu.plot_heatmap(heatmap_df,
+                          all_results_df.reset_index(drop=True),
+                          results_df,
+                          metric=plot_metric,
+                          origin_eps_x=0.02,
+                          origin_eps_y=0.015,
+                          length_x=0.85,
+                          length_y=0.95)
+    plt.title('Performance by data type for Vogelstein et al. genes, expression vs. methylation', pad=15)
 
-plt.title('Performance by data type for Vogelstein et al. genes, expression vs. methylation', pad=15)
-
-if SAVE_FIGS:
-    plt.savefig(images_dir / 'methylation_heatmap.svg', bbox_inches='tight')
-    plt.savefig(images_dir / 'methylation_heatmap.png',
-                dpi=300, bbox_inches='tight')
+plt.savefig(images_dir / 'methylation_heatmap.svg', bbox_inches='tight')
+plt.savefig(images_dir / 'methylation_heatmap.png',
+            dpi=300, bbox_inches='tight')
 
 
 # Key to above heatmap:
