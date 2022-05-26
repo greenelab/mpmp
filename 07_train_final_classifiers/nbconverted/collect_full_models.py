@@ -205,7 +205,7 @@ for data_type in compressed_data_types:
           .sort_index(axis='columns')
     )
     coefs_df.index.name = None
-    # cfg.final_coefs_df should be a Path object, set in config.py
+    # cfg.final_coefs_df should be a string, we can format here
     output_fname = cfg.final_coefs_df.format(data_type)
     coefs_df.to_csv(output_fname, sep='\t')
     print(output_fname)
@@ -216,23 +216,27 @@ for data_type in compressed_data_types:
 # In[14]:
 
 
-params = {}
+def load_params(training_data):
+    params = {}
+    # load parameter lists from output files, into dict
+    for gene_dir in results_dir.iterdir():
+        gene_name = gene_dir.stem
+        gene_dir = Path(results_dir, gene_dir)
+        if gene_dir.is_file(): continue
+        for results_file in gene_dir.iterdir():
+            if not results_file.is_file(): continue
+            results_filename = str(results_file.stem)
+            if training_data not in results_filename: continue
+            if 'params' not in results_filename: continue
+            with open(results_file, 'rb') as f:
+                gene_params = pkl.load(f)
+            params[gene_name] = pd.DataFrame(
+                gene_params, index=[gene_name]
+            )
+            
+    return params
 
-# load parameter lists from output files, into dict
-for gene_dir in results_dir.iterdir():
-    gene_name = gene_dir.stem
-    gene_dir = Path(results_dir, gene_dir)
-    if gene_dir.is_file(): continue
-    for results_file in gene_dir.iterdir():
-        if not results_file.is_file(): continue
-        results_filename = str(results_file.stem)
-        if 'params' not in results_filename: continue
-        with open(results_file, 'rb') as f:
-            gene_params = pkl.load(f)
-        params[gene_name] = pd.DataFrame(
-            gene_params, index=[gene_name]
-        )
-        
+params = load_params('expression')
 print(list(params.keys())[:5])
 print(len(params.keys()))
 
@@ -247,19 +251,14 @@ params[gene].head()
 
 
 # concatenate lists of selected parameters into a single dataframe
-params_df = (
-    pd.concat(params.values(), axis='rows')
-      .sort_index(axis='rows')
-)
-
-print(params_df.shape)
-params_df.iloc[:5, :5]
-
-
-# In[17]:
-
-
-# cfg.final_params_df should be a Path object, set in config.py
-params_df.to_csv(cfg.final_params_df, sep='\t')
-print(cfg.final_params_df)
+for data_type in (raw_data_types + compressed_data_types):
+    params = load_params(data_type)
+    params_df = (
+        pd.concat(params.values(), axis='rows')
+          .sort_index(axis='rows')
+    )
+    # cfg.final_params_df should be a string, we can format here
+    output_fname = cfg.final_params_df.format(data_type)
+    params_df.to_csv(output_fname, sep='\t')
+    print(output_fname)
 
