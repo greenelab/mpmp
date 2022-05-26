@@ -3,6 +3,7 @@ PARAMS_DIR=./02_classify_mutations/results/merged_all_params
 RESULTS_DIR=./07_train_final_classifiers/results/merged_all_params
 ERRORS_DIR=./final_merged_errors
 SEED=42
+N_DIM=5000
 
 mkdir -p $ERRORS_DIR
 
@@ -25,19 +26,36 @@ read_genes_from_file $merged_filename
 
 for gene in "${genes[@]}"; do
 
-    # just do expression for now
-    # TODO: could do methylation but would need to pass PCA features
-    cmd="python 07_train_final_classifiers/train_classifier.py "
-    cmd+="--gene $gene "
-    cmd+="--params_dir $PARAMS_DIR "
-    cmd+="--results_dir $RESULTS_DIR "
-    cmd+="--training_data expression "
-    cmd+="--seed $SEED "
-    cmd+="--overlap_data_types expression me_27k me_450k rppa mirna mut_sigs "
-    cmd+="--save_model "
-    cmd+="2>$ERRORS_DIR/errors_expression_${gene}.txt"
-    echo "Running: $cmd"
-    eval $cmd
+    # use raw data for non-methylation data types
+    for training_data in expression rppa mirna mut_sigs; do
+        cmd="python 07_train_final_classifiers/train_classifier.py "
+        cmd+="--gene $gene "
+        cmd+="--params_dir $PARAMS_DIR "
+        cmd+="--results_dir $RESULTS_DIR "
+        cmd+="--training_data ${training_data} "
+        cmd+="--seed $SEED "
+        cmd+="--overlap_data_types expression me_27k me_450k rppa mirna mut_sigs "
+        cmd+="--save_model "
+        cmd+="2>$ERRORS_DIR/errors_${training_data}_${gene}.txt"
+        echo "Running: $cmd"
+        eval $cmd
+    done
+
+    # use compressed data for methylation
+    for training_data in me_27k me_450k; do
+        cmd="python 07_train_final_classifiers/train_classifier.py "
+        cmd+="--gene $gene "
+        cmd+="--params_dir $PARAMS_DIR "
+        cmd+="--results_dir $RESULTS_DIR "
+        cmd+="--training_data ${training_data} "
+        cmd+="--seed $SEED "
+        cmd+="--n_dim $N_DIM "
+        cmd+="--overlap_data_types expression me_27k me_450k rppa mirna mut_sigs "
+        cmd+="--save_model "
+        cmd+="2>$ERRORS_DIR/errors_${training_data}_${gene}.txt"
+        echo "Running: $cmd"
+        eval $cmd
+    done
 
 done
 

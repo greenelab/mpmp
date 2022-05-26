@@ -68,6 +68,9 @@ def process_args():
     opts.add_argument('--model', choices=cfg.model_choices, default='elasticnet',
                       help='what type of model to use for classification, defaults '
                            'to logistic regression with elastic net regularization')
+    opts.add_argument('--n_dim', default=None,
+                      help='number of compressed dimensions to use, if None '
+                           'use raw features')
     opts.add_argument('--num_features', type=int, default=cfg.num_features_raw,
                       help='if included, select this number of features, using '
                            'feature selection method in feature_selection')
@@ -97,7 +100,8 @@ def process_args():
 
     # add some additional hyperparameters/ranges from config file to model options
     # these shouldn't be changed by the user, so they aren't added as arguments
-    model_options.n_dim = None
+    if model_options.n_dim is not None:
+        model_options.n_dim = int(model_options.n_dim)
     model_options.standardize_data_types = cfg.standardize_data_types
     model_options.shuffle_by_cancer_type = cfg.shuffle_by_cancer_type
 
@@ -139,6 +143,9 @@ if __name__ == '__main__':
     tcga_data = TCGADataModel(seed=model_options.seed,
                               training_data=model_options.training_data,
                               overlap_data_types=model_options.overlap_data_types,
+                              load_compressed_data=(model_options.n_dim is not None),
+                              standardize_input=(model_options.n_dim is not None),
+                              n_dim=model_options.n_dim,
                               sample_info_df=sample_info_df,
                               verbose=io_args.verbose,
                               debug=model_options.debug)
@@ -187,7 +194,10 @@ if __name__ == '__main__':
 
     # train model
     try:
-        standardize_columns = (model_options.training_data in cfg.standardize_data_types)
+        # don't standardize if using compressed data, or if
+        # training data is not in config data types to standardize
+        standardize_columns = ((model_options.n_dim is None) and
+                               (model_options.training_data in cfg.standardize_data_types))
         model_fit, results = train_all_data(
             tcga_data,
             'gene',
