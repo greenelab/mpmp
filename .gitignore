@@ -13,6 +13,8 @@ data/raw/*
 data/compressed_data/*
 data/expression_confusion_matrix.tsv
 data/exp_compressed/*
+data/final_models/*.zip
+data/final_models/pca/*
 data/HumanMethylation450_15017482_v1-2.csv
 data/methylation_27k*.tsv
 data/methylation_27k_filtered_probe_types.txt
