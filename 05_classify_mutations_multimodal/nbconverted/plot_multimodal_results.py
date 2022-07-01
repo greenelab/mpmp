@@ -31,7 +31,7 @@ get_ipython().run_line_magic('autoreload', '2')
 
 
 BAYES_OPT = False
-MLP = True
+MLP = False
 
 if BAYES_OPT:
     results_dir = Path(
@@ -226,7 +226,8 @@ for ix, data in enumerate(list(data_names.values())):
     handle = mpatches.Patch(color=colors[ix], label=data)
     handles.append(handle)
     
-plt.legend(title='Data types used to train model', handles=handles, loc='lower right')
+plt.legend(title='', handles=handles,
+           loc='lower right', fontsize=15, title_fontsize=15)
 plt.tight_layout()
 
 if SAVE_FIGS:
@@ -408,7 +409,7 @@ print(compare_df.training_data.unique())
 compare_df[compare_df.gene == 'TP53'].head(10)
 
 
-# In[ ]:
+# In[17]:
 
 
 sns.set({'figure.figsize': (13, 6)})
@@ -425,10 +426,4 @@ if SAVE_FIGS:
     images_dir.mkdir(exist_ok=True)
     plt.savefig(images_dir / svg_filename, bbox_inches='tight')
     plt.savefig(images_dir / png_filename, dpi=300, bbox_inches='tight')
-
-
-# In[ ]:
-
-
-
 
