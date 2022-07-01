@@ -33,14 +33,13 @@ SAVE_FIGS = True
 
 
 # map data types to readable names
-# TODO: store this somewhere central
 data_map = {
-    'expression': 'gene expression',
-    'me_27k': '27k methylation',
-    'me_450k': '450k methylation',
+    'expression': 'expression',
+    'me_27k': '27k',
+    'me_450k': '450k',
     'rppa': 'RPPA',
     'mirna': 'microRNA',
-    'mut_sigs': 'mut sigs',
+    'mut_sigs': 'mut. sigs',
 }
 
 # get sample list for each -omics data type
@@ -115,12 +114,11 @@ def series_from_samples(samples, labels):
 # In[8]:
 
 
-# probably stick with venn diagram here
 sns.set({'figure.figsize': (8, 10)})
 sns.set_style('white')
 
 # get only sample lists from gene expression and mutation
-labels = ['gene expression', 'mutation']
+labels = ['expression', 'mutation']
 label_map = {l: sample_lists[l] for l in labels}
 
 venn(label_map)
@@ -133,7 +131,7 @@ plt.title('TCGA sample intersections, gene expression data', size=14)
 
 
 sns.set_style('white')
-labels = ['gene expression', 'mutation', '27k methylation', '450k methylation']
+labels = ['expression', 'mutation', '27k', '450k']
 samples = [sample_lists[l] for l in labels]
 
 upset_series = series_from_samples(samples, labels)
@@ -143,11 +141,13 @@ upset_series[upset_series != 0].sort_values().head(20)
 # In[10]:
 
 
-subplots = up.plot(upset_series[upset_series != 0], element_size=60)
-plt.title('TCGA sample intersections, expression/methylation datasets', size=13)
-plt.ylabel('Intersection size', size=13)
-plt.yticks(fontsize=13)
-subplots['matrix'].set_yticklabels(labels=subplots['matrix'].get_yticklabels(), fontsize=12)
+subplots = up.plot(upset_series[upset_series != 0], element_size=60,
+                   totals_plot_elements=1)
+plt.title('TCGA sample intersections, expression/methylation datasets', size=18)
+plt.ylabel('Intersection size', size=18)
+plt.yticks(fontsize=18)
+subplots['matrix'].set_yticklabels(labels=subplots['matrix'].get_yticklabels(), fontsize=18)
+plt.gcf().delaxes(subplots['totals'])
 
 # we can clean up whitespace below in figure assembly script
 if SAVE_FIGS:
@@ -164,8 +164,8 @@ if SAVE_FIGS:
 
 
 sns.set_style('white')
-labels = ['gene expression', 'mutation', '27k methylation', '450k methylation',
-          'RPPA', 'microRNA', 'mut sigs']
+labels = ['expression', 'mutation', '27k', '450k',
+          'RPPA', 'microRNA', 'mut. sigs']
 samples = [sample_lists[l] for l in labels]
 
 upset_series = series_from_samples(samples, labels)
@@ -176,10 +176,11 @@ upset_series[upset_series >= 100].sort_values().head(20)
 
 
 subplots = up.plot(upset_series[upset_series >= 100], element_size=60)
-plt.title('TCGA sample intersections, all datasets', size=13)
-plt.ylabel('Intersection size', size=13)
-plt.yticks(fontsize=13)
-subplots['matrix'].set_yticklabels(labels=subplots['matrix'].get_yticklabels(), fontsize=12)
+plt.title('TCGA sample intersections, all datasets', size=18)
+plt.ylabel('Intersection size', size=16)
+plt.yticks(fontsize=16)
+subplots['matrix'].set_yticklabels(labels=subplots['matrix'].get_yticklabels(), fontsize=16)
+plt.gcf().delaxes(subplots['totals'])
 
 if SAVE_FIGS:
     images_dir = Path(cfg.images_dirs['data'])

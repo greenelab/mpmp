@@ -20,14 +20,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from adjustText import adjust_text
 
-# svgutils sometimes doesn't deal well with text as paths in svgs
-# so for this file, we'll save the text as text, then convert it by hand
-# in inkscape to paths which seem to work fine in svgutils
-# 
-# for some reason just the plots in this file have this issue, plots from
-# other analysis scripts don't have this issue so we don't have to do all this
-plt.rcParams['svg.fonttype'] = 'none'
-
 import mpmp.config as cfg
 import mpmp.utilities.analysis_utilities as au
 import mpmp.utilities.plot_utilities as plu
@@ -148,7 +140,7 @@ plu.plot_volcano_baseline(all_results_df,
                           SIG_ALPHA,
                           metric=plot_metric,
                           verbose=True,
-                          label_x_lower_bounds=[0.5, 0.4, 0.4],
+                          label_x_lower_bounds=[0.55, 0.4, 0.4],
                           label_y_lower_bounds=[4, 4, 4])
     
 if SAVE_FIGS:

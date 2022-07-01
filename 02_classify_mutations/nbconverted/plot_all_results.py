@@ -19,14 +19,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# svgutils sometimes doesn't deal well with text as paths in svgs
-# so for this file, we'll save the text as text, then convert it by hand
-# in inkscape to paths which seem to work fine in svgutils
-# 
-# for some reason just the plots in this file have this issue, plots from
-# other analysis scripts don't have this issue so we don't have to do all this
-plt.rcParams['svg.fonttype'] = 'none'
-
 import mpmp.config as cfg
 import mpmp.utilities.analysis_utilities as au
 import mpmp.utilities.plot_utilities as plu
@@ -345,7 +337,7 @@ plt.rcParams['svg.fonttype'] = 'path'
 if merged_geneset:
     # for the larger gene set we need a bigger figure, since we
     # separate the heatmap into multiple rows
-    sns.set({'figure.figsize': (38, 13)})
+    sns.set({'figure.figsize': (38, 21)})
 else:
     sns.set({'figure.figsize': (28, 6)})
     
@@ -360,7 +352,7 @@ if merged_geneset:
                                 origin_eps_y=0.015,
                                 length_x=0.85,
                                 length_y=0.95)
-    plt.suptitle('Performance by data type for cancer-related genes, all data types')
+    plt.suptitle('Performance by data type for cancer-related genes, all data types', size=26)
     plt.tight_layout()
 else:
     ax = plu.plot_heatmap_split(heatmap_df,
@@ -426,11 +418,4 @@ if SAVE_FIGS:
     plt.savefig(images_dir / 'all_heatmap_sig.svg', bbox_inches='tight')
     plt.savefig(images_dir / 'all_heatmap_sig.png',
                 dpi=300, bbox_inches='tight')
-
-
-# In[20]:
-
-
-print(heatmap_sig_df.shape)
-heatmap_sig_df.iloc[:, :10]
 
