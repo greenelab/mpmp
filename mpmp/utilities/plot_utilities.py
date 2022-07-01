@@ -88,10 +88,11 @@ def plot_volcano_baseline(results_df,
         # label axes and set axis limits
         ax.set_xlabel('{}(signal) - {}(shuffled)'.format(
                           metric.upper(), metric.upper()),
-                      size=14)
-        ax.set_ylabel(r'$-\log_{10}($adjusted $p$-value$)$', size=14)
+                      size=16)
+        ax.set_ylabel(r'$-\log_{10}($adjusted $p$-value$)$', size=16)
         ax.set_xlim(xlim)
         ax.set_ylim(ylim)
+        ax.tick_params(axis='both', labelsize=15)
 
         # only add a legend to the first subplot
         if ix == 0:
@@ -100,11 +101,11 @@ def plot_volcano_baseline(results_df,
                 label_list[1][0] = r'Reject $H_0$'
                 label_list[1][3] = r'Overlap'
                 ax.legend(handles=label_list[0], labels=label_list[1],
-                          loc='upper left', fontsize=14, title_fontsize=14)
+                          loc='upper left', fontsize=15, title_fontsize=15)
             else:
                 ax.legend(title=r'Reject $H_0$', loc='upper left',
                           fontsize=14, title_fontsize=14)
-        ax.set_title(r'{}, {} data'.format(predict_str, training_data), size=14)
+        ax.set_title(r'{}, {} data'.format(predict_str, training_data), size=16)
 
         # label genes and adjust text to not overlap
         # automatic alignment isn't perfect, can align by hand in inkscape if necessary
@@ -256,19 +257,20 @@ def plot_volcano_comparison(results_df,
         # label axes and set axis limits
         ax.set_xlabel('{}({}) - {}(expression)'.format(
                           metric.upper(), training_data, metric.upper()),
-                      size=14)
-        ax.set_ylabel(r'$-\log_{10}($adjusted $p$-value$)$', size=14)
+                      size=16)
+        ax.set_ylabel(r'$-\log_{10}($adjusted $p$-value$)$', size=16)
         ax.set_xlim(xlim)
         ax.set_ylim(ylim)
+        ax.tick_params(axis='both', labelsize=15)
 
         # only add a legend to the first subplot
         if ix == 0:
             ax.legend(title=r'Reject $H_0$', loc='upper left',
-                      fontsize=14, title_fontsize=14)
+                      fontsize=15, title_fontsize=15)
 
         ax.set_title(
             r'{}, expression vs. {}'.format(predict_str, training_data),
-            size=14
+            size=16
         )
 
         # label genes and adjust text to not overlap
@@ -323,7 +325,7 @@ def plot_boxes(results_df,
         ax_all = axarr
     sns.boxplot(data=results_df, x='training_data', y='delta_mean',
                 ax=ax_all, order=list(training_data_map.values()))
-    ax_all.set_title('Prediction for all genes, performance vs. data type', size=14)
+    ax_all.set_title('Prediction for all genes, performance vs. data type', size=16)
     if orientation == 'v':
         ax_all.set_xlabel('')
     else:
@@ -333,8 +335,8 @@ def plot_boxes(results_df,
                   size=14)
     ax_all.set_ylim(-0.2, 0.7)
     for tick in ax_all.get_xticklabels():
-        tick.set_fontsize(12)
         tick.set_rotation(30)
+    ax_all.tick_params(axis='both', labelsize=15)
 
     if plot_significant:
         # plot mean performance for genes that are significant for at least one data type
@@ -346,15 +348,15 @@ def plot_boxes(results_df,
         sns.boxplot(data=results_df[results_df.gene.isin(gene_list)],
                     x='training_data', y='delta_mean', ax=ax_sig,
                     order=list(training_data_map.values()))
-        ax_sig.set_title('Prediction for significant genes only, performance vs. data type', size=14)
+        ax_sig.set_title('Prediction for significant genes only, per data type', size=16)
         ax_sig.set_xlabel('Data type', size=14)
         ax_sig.set_ylabel('{}(signal) - {}(shuffled)'.format(
                           metric.upper(), metric.upper()),
                       size=14)
         ax_sig.set_ylim(-0.2, 0.7)
         for tick in ax_sig.get_xticklabels():
-            tick.set_fontsize(12)
             tick.set_rotation(30)
+        ax_sig.tick_params(axis='both', labelsize=15)
 
     plt.tight_layout()
 
@@ -504,12 +506,14 @@ def plot_heatmap_split(heatmap_df,
                                          id_name=id_name)
 
     num_genes = heatmap_df.shape[1]
-    fig, axarr = plt.subplots(2, 1)
+    fig, axarr = plt.subplots(3, 1)
+    colorbar_range = (-0.1, 0.7)
 
-    heatmap1_df = heatmap_df.iloc[:, :(num_genes // 2)]
+    heatmap1_df = heatmap_df.iloc[:, :(num_genes // 3)]
     ax1 = sns.heatmap(heatmap1_df,
                       cmap='Greens',
                       cbar_kws={'aspect': 10, 'fraction': 0.1, 'pad': 0.01},
+                      vmin=colorbar_range[0], vmax=colorbar_range[1],
                       ax=axarr[0])
     ax1.xaxis.labelpad = 15
 
@@ -522,14 +526,15 @@ def plot_heatmap_split(heatmap_df,
     cbar = ax1.collections[0].colorbar
     cbar.set_label('{}(signal) - {}(shuffled)'.format(
                        metric.upper(), metric.upper()),
-                   labelpad=15)
+                   size=21, labelpad=15)
     cbar.outline.set_edgecolor('black')
     cbar.outline.set_linewidth(1)
 
-    heatmap2_df = heatmap_df.iloc[:, (num_genes // 2):]
+    heatmap2_df = heatmap_df.iloc[:, (num_genes // 3):(2 * (num_genes // 3))]
     ax2 = sns.heatmap(heatmap2_df,
                       cmap='Greens',
                       cbar_kws={'aspect': 10, 'fraction': 0.1, 'pad': 0.01},
+                      vmin=colorbar_range[0], vmax=colorbar_range[1],
                       ax=axarr[1])
     ax2.xaxis.labelpad = 15
 
@@ -542,7 +547,28 @@ def plot_heatmap_split(heatmap_df,
     cbar = ax2.collections[0].colorbar
     cbar.set_label('{}(signal) - {}(shuffled)'.format(
                        metric.upper(), metric.upper()),
-                   labelpad=15)
+                   size=21, labelpad=15)
+    cbar.outline.set_edgecolor('black')
+    cbar.outline.set_linewidth(1)
+
+    heatmap3_df = heatmap_df.iloc[:, (2 * (num_genes // 3)):]
+    ax3 = sns.heatmap(heatmap3_df,
+                      cmap='Greens',
+                      cbar_kws={'aspect': 10, 'fraction': 0.1, 'pad': 0.01},
+                      vmin=colorbar_range[0], vmax=colorbar_range[1],
+                      ax=axarr[2])
+    ax3.xaxis.labelpad = 15
+
+    # outline around heatmap
+    for _, spine in ax3.spines.items():
+        spine.set_visible(True)
+        spine.set_color('black')
+
+    # outline around colorbar
+    cbar = ax3.collections[0].colorbar
+    cbar.set_label('{}(signal) - {}(shuffled)'.format(
+                       metric.upper(), metric.upper()),
+                   size=21, labelpad=15)
     cbar.outline.set_edgecolor('black')
     cbar.outline.set_linewidth(1)
 
@@ -550,18 +576,20 @@ def plot_heatmap_split(heatmap_df,
     # add black dots to cells that are significant and "best" predictor for that gene
     heatmap_dfs = []
 
-    for ix, heatmap_df in enumerate([heatmap1_df, heatmap2_df]):
+    for ix, heatmap_df in enumerate([heatmap1_df, heatmap2_df, heatmap3_df]):
         heatmap_sig_df = pd.DataFrame(
             np.zeros(heatmap_df.shape),
             index=heatmap_df.index.copy(),
             columns=heatmap_df.columns.copy()
         )
         ax = axarr[ix]
-        if ix != 0:
-            ax.set_xlabel('{} name'.format(id_name.capitalize().replace('_', ' ')))
+        if ix == 2:
+            ax.set_xlabel('{} name'.format(id_name.capitalize().replace('_', ' ')),
+                         size=21)
         else:
             ax.set_xlabel('')
-        ax.set_ylabel('Training data type')
+        ax.set_ylabel('Training data type', size=21)
+        ax.tick_params(axis='both', labelsize=21)
         for id_ix, identifier in enumerate(heatmap_df.columns):
             for data_ix, data_type in enumerate(heatmap_df.index):
                 if _check_data_type(results_df, identifier, data_type, id_name):
@@ -857,7 +885,7 @@ def plot_multi_omics_results(results_df,
             sns.boxplot(data=plot_df, x='training_data', y=delta_metric,
                         order=list(data_names.values()), palette=colors, ax=ax)
 
-        ax.set_title('Prediction for {} mutation'.format(gene), size=13)
+        ax.set_title('Prediction for {} mutation'.format(gene), size=20)
 
         # if we're comparing models we want to add x-labels for the
         # second row, and a legend describing the models only for the
@@ -880,8 +908,9 @@ def plot_multi_omics_results(results_df,
 
         ax.set_ylabel('{}(signal) - {}(shuffled)'.format(
                           metric.upper(), metric.upper()),
-                      size=13)
+                      size=18)
         ax.set_ylim(-0.2, max_aupr+0.1)
+        ax.tick_params(axis='both', labelsize=15)
 
 
 def plot_best_multi_omics_results(results_df,
@@ -926,13 +955,14 @@ def plot_best_multi_omics_results(results_df,
 
     colors = sns.color_palette('Set2')
     sns.boxplot(data=plot_df, x='gene', y=delta_metric, hue='model_type', palette=colors)
-    plt.title('Best performing single-omics vs. multi-omics data type, per gene', size=13)
-    plt.xlabel('Target gene', size=13)
+    plt.title('Best performing single-omics vs. multi-omics data type, per gene', size=16)
+    plt.xlabel('Target gene', size=15)
     plt.ylabel('{}(signal) - {}(shuffled)'.format(
                    metric.upper(), metric.upper()),
-               size=13)
+               size=15)
     plt.ylim(ylim)
-    plt.legend(title='Model type', loc='lower left', fontsize=12, title_fontsize=12)
+    plt.tick_params(labelsize=14)
+    plt.legend(title='Model type', loc='lower left', fontsize=14, title_fontsize=14)
 
 
 def _check_data_type(results_df, identifier, data_type, id_name):
@@ -963,7 +993,8 @@ def _label_points_bound(x, y, labels, ax, x_lower, y_lower):
     for i, point in pts.iterrows():
         if point['x'] > x_lower and point['y'] > y_lower:
             text_labels.append(
-                ax.text(point['x'], point['y'], str(point['label']))
+                ax.text(point['x'], point['y'], str(point['label']),
+                        fontsize=14)
             )
     return text_labels
 

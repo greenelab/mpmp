@@ -149,7 +149,7 @@ all_results_df['nlog10_p'] = -np.log10(all_results_df.corr_pval)
 all_results_df.sort_values(by='p_value').head(10)
 
 
-# In[7]:
+# In[13]:
 
 
 sns.set({'figure.figsize': (24, 6)})
@@ -171,7 +171,7 @@ plu.plot_volcano_baseline(all_results_df,
                           SIG_ALPHA,
                           metric=plot_metric,
                           verbose=True,
-                          label_x_lower_bounds=[0.2, 0.2, 0.4],
+                          label_x_lower_bounds=[0.2, 0.3, 0.5],
                           label_y_lower_bounds=[4, 4, 5],
                           mark_overlap=True,
                           overlap_reference='cancer gene set')
