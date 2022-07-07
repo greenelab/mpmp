@@ -814,7 +814,8 @@ def compress_and_save_data(data_type,
                            standardize_input,
                            verbose=False,
                            seed=cfg.default_seed,
-                           save_variance_explained=False):
+                           save_variance_explained=False,
+                           save_loadings=False):
 
     from sklearn.decomposition import PCA
     from sklearn.preprocessing import StandardScaler
@@ -852,6 +853,13 @@ def compress_and_save_data(data_type,
     if save_variance_explained:
         np.savetxt(os.path.join(output_dir, '{}_ve.tsv.gz'.format(output_prefix)),
                    pca.explained_variance_ratio_)
+    
+    if save_loadings:
+        # https://stackoverflow.com/a/42046659
+        np.savetxt(
+            os.path.join(output_dir, '{}_loadings.tsv.gz'.format(output_prefix)),
+            pca.components_.T * np.sqrt(pca.explained_variance_)
+        )
 
     return transformed_data_df
 
